@@ -1,0 +1,252 @@
+#include <iostream>
+#include <sstream>
+#include <algorithm>
+
+#include <boost/foreach.hpp>
+
+#include "util/use-stl-algo-boost-lambda.h"
+
+#include "util/climate-common.h"
+
+using namespace std;
+using namespace Climate;
+using namespace Util;
+
+vector<string> splitString(string s, string splitElements)
+{
+	vector<string> v;
+	v.push_back("");
+	for(auto cit = s.begin(); cit != s.end(); cit++)
+	{
+		if(splitElements.find(*cit) == string::npos)
+			v.back().append(1, *cit);
+		else if(v.back().size() > 0)
+			v.push_back("");
+	}
+
+	return v;
+}
+
+//------------------------------------------------------------------------------
+
+string Climate::availableClimateData2CLMDBColName(AvailableClimateData col)
+{
+  switch(col)
+  {
+  case day: return "tag";
+  case month: return "monat";
+  case year: return "jahr";
+  case tmin: return "tn";
+  case tavg: return "tm";
+  case tmax: return "tx";
+  case precip: return "rr_corr";
+  case precipOrig: return "rr";
+  case globrad: return "0";
+  case relhumid: return "rf";
+  case airpress: return "pp";
+  case sunhours: return "sd";
+  case cloudamount: return "nn";
+  case vaporpress: return "dd";
+  case wind: return "ff";
+  default: ;
+	}
+	return "error";
+}
+
+string Climate::availableClimateData2WerexColName(AvailableClimateData col)
+{
+  switch(col)
+  {
+  case day: return "tag";
+  case month: return "mo";
+  case year: return "jahr";
+  case tmin: return "tmin";
+  case tavg: return "tmit";
+  case tmax: return "tmax";
+  case precip: return "rr";
+  case precipOrig: return "rr";
+  case globrad: return "0";
+  case relhumid: return "rf";
+  case airpress: return "pp";
+  case sunhours: return "sd";
+  case cloudamount: return "nn";
+  case vaporpress: return "dd";
+  case wind: return "ff";
+  default: ;
+	}
+	return "error";
+}
+
+string Climate::availableClimateData2WettRegDBColName(AvailableClimateData col)
+{
+  switch(col)
+  {
+  case day: return "tag";
+  case month: return "mo";
+  case year: return "jahr";
+  case tmin: return "tmin";
+  case tavg: return "tmit";
+  case tmax: return "tmax";
+  case precip: return "nied";
+  case precipOrig: return "nied";
+  case globrad: return "stra";
+  case relhumid: return "relf";
+  case airpress: return "ludr";
+  case sunhours: return "sonn";
+  case cloudamount: return "bewo";
+  case vaporpress: return "dadr";
+  case wind: return "wind";
+  default: ;
+	}
+	return "error";
+}
+
+std::string Climate::availableClimateData2Name(AvailableClimateData col)
+{
+	switch(col)
+	{
+	case day: return "Tag";
+	case month: return "Monat";
+	case year: return "Jahr";
+	case tmin: return "Tmin";
+	case tavg: return "Tmit";
+	case tmax: return "Tmax";
+	case precip: return "Niederschlag";
+	case precipOrig: return "Niederschlag (unkorrigiert)";
+	case globrad: return "Globlstrahlung";
+	case relhumid: return "relative Luftfeuchte";
+	case airpress: return "Luftdruck";
+	case sunhours: return "Sonnenscheindauer";
+	case cloudamount: return "Bewölkungsgrad";
+	case vaporpress: return "Dampfdruck";
+	case wind: return "Windgeschwindigkeit";
+	default: ;
+	}
+	return "unbekannt";
+}
+
+std::string Climate::availableClimateData2unit(AvailableClimateData col)
+{
+	switch(col)
+	{
+	case day: return "d";
+	case year: return "a";
+	case tmin: return "°C";
+	case tavg: return "°C";
+	case tmax: return "°C";
+	case precip: return "mm";
+	case precipOrig: return "mm";
+	case sunhours: return "h";
+	case wind: return "m/s";
+	default: ;
+	}
+	return "";
+}
+
+const ACDV& acds()
+{
+	static ACDV v;
+	static bool isInitialized = false;
+  if(!isInitialized)
+  {
+		ACD t[] = { day, month, year, tmin, tavg, tmax, precip, precipOrig, globrad,
+		            wind, sunhours, cloudamount, relhumid, airpress, vaporpress };
+		v.insert(v.end(), t, t + availableClimateDataSize());
+		isInitialized = true;
+	}
+	return v;
+}
+
+//------------------------------------------------------------------------------
+
+YearRange Climate::snapToRaster(YearRange yr, int raster)
+{
+  int from = yr.fromYear;
+  int to = yr.toYear;
+
+  int fmod = from % raster;
+  if(fmod != 1)
+    from = from + (fmod == 0 ? 0 : raster - fmod) + 1;
+  int tmod = to % raster;
+  if(tmod != 0)
+    to = to - tmod;
+
+  return YearRange(from, to);
+}
+
+//------------------------------------------------------------------------------
+
+DataAccessor::DataAccessor()
+: _data(new VVD), _acd2dataIndex(availableClimateDataSize(), -1),
+_fromStep(0), _numberOfSteps(0){}
+
+DataAccessor::DataAccessor(const Util::Date& startDate,
+                           const Util::Date& endDate)
+: _startDate(startDate), _endDate(endDate),
+_data(new VVD), _acd2dataIndex(availableClimateDataSize(), -1),
+_fromStep(0), _numberOfSteps(0){}
+
+DataAccessor::DataAccessor(const DataAccessor& other)
+: _startDate(other._startDate), _endDate(other._endDate),
+_data(other._data), _acd2dataIndex(other._acd2dataIndex),
+_fromStep(other._fromStep), _numberOfSteps(other._numberOfSteps) {}
+
+double DataAccessor::dataForTimestep(AvailableClimateData acd,
+    unsigned int stepNo) const
+{
+  short cacheIndex = _acd2dataIndex.at(int(acd));
+  return cacheIndex < 0 ? 0.0 : _data->at(cacheIndex).at(_fromStep + stepNo);
+}
+
+vector<double> DataAccessor::dataAsVector(AvailableClimateData acd) const
+{
+  short cacheIndex = _acd2dataIndex.at(int(acd));
+  return cacheIndex < 0 ? vector<double>()
+    :vector<double>(_data->at(cacheIndex).begin()+_fromStep,
+                    _data->at(cacheIndex).begin()+_fromStep+noOfStepsPossible());
+}
+
+DataAccessor DataAccessor::cloneForRange(unsigned int fromStep,
+                                         unsigned int numberOfSteps) const
+{
+	//cout << "cloneForRange fromStep: " << fromStep <<
+	//" numberOfSteps: " << numberOfSteps << endl;
+  if(!isValid()
+    || fromStep > noOfStepsPossible()
+    || (fromStep + numberOfSteps) > noOfStepsPossible())
+    return DataAccessor(); //numberOfSteps = fromStep = 0;
+
+	DataAccessor clone(*this);
+  clone._fromStep += fromStep;
+	clone._numberOfSteps = numberOfSteps;
+  clone._startDate = clone._startDate + clone._fromStep;
+  clone._endDate = clone._startDate + numberOfSteps - 1;
+	return clone;
+}
+
+void DataAccessor::addClimateData(AvailableClimateData acd,
+                                  const vector<double>& data)
+{
+  if(!_data->empty())
+    assert(_numberOfSteps = data.size());
+
+	_data->push_back(data);
+	_acd2dataIndex[int(acd)] = _data->size() - 1;
+	_numberOfSteps = _data->empty() ? 0 : _data->front().size();
+}
+
+void DataAccessor::addOrReplaceClimateData(AvailableClimateData acd,
+                                           const vector<double>& data)
+{
+  int index = _acd2dataIndex[int(acd)];
+  if(index < 0)
+    addClimateData(acd, data);
+  else
+    (*_data)[index] = data;
+}
+
+unsigned int DataAccessor::julianDayForStep(int stepNo) const
+{
+	return (_startDate + stepNo).julianDay();
+}
+
