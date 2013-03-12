@@ -1,3 +1,29 @@
+/**
+Authors: 
+Michael Berg <michael.berg@zalf.de>
+
+Maintainers: 
+Currently maintained by the authors.
+
+This file is part of the util library used by models created at the Institute of 
+Landscape Systems Analysis at the ZALF.
+<one line to give the program's name and a brief idea of what it does.>
+Copyright (C) 2007-2013, Leibniz Centre for Agricultural Landscape Research (ZALF)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef HELPER_H_
 #define HELPER_H_
 
@@ -19,21 +45,6 @@ namespace Util
       return std::atof(s.replace(pos, 1, ".").c_str());
 
     return 0.0;
-
-    /*
-    if(c)
-    {
-			char* cpy = new char[std::strlen(c)+1];
-      std::strcpy(cpy, c);
-			if(char* p = std::strchr(cpy, ','))
-      {
-        *p = '.';
-				return atof(cpy);
-      }
-			delete[] cpy;
-    }
-    return 0.0;
-    */
   }
 
   inline bool fuzzyIsNull(double d)

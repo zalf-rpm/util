@@ -1,4 +1,29 @@
-//#include <gsl/gsl_fit.h>
+/**
+Authors: 
+Michael Berg <michael.berg@zalf.de>
+
+Maintainers: 
+Currently maintained by the authors.
+
+This file is part of the util library used by models created at the Institute of 
+Landscape Systems Analysis at the ZALF.
+<one line to give the program's name and a brief idea of what it does.>
+Copyright (C) 2007-2013, Leibniz Centre for Agricultural Landscape Research (ZALF)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <cstdio>
 #include <cmath>
 #include <cstdlib>
@@ -16,7 +41,8 @@
 using namespace std;
 using namespace Util;
 
-string Util::trim(const string& s, const string& whitespaces) {
+string Util::trim(const string& s, const string& whitespaces) 
+{
   string str(s);
   size_t found;
   found = str.find_last_not_of(whitespaces);
@@ -28,17 +54,20 @@ string Util::trim(const string& s, const string& whitespaces) {
   return str;
 }
 
-namespace {
-
-  void de_capitalizeInPlace(string& s, int (*f)(int) = &toupper){
+namespace 
+{
+  void de_capitalizeInPlace(string& s, int (*f)(int) = &toupper)
+  {
     if(s.begin() == s.end())
       return;
 
-    for(string::iterator si = s.begin()+1; si != s.end(); si++){
+    for(string::iterator si = s.begin()+1; si != s.end(); si++)
+    {
       if(si-1 == s.begin())
         *(si-1) = f(*(si-1));
 
-      switch(*(si-1)){
+      switch(*(si-1))
+      {
       case '-': case '(': case ')': case ',': case '/': case '_':
         *si = f(*si);
       }
@@ -47,21 +76,25 @@ namespace {
 
 }
 
-void Util::capitalizeInPlace(string& s){
+void Util::capitalizeInPlace(string& s)
+{
   de_capitalizeInPlace(s);
 }
 
-string Util::capitalize(const string& s){
+string Util::capitalize(const string& s)
+{
   string res = s;
   capitalizeInPlace(res);
   return res;
 }
 
-void Util::decapitalizeInPlace(string& s){
+void Util::decapitalizeInPlace(string& s)
+{
   de_capitalizeInPlace(s, &tolower);
 }
 
-string Util::decapitalize(const string& s){
+string Util::decapitalize(const string& s)
+{
   string res = s;
   decapitalizeInPlace(res);
   return res;
@@ -177,101 +210,107 @@ double Util::cloudAmount2globalRadiation(int doy,
 }
 
 HistogramData Util::histogramDataByStepSize(const vector<double>& ys,
-                                            double step, int normalizeCount){
-                                              HistogramData res;
-                                              if(ys.empty()) return res;
+                                            double step, int normalizeCount)
+{
+  HistogramData res;
+  if(ys.empty()) 
+    return res;
 
-                                              pair<double, double> mima = minMax(ys);
-                                              //cout << "rmin: " << mima.first << " rmax: " << mima.second << endl;
+  pair<double, double> mima = minMax(ys);
+  //cout << "rmin: " << mima.first << " rmax: " << mima.second << endl;
 
-                                              //round minY and maxY to/including full stepSize
-                                              double minY = mima.first;
-                                              double t = minY / step;
-                                              minY = std::floor(t) * step;
-                                              double shift = -1*minY;
-                                              double maxY = mima.second;
-                                              t = maxY / step;
-                                              maxY = std::ceil(t) * step;
+  //round minY and maxY to/including full stepSize
+  double minY = mima.first;
+  double t = minY / step;
+  minY = std::floor(t) * step;
+  double shift = -1*minY;
+  double maxY = mima.second;
+  t = maxY / step;
+  maxY = std::ceil(t) * step;
 
-                                              int n = int(std::ceil((maxY - minY) / step));
-                                              //cout << "minY: " << minY << " shift: " << shift << " maxY: " << maxY
-                                              //<< " step: " << step << " n: " << n << endl;
+  int n = int(std::ceil((maxY - minY) / step));
+  //cout << "minY: " << minY << " shift: " << shift << " maxY: " << maxY
+  //<< " step: " << step << " n: " << n << endl;
 
-                                              //if all values are the same
-                                              if(n == 0){
-                                                minY = minY - (step / 2);
-                                                maxY = maxY + (step / 2);
-                                                n = 1;
-                                              }
+  //if all values are the same
+  if(n == 0)
+  {
+    minY = minY - (step / 2);
+    maxY = maxY + (step / 2);
+    n = 1;
+  }
 
-                                              res.xs.resize(n);
-                                              for(int i = 0; i < n; i++)
-                                                res.xs[i] = minY + (i * step + (step / 2));
-                                              //cout << "xs: " << xs << endl;
+  res.xs.resize(n);
+  for(int i = 0; i < n; i++)
+    res.xs[i] = minY + (i * step + (step / 2));
+  //cout << "xs: " << xs << endl;
 
-                                              res.borders.resize(n+1);
-                                              for(int i = 0; i < n+1; i++)
-                                                res.borders[i] = minY + (i * step);
-                                              //cout << "borders: " << borders << endl;
+  res.borders.resize(n+1);
+  for(int i = 0; i < n+1; i++)
+    res.borders[i] = minY + (i * step);
+  //cout << "borders: " << borders << endl;
 
-                                              res.classes.resize(n+1);
-                                              for(vector<double>::const_iterator ci = ys.begin(); ci != ys.end(); ci++){
-                                                //cout << "int(ceil((" << shift << " + " << *ci << ") /" << step << "))=" <<
-                                                //	(int(ceil((shift + *ci)/step))) << endl;
-                                                res.classes[int(std::ceil((shift + *ci)/step))]++;
-                                              }
-                                              //cout << "classes: " << classes << endl;
-                                              res.classes[1] += res.classes.at(0);
-                                              res.classes.erase(res.classes.begin()); //lowest border actually belongs to class above (0 value)
-                                              //cout << "classes: " << classes << endl;
+  res.classes.resize(n+1);
+  for(vector<double>::const_iterator ci = ys.begin(); ci != ys.end(); ci++)
+  {
+    //cout << "int(ceil((" << shift << " + " << *ci << ") /" << step << "))=" <<
+    //	(int(ceil((shift + *ci)/step))) << endl;
+    res.classes[int(std::ceil((shift + *ci)/step))]++;
+  }
+  //cout << "classes: " << classes << endl;
+  res.classes[1] += res.classes.at(0);
+  res.classes.erase(res.classes.begin()); //lowest border actually belongs to class above (0 value)
+  //cout << "classes: " << classes << endl;
 
-                                              if(normalizeCount > 1)
-                                                for(int i = 0, size = res.classes.size(); i < size; i++)
-                                                  res.classes[i] /= normalizeCount;
+  if(normalizeCount > 1)
+    for(int i = 0, size = res.classes.size(); i < size; i++)
+      res.classes[i] /= normalizeCount;
 
-                                              return res;
+  return res;
 }
 
 
 HistogramData Util::histogramDataByNoOfClasses(const vector<double>& ys, int n,
-                                               int normalizeCount){
-                                                 HistogramData res;
-                                                 if(ys.empty()) return res;
+                                               int normalizeCount)
+{
+  HistogramData res;
+  if(ys.empty()) return res;
 
-                                                 pair<double, double> mima = minMax(ys);
-                                                 double minY = mima.first;
-                                                 double shift = -1*minY;
-                                                 double maxY = mima.second;
-                                                 double step = (maxY - minY) / n;
-                                                 //qDebug() << "minY: " << minY << " shift: " << shift << " maxY: " << maxY << " step: " << step;
+  pair<double, double> mima = minMax(ys);
+  double minY = mima.first;
+  double shift = -1*minY;
+  double maxY = mima.second;
+  double step = (maxY - minY) / n;
+  //qDebug() << "minY: " << minY << " shift: " << shift << " maxY: " << maxY << " step: " << step;
 
-                                                 res.xs.resize(n);
-                                                 for(int i = 0; i < n; i++)
-                                                   res.xs[i] = minY + (i * step + (step / 2));
-                                                 //cout << "xs: " << xs << endl;
+  res.xs.resize(n);
+  for(int i = 0; i < n; i++)
+    res.xs[i] = minY + (i * step + (step / 2));
+  //cout << "xs: " << xs << endl;
 
-                                                 res.borders.resize(n+1);
-                                                 for(int i = 0; i < n+1; i++)
-                                                   res.borders[i] = minY + (i * step);
-                                                 //cout << "borders: " << borders << endl;
+  res.borders.resize(n+1);
+  for(int i = 0; i < n+1; i++)
+    res.borders[i] = minY + (i * step);
+  //cout << "borders: " << borders << endl;
 
-                                                 res.classes.resize(n+1);
-                                                 for(vector<double>::const_iterator ci = ys.begin(); ci != ys.end(); ci++){
-                                                   //cout << "int(ceil((" << shift << " + " << *ci << ") /" << step << "))=" <<
-                                                   //	(int(ceil((shift + *ci)/step))) << endl;
-                                                   res.classes[int(std::ceil((shift + *ci)/step))]++;
-                                                 }
+  res.classes.resize(n+1);
+  for(vector<double>::const_iterator ci = ys.begin(); ci != ys.end(); ci++)
+  {
+    //cout << "int(ceil((" << shift << " + " << *ci << ") /" << step << "))=" <<
+    //	(int(ceil((shift + *ci)/step))) << endl;
+    res.classes[int(std::ceil((shift + *ci)/step))]++;
+  }
 
-                                                 //lowest border actually belongs to class above (0 value)
-                                                 res.classes[1] += res.classes.at(0);
-                                                 res.classes.erase(res.classes.begin());
-                                                 //cout << "classes: " << classes << endl;
+  //lowest border actually belongs to class above (0 value)
+  res.classes[1] += res.classes.at(0);
+  res.classes.erase(res.classes.begin());
+  //cout << "classes: " << classes << endl;
 
-                                                 if(normalizeCount > 1)
-                                                   for(int i = 0, size = res.classes.size(); i < size; i++)
-                                                     res.classes[i] /= normalizeCount;
+  if(normalizeCount > 1)
+    for(int i = 0, size = res.classes.size(); i < size; i++)
+      res.classes[i] /= normalizeCount;
 
-                                                 return res;
+  return res;
 }
 
 //------------------------------------------------------------------------------
@@ -284,7 +323,8 @@ BoxPlotInfo::BoxPlotInfo(double m, double q25, double q75, double min, double ma
   : median(m), Q25(q25), Q75(q75), min(min), max(max),
   minInnerFence(0), maxInnerFence(0){}
 
-string BoxPlotInfo::toString() const {
+string BoxPlotInfo::toString() const 
+{
   ostringstream s;
   s << "\nextreme lower outliers: [ ";
   for_each(extremeLowerOutliers.begin(), extremeLowerOutliers.end(),
@@ -316,91 +356,98 @@ string BoxPlotInfo::toString() const {
 
 
 BoxPlotInfo Util::boxPlotAnalysis(const std::vector<double>& data,
-                                  bool orderedData){
-                                    if(data.empty())
-                                      return BoxPlotInfo();
+                                  bool orderedData)
+{
+  if(data.empty())
+    return BoxPlotInfo();
 
-                                    vector<double> _odata;
-                                    if(!orderedData){
-                                      _odata.insert(_odata.begin(), data.begin(), data.end());
-                                      sort(_odata.begin(), _odata.end());
-                                    }
-                                    const vector<double>& odata = orderedData ? data : _odata;
+  vector<double> _odata;
+  if(!orderedData)
+  {
+    _odata.insert(_odata.begin(), data.begin(), data.end());
+    sort(_odata.begin(), _odata.end());
+  }
+  const vector<double>& odata = orderedData ? data : _odata;
 
-                                    BoxPlotInfo bpi(median(odata), quartile(0.25, odata), quartile(0.75, odata),
-                                      odata.front(), odata.back());
+  BoxPlotInfo bpi(median(odata), quartile(0.25, odata), quartile(0.75, odata),
+    odata.front(), odata.back());
 
-                                    //get extreme lower outliers
-                                    remove_copy_if(odata.begin(), odata.end(),
-                                      inserter(bpi.extremeLowerOutliers, bpi.extremeLowerOutliers.end()),
-                                      _1 >= bpi.lowerOuterFence());
-                                    //keep just the 10 smallest elements, delete the rest
-                                    if(bpi.extremeLowerOutliers.size() > 10){
-                                      int count = 0;
-                                      set<double>::iterator i = bpi.extremeLowerOutliers.begin();
-                                      while(i != bpi.extremeLowerOutliers.end() && count++ < 10)
-                                        i++;
-                                      bpi.extremeLowerOutliers.erase(i, bpi.extremeLowerOutliers.end());
-                                    }
+  //get extreme lower outliers
+  remove_copy_if(odata.begin(), odata.end(),
+    inserter(bpi.extremeLowerOutliers, bpi.extremeLowerOutliers.end()),
+    _1 >= bpi.lowerOuterFence());
+  //keep just the 10 smallest elements, delete the rest
+  if(bpi.extremeLowerOutliers.size() > 10)
+  {
+    int count = 0;
+    set<double>::iterator i = bpi.extremeLowerOutliers.begin();
+    while(i != bpi.extremeLowerOutliers.end() && count++ < 10)
+      i++;
+    bpi.extremeLowerOutliers.erase(i, bpi.extremeLowerOutliers.end());
+  }
 
-                                    //get mild lower outliers
-                                    remove_copy_if(odata.begin(), odata.end(),
-                                      inserter(bpi.mildLowerOutliers, bpi.mildLowerOutliers.end()),
-                                      _1 < bpi.lowerOuterFence() || _1 >= bpi.lowerInnerFence());
-                                    //keep just the 10 smallest elements, delete the rest
-                                    if(bpi.mildLowerOutliers.size() > 10){
-                                      int count = 0;
-                                      set<double>::iterator i = bpi.mildLowerOutliers.begin();
-                                      while(i != bpi.mildLowerOutliers.end() && count++ < 10)
-                                        i++;
-                                      bpi.mildLowerOutliers.erase(i, bpi.mildLowerOutliers.end());
-                                    }
+  //get mild lower outliers
+  remove_copy_if(odata.begin(), odata.end(),
+    inserter(bpi.mildLowerOutliers, bpi.mildLowerOutliers.end()),
+    _1 < bpi.lowerOuterFence() || _1 >= bpi.lowerInnerFence());
+  //keep just the 10 smallest elements, delete the rest
+  if(bpi.mildLowerOutliers.size() > 10)
+  {
+    int count = 0;
+    set<double>::iterator i = bpi.mildLowerOutliers.begin();
+    while(i != bpi.mildLowerOutliers.end() && count++ < 10)
+      i++;
+    bpi.mildLowerOutliers.erase(i, bpi.mildLowerOutliers.end());
+  }
 
-                                    //get mild upper outliers
-                                    remove_copy_if(odata.begin(), odata.end(),
-                                      inserter(bpi.mildUpperOutliers, bpi.mildUpperOutliers.end()),
-                                      _1 <= bpi.upperInnerFence() || _1 > bpi.upperOuterFence());
-                                    //keep just the 10 largest elements, delete the rest
-                                    if(bpi.mildUpperOutliers.size() > 10){
-                                      int count = 0;
-                                      set<double>::iterator i = bpi.mildUpperOutliers.end();
-                                      while(i != bpi.mildUpperOutliers.begin() && count++ < 10)
-                                        i--;
-                                      bpi.mildUpperOutliers.erase(bpi.mildUpperOutliers.begin(), i);
-                                    }
+  //get mild upper outliers
+  remove_copy_if(odata.begin(), odata.end(),
+    inserter(bpi.mildUpperOutliers, bpi.mildUpperOutliers.end()),
+    _1 <= bpi.upperInnerFence() || _1 > bpi.upperOuterFence());
+  //keep just the 10 largest elements, delete the rest
+  if(bpi.mildUpperOutliers.size() > 10)
+  {
+    int count = 0;
+    set<double>::iterator i = bpi.mildUpperOutliers.end();
+    while(i != bpi.mildUpperOutliers.begin() && count++ < 10)
+      i--;
+    bpi.mildUpperOutliers.erase(bpi.mildUpperOutliers.begin(), i);
+  }
 
-                                    //get extreme upper outliers
-                                    remove_copy_if(odata.begin(), odata.end(),
-                                      inserter(bpi.extremeUpperOutliers, bpi.extremeUpperOutliers.end()),
-                                      _1 <= bpi.upperOuterFence());
-                                    //keep just the 10 largest elements, delete the rest
-                                    if(bpi.extremeUpperOutliers.size() > 10){
-                                      int count = 0;
-                                      set<double>::iterator i = bpi.extremeUpperOutliers.end();
-                                      while(i != bpi.extremeUpperOutliers.begin() && count++ < 10)
-                                        i--;
-                                      bpi.extremeUpperOutliers.erase(bpi.extremeUpperOutliers.begin(), i);
-                                    }
+  //get extreme upper outliers
+  remove_copy_if(odata.begin(), odata.end(),
+    inserter(bpi.extremeUpperOutliers, bpi.extremeUpperOutliers.end()),
+    _1 <= bpi.upperOuterFence());
+  //keep just the 10 largest elements, delete the rest
+  if(bpi.extremeUpperOutliers.size() > 10)
+  {
+    int count = 0;
+    set<double>::iterator i = bpi.extremeUpperOutliers.end();
+    while(i != bpi.extremeUpperOutliers.begin() && count++ < 10)
+      i--;
+    bpi.extremeUpperOutliers.erase(bpi.extremeUpperOutliers.begin(), i);
+  }
 
-                                    //get smallest value above lower inner fence
-                                    bpi.minInnerFence = bpi.min;
-                                    vector<double>::const_iterator
-                                      ci = find_if(odata.begin(), odata.end(), _1 > bpi.lowerInnerFence());
-                                    if(ci != odata.end())
-                                      bpi.minInnerFence = *ci;
+  //get smallest value above lower inner fence
+  bpi.minInnerFence = bpi.min;
+  vector<double>::const_iterator
+    ci = find_if(odata.begin(), odata.end(), _1 > bpi.lowerInnerFence());
+  if(ci != odata.end())
+    bpi.minInnerFence = *ci;
 
-                                    //get largest value below upper inner fence
-                                    bpi.maxInnerFence = bpi.max;
-                                    ci = find(odata.begin(), odata.end(), bpi.Q75); //start at Q75
-                                    vector<double>::const_iterator cilast = odata.end();
-                                    while(ci != odata.end()){
-                                      cilast = ci++;
-                                      ci = find_if(ci, odata.end(), _1 < bpi.upperInnerFence());
-                                    }
-                                    if(cilast != odata.end())
-                                      bpi.maxInnerFence = *cilast;
+  //get largest value below upper inner fence
+  bpi.maxInnerFence = bpi.max;
+  ci = find(odata.begin(), odata.end(), bpi.Q75); //start at Q75
+  vector<double>::const_iterator cilast = odata.end();
+  while(ci != odata.end())
+  {
+    cilast = ci++;
+    ci = find_if(ci, odata.end(), _1 < bpi.upperInnerFence());
+  }
+  if(cilast != odata.end())
+    bpi.maxInnerFence = *cilast;
 
-                                    return bpi;
+  return bpi;
 }
 
 /*
@@ -436,20 +483,24 @@ double Util::quartile(double xth, const vector<double>& odata)
 
 //------------------------------------------------------------------------------
 
-std::pair<double, int> Util::decomposeIntoSci(double value){
+std::pair<double, int> Util::decomposeIntoSci(double value)
+{
   if(abs(value) < 0.000001)
     return make_pair(0.0, 0);
 
   double man = value;
   int exp = 0;
 
-  if(abs(man) > 0.1){
+  if(abs(man) > 0.1)
+  {
     while(abs(man/10) > 1)
       man/=10, exp++;
 
     if(abs(man) > 1)
       man/=10, exp++;
-  } else {
+  } 
+  else 
+  {
     while(abs(man*10) < 0.1)
       man*=10, exp--;
 
@@ -475,19 +526,22 @@ return int(t + 0.5) * std::pow(double(10), digits);
 }
 */
 
-double Util::floor(double value, int digits, bool trailingDigits){
+double Util::floor(double value, int digits, bool trailingDigits)
+{
   if(trailingDigits)
     return std::floor(value * std::pow(double(10), digits)) / std::pow(double(10), digits);
   return std::floor(value / std::pow(double(10), digits)) * std::pow(double(10), digits);
 }
 
-double Util::ceil(double value, int digits, bool trailingDigits){
+double Util::ceil(double value, int digits, bool trailingDigits)
+{
   if(trailingDigits)
     return std::ceil(value * std::pow(double(10), digits)) / std::pow(double(10), digits);
   return std::ceil(value / std::pow(double(10), digits)) * std::pow(double(10), digits);
 }
 
-void Util::testRoundFloorCeil(){
+void Util::testRoundFloorCeil()
+{
   assert(round(1.5) == 2);
   assert(round(1.4) == 1);
   assert(round(2.) == 2);
