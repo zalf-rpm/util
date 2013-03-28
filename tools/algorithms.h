@@ -39,10 +39,31 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <iterator>
 #include <cassert>
 
-namespace Util
+namespace Tools
 {
 #undef min
 #undef max
+
+	std::vector<std::string> splitString(std::string s, std::string splitElements);
+
+	//! reverse a typelist
+	/*
+		template<class TypeList>
+		struct Reverse {
+		private:
+			typedef typename Reverse<typename TypeList::Tail>::Result temp;
+		public:
+			typedef LOKI_TYPELIST_2(temp, typename TypeList::Head) Result;
+		};
+
+		template<class Head>
+		struct Reverse<Loki::Typelist<Head, Loki::NullType> > {
+			typedef Head Result;
+		};
+		*/
+
+	int createRandomNumber();
+	int createRandomNumber(int max);
 
   inline double interpolate(double x1, double x2, double f1, double f2, double x)
   {
@@ -523,7 +544,7 @@ namespace Util
 //------------------------------------------------------------------------------
 
 template<class Collection>
-Collection Util::linearRegression(const Collection& xs, const Collection& ys) {
+Collection Tools::linearRegression(const Collection& xs, const Collection& ys) {
   typedef typename Collection::value_type T;
 
   Q_ASSERT(xs.size() <= ys.size());
@@ -554,7 +575,7 @@ Collection Util::linearRegression(const Collection& xs, const Collection& ys) {
 }
 
 template<class Collection>
-Collection Util::cumulativeSum(const Collection& ys, int n){
+Collection Tools::cumulativeSum(const Collection& ys, int n){
   typedef typename Collection::value_type T;
 
   T acc = 0;
@@ -566,7 +587,7 @@ Collection Util::cumulativeSum(const Collection& ys, int n){
 }
 
 template<class Collection>
-Collection Util::expGlidingAverage(const Collection& ys,
+Collection Tools::expGlidingAverage(const Collection& ys,
                                     typename Collection::value_type alpha) {
                                       typedef typename Collection::value_type T;
 
@@ -583,7 +604,7 @@ Collection Util::expGlidingAverage(const Collection& ys,
 }
 
 template<class Collection>
-Collection Util::simpleGlidingAverage(const Collection& ys, int n){
+Collection Tools::simpleGlidingAverage(const Collection& ys, int n){
   typedef typename Collection::value_type T;
 
   int lr = int(T(isEven(n) ? n : n-1) / 2.0);  //left right
@@ -610,7 +631,7 @@ Collection Util::simpleGlidingAverage(const Collection& ys, int n){
 
 template<class Collection>
 std::pair<typename Collection::value_type, typename Collection::value_type>
-  Util::minMax(const Collection& ys)
+	Tools::minMax(const Collection& ys)
 {
   typedef typename Collection::value_type T;
   if(ys.empty()) return std::make_pair(T(0), T(0));
@@ -626,7 +647,7 @@ std::pair<typename Collection::value_type, typename Collection::value_type>
 }
 
 template<typename T>
-T Util::bound(T lower, T value, T upper)
+T Tools::bound(T lower, T value, T upper)
 {
   if(value < lower) return lower;
   if(value > upper) return upper;
@@ -634,13 +655,13 @@ T Util::bound(T lower, T value, T upper)
 }
 
 template<class Collection>
-double Util::average(const Collection& xs)
+double Tools::average(const Collection& xs)
 {
   return std::accumulate(xs.begin(), xs.end(), double(0)) / double(xs.size());
 }
 
 template<class Collection>
-double Util::standardDeviation(const Collection& xs, bool calcAvg,
+double Tools::standardDeviation(const Collection& xs, bool calcAvg,
                                 double xavg)
 {
   if(calcAvg) xavg = average(xs);
@@ -653,14 +674,14 @@ double Util::standardDeviation(const Collection& xs, bool calcAvg,
 }
 
 template<class Collection>
-std::pair<double, double> Util::standardDeviationAndAvg(const Collection& xs)
+std::pair<double, double> Tools::standardDeviationAndAvg(const Collection& xs)
 {
   double avg = average(xs);
   return std::make_pair(standardDeviation(xs, false, avg), avg);
 }
 
 template<class Vector1, class Vector2, class OP>
-Vector1 Util::elemVecOp(const Vector1& left, const Vector2& right, OP op,
+Vector1 Tools::elemVecOp(const Vector1& left, const Vector2& right, OP op,
                          bool autoFit)
 {
   int msize = std::min(int(left.size()), int(right.size()));
@@ -676,7 +697,7 @@ Vector1 Util::elemVecOp(const Vector1& left, const Vector2& right, OP op,
 }
 
 template<class Vector1, class Vector2, class OP>
-Vector1& Util::inElemVecOp(Vector1& left, const Vector2& right, OP op,
+Vector1& Tools::inElemVecOp(Vector1& left, const Vector2& right, OP op,
                             bool autoFit)
 {
   int msize = std::min(int(left.size()), int(right.size()));
@@ -691,7 +712,7 @@ Vector1& Util::inElemVecOp(Vector1& left, const Vector2& right, OP op,
 }
 
 template<class Vector, typename T, class OP>
-Vector Util::scalVecOp(const Vector& left, T right, OP op){
+Vector Tools::scalVecOp(const Vector& left, T right, OP op){
   Vector res(left.size());
   for(int i = 0, size = left.size(); i < size; i++)
     res[i] = op(left.at(i), right);
@@ -699,14 +720,14 @@ Vector Util::scalVecOp(const Vector& left, T right, OP op){
 }
 
 template<class Vector, typename T, class OP>
-Vector& Util::inScalVecOp(Vector& left, T right, OP op){
+Vector& Tools::inScalVecOp(Vector& left, T right, OP op){
   for(int i = 0, size = left.size(); i < size; i++)
     left[i] = op(left.at(i), right);
   return left;
 }
 
 template<typename T>
-double Util::round(T value, int digits, bool trailingDigits)
+double Tools::round(T value, int digits, bool trailingDigits)
 {
   if(trailingDigits){
     T t = value * (std::pow(T(10), digits));
@@ -721,7 +742,7 @@ double Util::round(T value, int digits, bool trailingDigits)
 //------------------------------------------------------------------------------
 
 template<class DoubleVector>
-int Util::findThermalVegetationalSeasonStart(const DoubleVector& ts)
+int Tools::findThermalVegetationalSeasonStart(const DoubleVector& ts)
 {
   // cout << "start ts: " << ts << endl;
   double tresh = 5;
@@ -741,7 +762,7 @@ int Util::findThermalVegetationalSeasonStart(const DoubleVector& ts)
 }
 
 template<class DoubleVector>
-int Util::findThermalVegetationalSeasonEnd(const DoubleVector& ts, int startDay)
+int Tools::findThermalVegetationalSeasonEnd(const DoubleVector& ts, int startDay)
 {
   //  cout << "end ts: " << ts << endl;
   double tresh = 5;
@@ -760,7 +781,7 @@ int Util::findThermalVegetationalSeasonEnd(const DoubleVector& ts, int startDay)
 }
 
 template<class Iterator>
-std::pair<int, int> Util::forestalVegetationalSeasonStartEnd(Iterator begin,
+std::pair<int, int> Tools::forestalVegetationalSeasonStartEnd(Iterator begin,
                                                               Iterator end)
 {
   static const double threshold = 10.0;
@@ -798,7 +819,7 @@ std::pair<int, int> Util::forestalVegetationalSeasonStartEnd(Iterator begin,
 }
 
 //template<class Collection>
-//Collection Util::classifyClimateZonesForPNV(const Collection& qyrs,
+//Collection Tools::classifyClimateZonesForPNV(const Collection& qyrs,
 //																						 const Collection& qgss)
 //{
 //	assert(qyrs.size() == qgss.size());
@@ -824,7 +845,7 @@ std::pair<int, int> Util::forestalVegetationalSeasonStartEnd(Iterator begin,
 //}
 
 template<class Collection>
-Collection Util::classifyClimateZonesForPNV(const Collection& qs, PNVQ pnvq)
+Collection Tools::classifyClimateZonesForPNV(const Collection& qs, PNVQ pnvq)
 {
   Collection res;
   for(int i=0, size=qs.size(); i<size; i++)

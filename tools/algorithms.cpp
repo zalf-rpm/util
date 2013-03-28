@@ -24,6 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <cstdio>
+#include <ctime>
+#include <cstdio>
 #include <cmath>
 #include <cstdlib>
 #include <numeric>
@@ -32,15 +34,60 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sstream>
 #include <cassert>
 
-#include "use-stl-algo-boost-lambda.h"
 #include "algorithms.h"
-#include "date.h"
-#include "helper.h"
+#include "tools/use-stl-algo-boost-lambda.h"
+#include "tools/date.h"
+#include "tools/helper.h"
 
 using namespace std;
-using namespace Util;
+using namespace Tools;
 
-string Util::trim(const string& s, const string& whitespaces) 
+vector<string> Tools::splitString(string s, string splitElements)
+{
+	vector<string> v;
+	v.push_back("");
+	for(auto cit = s.begin(); cit != s.end(); cit++)
+	{
+		if(splitElements.find(*cit) == string::npos)
+			v.back().append(1, *cit);
+		else if(v.back().size() > 0)
+			v.push_back("");
+	}
+
+	return v;
+}
+
+int Tools::createRandomNumber()
+{
+	static time_t lastTime = -1;
+	int id = 0; //reserved
+	while(id == 0)
+	{
+		time_t t = time(NULL);
+		if(lastTime != t)
+			srand(t);
+		id = rand();
+		lastTime = t;
+	}
+	return id;
+}
+
+int Tools::createRandomNumber(int max)
+{
+	static time_t lastTime = -1;
+	int id = 0; //reserved
+	while(id == 0)
+	{
+		time_t t = time(NULL);
+		if(lastTime != t)
+			srand(t);
+		id = rand() % max;
+		lastTime = t;
+	}
+	return id;
+}
+
+string Tools::trim(const string& s, const string& whitespaces)
 {
   string str(s);
   size_t found;
@@ -75,24 +122,24 @@ namespace
 
 }
 
-void Util::capitalizeInPlace(string& s)
+void Tools::capitalizeInPlace(string& s)
 {
   de_capitalizeInPlace(s);
 }
 
-string Util::capitalize(const string& s)
+string Tools::capitalize(const string& s)
 {
   string res = s;
   capitalizeInPlace(res);
   return res;
 }
 
-void Util::decapitalizeInPlace(string& s)
+void Tools::decapitalizeInPlace(string& s)
 {
   de_capitalizeInPlace(s, &tolower);
 }
 
-string Util::decapitalize(const string& s)
+string Tools::decapitalize(const string& s)
 {
   string res = s;
   decapitalizeInPlace(res);
@@ -100,7 +147,7 @@ string Util::decapitalize(const string& s)
 }
 
 
-double Util::sunshine2globalRadiation(int yd, double sonn, double lat,
+double Tools::sunshine2globalRadiation(int yd, double sonn, double lat,
                                       bool asMJpm2pd)
 {
   double pi=4.0*atan(1.0);
@@ -120,7 +167,7 @@ double Util::sunshine2globalRadiation(int yd, double sonn, double lat,
   return asMJpm2pd ? t/100.0 : t;
 }
 
-double Util::cloudAmount2globalRadiation(int doy,
+double Tools::cloudAmount2globalRadiation(int doy,
                                          double nn, //[1/8]
                                          double lat, //[°]
                                          double hh, //[m]
@@ -208,7 +255,7 @@ double Util::cloudAmount2globalRadiation(int doy,
   return asMJpm2pd ? rg_nn/100.0 : rg_nn;
 }
 
-HistogramData Util::histogramDataByStepSize(const vector<double>& ys,
+HistogramData Tools::histogramDataByStepSize(const vector<double>& ys,
                                             double step, int normalizeCount)
 {
   HistogramData res;
@@ -269,7 +316,7 @@ HistogramData Util::histogramDataByStepSize(const vector<double>& ys,
 }
 
 
-HistogramData Util::histogramDataByNoOfClasses(const vector<double>& ys, int n,
+HistogramData Tools::histogramDataByNoOfClasses(const vector<double>& ys, int n,
                                                int normalizeCount)
 {
   HistogramData res;
@@ -354,7 +401,7 @@ string BoxPlotInfo::toString() const
 }
 
 
-BoxPlotInfo Util::boxPlotAnalysis(const std::vector<double>& data,
+BoxPlotInfo Tools::boxPlotAnalysis(const std::vector<double>& data,
                                   bool orderedData)
 {
   if(data.empty())
@@ -458,7 +505,7 @@ return isEven(size)
 }
 */
 
-double Util::quartile(double xth, const vector<double>& odata)
+double Tools::quartile(double xth, const vector<double>& odata)
 {
   switch(odata.size())
   {
@@ -482,7 +529,7 @@ double Util::quartile(double xth, const vector<double>& odata)
 
 //------------------------------------------------------------------------------
 
-std::pair<double, int> Util::decomposeIntoSci(double value)
+std::pair<double, int> Tools::decomposeIntoSci(double value)
 {
   if(abs(value) < 0.000001)
     return make_pair(0.0, 0);
@@ -525,21 +572,21 @@ return int(t + 0.5) * std::pow(double(10), digits);
 }
 */
 
-double Util::floor(double value, int digits, bool trailingDigits)
+double Tools::floor(double value, int digits, bool trailingDigits)
 {
   if(trailingDigits)
     return std::floor(value * std::pow(double(10), digits)) / std::pow(double(10), digits);
   return std::floor(value / std::pow(double(10), digits)) * std::pow(double(10), digits);
 }
 
-double Util::ceil(double value, int digits, bool trailingDigits)
+double Tools::ceil(double value, int digits, bool trailingDigits)
 {
   if(trailingDigits)
     return std::ceil(value * std::pow(double(10), digits)) / std::pow(double(10), digits);
   return std::ceil(value / std::pow(double(10), digits)) * std::pow(double(10), digits);
 }
 
-void Util::testRoundFloorCeil()
+void Tools::testRoundFloorCeil()
 {
   assert(round(1.5) == 2);
   assert(round(1.4) == 1);

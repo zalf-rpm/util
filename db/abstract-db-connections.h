@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 
 #include "db.h"
-#include "read-ini.h"
+#include "tools/read-ini.h"
 
 namespace Db
 {
@@ -38,11 +38,11 @@ namespace Db
 	 * - upon the first call the user can change where to find the ini-file
 	 * - subsequent calls with a parameter won't change the initial map anymore
 	 */
-	Util::IniParameterMap& 
+	Tools::IniParameterMap&
     dbConnectionParameters(const std::string& initialPathToIniFile = "db-connections.ini");
 
 	//! connection data for schema from given parameter map
-	DBConData dbConData(const Util::IniParameterMap& dbParams,
+	DBConData dbConData(const Tools::IniParameterMap& dbParams,
 	                    const std::string& abstractSchema);
 
 	//! connection data via default parameter map
@@ -52,7 +52,7 @@ namespace Db
 	}
 
 	//! new connection from given parameters
-	DB* newConnection(const Util::IniParameterMap& dbParameters,
+	DB* newConnection(const Tools::IniParameterMap& dbParameters,
 										const std::string& abstractSchema);
 
 	//! new connection from default parameters

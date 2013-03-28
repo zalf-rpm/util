@@ -34,9 +34,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "boost/foreach.hpp"
 
-#include "util/helper.h"
+#include "helper.h"
 
-namespace Util
+namespace Tools
 {
 	//! just to impose some structure on 4 values
 	template<typename T>
@@ -298,7 +298,7 @@ namespace Util
 	 */
 
 	template<typename T>
-	std::string Util::Point<T>::toString() const {
+	std::string Tools::Point<T>::toString() const {
 		std::ostringstream s;
 		s << _x << "x" << _y;
 		return s.str();

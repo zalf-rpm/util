@@ -29,28 +29,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/foreach.hpp>
 
-#include "util/use-stl-algo-boost-lambda.h"
+#include "tools/use-stl-algo-boost-lambda.h"
 
-#include "util/climate-common.h"
+#include "climate/climate-common.h"
 
 using namespace std;
 using namespace Climate;
-using namespace Util;
-
-vector<string> splitString(string s, string splitElements)
-{
-	vector<string> v;
-	v.push_back("");
-	for(auto cit = s.begin(); cit != s.end(); cit++)
-	{
-		if(splitElements.find(*cit) == string::npos)
-			v.back().append(1, *cit);
-		else if(v.back().size() > 0)
-			v.push_back("");
-	}
-
-	return v;
-}
+using namespace Tools;
 
 //------------------------------------------------------------------------------
 
@@ -205,8 +190,8 @@ DataAccessor::DataAccessor()
 : _data(new VVD), _acd2dataIndex(availableClimateDataSize(), -1),
 _fromStep(0), _numberOfSteps(0){}
 
-DataAccessor::DataAccessor(const Util::Date& startDate,
-                           const Util::Date& endDate)
+DataAccessor::DataAccessor(const Tools::Date& startDate,
+													 const Tools::Date& endDate)
 : _startDate(startDate), _endDate(endDate),
 _data(new VVD), _acd2dataIndex(availableClimateDataSize(), -1),
 _fromStep(0), _numberOfSteps(0){}

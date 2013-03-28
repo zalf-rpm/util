@@ -33,7 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "date.h"
 
-namespace Util
+namespace Tools
 {
 	typedef std::map<std::string, std::string> Names2Values;
 	typedef std::map<std::string, Names2Values> Sections2NVMaps;

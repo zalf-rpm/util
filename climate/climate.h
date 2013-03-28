@@ -1,3 +1,28 @@
+/**
+Authors:
+Michael Berg <michael.berg@zalf.de>
+
+Maintainers:
+Currently maintained by the authors.
+
+This file is part of the util library used by models created at the Institute of
+Landscape Systems Analysis at the ZALF.
+Copyright (C) 2007-2013, Leibniz Centre for Agricultural Landscape Research (ZALF)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef CLIMATE_H_
 #define CLIMATE_H_
 
@@ -17,13 +42,13 @@
 #define LOKI_OBJECT_LEVEL_THREADING
 
 #include "loki/Threads.h"
-#include "util/date.h"
-#include "util/db.h"
-#include "util/coord-trans.h"
-#include "util/algorithms.h"
-#include "util/helper.h"
+#include "tools/date.h"
+#include "db/db.h"
+#include "tools/coord-trans.h"
+#include "tools/algorithms.h"
+#include "tools/helper.h"
 
-#include "util/climate-common.h"
+#include "climate/climate-common.h"
 
 //! All climate data related classes.
 namespace Climate
@@ -143,7 +168,7 @@ namespace Climate
 		/*!
 		 * @return the stations Gauss-Krüger 5. Meridian coordinate
 		 */
-    Tools::GK5Coord gk5Coord() const { return Tools::latLng2GK5(geoCoord()); }
+		Tools::GK5Coord gk5Coord() const { return Tools::latLng2GK5(geoCoord()); }
 
 		/*!
 		* @return the climate simulation this station belongs to
@@ -554,7 +579,7 @@ namespace Climate
 		std::vector<unsigned int> offsets;
 
 		unsigned int getNewOffsetIndexFor(const Tools::Date& start);
-    unsigned int offsetFor(const Tools::Date& start) const
+		unsigned int offsetFor(const Tools::Date& start) const
     {
 			return startDate.numberOfDaysTo(start);
 		}
@@ -588,15 +613,15 @@ namespace Climate
 
     //! just fills the cache, but doesn't return any data
     void fillCacheFor(const std::vector<AvailableClimateData>& acds,
-                      const Tools::LatLngCoord& geoCoord,
-                      const Tools::Date& startDate,
-                      const Tools::Date& endDate);
+											const Tools::LatLngCoord& geoCoord,
+											const Tools::Date& startDate,
+											const Tools::Date& endDate);
 
     //! get data deep copied without references to climate cache
     DataAccessor dataAccessorFor(const std::vector<AvailableClimateData>& acds,
-                                 const Tools::LatLngCoord& geoCoord,
-                                 const Tools::Date& startDate,
-                                 const Tools::Date& endDate);
+																 const Tools::LatLngCoord& geoCoord,
+																 const Tools::Date& startDate,
+																 const Tools::Date& endDate);
 
     ClimateSimulation* simulation() const { return _simulation; }
 
@@ -613,25 +638,25 @@ namespace Climate
 
     //! caller takes care of returned pointer to data-vector
     virtual std::map<ACD, std::vector<double>*>
-        executeQuery(const ACDV& acds, const Tools::LatLngCoord& geoCoord,
-                     const Tools::Date& startDate,
-                     const Tools::Date& endDate) const = 0;
+				executeQuery(const ACDV& acds, const Tools::LatLngCoord& geoCoord,
+										 const Tools::Date& startDate,
+										 const Tools::Date& endDate) const = 0;
 
   private: //methods
     //! create list of acds not completely in cache
     ACDV notInCache(const std::vector<Cache>& cs, const ACDV& acds,
-                    const Tools::Date& startDate,
-                    const Tools::Date& endDate) const;
+										const Tools::Date& startDate,
+										const Tools::Date& endDate) const;
     //! create list of all lists with common start and end in cache
     std::vector<ACDV> commonStartEnd(const std::vector<Cache>& cs,
                                      const ACDV& acds,
-                                     const Tools::Date& startDate,
-                                     const Tools::Date& endDate) const;
+																		 const Tools::Date& startDate,
+																		 const Tools::Date& endDate) const;
     //! adjust the cache for acds with common start/end date
     void updateCaches(std::vector<Cache>& cs, ACDV acds,
-                      const Tools::LatLngCoord& geoCoord,
-                      const Tools::Date& startDate,
-                      const Tools::Date& endDate);
+											const Tools::LatLngCoord& geoCoord,
+											const Tools::Date& startDate,
+											const Tools::Date& endDate);
 
   private:
 		std::string _id;
@@ -642,7 +667,7 @@ namespace Climate
     ClimateSimulation* _simulation;
     ClimateScenario* _scenario;
 
-    std::map<Tools::LatLngCoord, std::vector<Cache> > _geoCoord2cache;
+		std::map<Tools::LatLngCoord, std::vector<Cache> > _geoCoord2cache;
 
 //    friend void testClimate();
 	};
@@ -662,14 +687,14 @@ namespace Climate
 
 		DataAccessor dataAccessorFor(const std::vector<AvailableClimateData>& acds,
 		                             const std::string& stationName,
-		                             const Tools::Date& startDate,
-		                             const Tools::Date& endDate);
+																 const Tools::Date& startDate,
+																 const Tools::Date& endDate);
 
 	protected:
 		virtual std::map<ACD, std::vector<double>*>
-        executeQuery(const ACDV& acds, const Tools::LatLngCoord& geoCoord,
-                     const Tools::Date& startDate,
-                     const Tools::Date& endDate) const;
+				executeQuery(const ACDV& acds, const Tools::LatLngCoord& geoCoord,
+										 const Tools::Date& startDate,
+										 const Tools::Date& endDate) const;
 	};
 
   //----------------------------------------------------------------------------
@@ -679,21 +704,21 @@ namespace Climate
   public:
     Star2Realization(Star2Simulation* simulation, Star2Scenario* s,
 										 Db::MysqlDB* connection, int realizationNo) :
-    ClimateRealization(Tools::toString(realizationNo), simulation, s,
+		ClimateRealization(Tools::toString(realizationNo), simulation, s,
                        connection){}
 
     virtual ~Star2Realization(){}
 
     DataAccessor dataAccessorFor(const std::vector<AvailableClimateData>& acds,
                                  const std::string& stationName,
-                                 const Tools::Date& startDate,
-                                 const Tools::Date& endDate);
+																 const Tools::Date& startDate,
+																 const Tools::Date& endDate);
 
   protected:
     virtual std::map<ACD, std::vector<double>*>
-        executeQuery(const ACDV& acds, const Tools::LatLngCoord& geoCoord,
-                     const Tools::Date& startDate,
-                     const Tools::Date& endDate) const;
+				executeQuery(const ACDV& acds, const Tools::LatLngCoord& geoCoord,
+										 const Tools::Date& startDate,
+										 const Tools::Date& endDate) const;
   };
 
   //----------------------------------------------------------------------------
@@ -710,14 +735,14 @@ namespace Climate
 
     DataAccessor dataAccessorFor(const std::vector<AvailableClimateData>& acds,
                                  const std::string& stationName,
-                                 const Tools::Date& startDate,
-                                 const Tools::Date& endDate);
+																 const Tools::Date& startDate,
+																 const Tools::Date& endDate);
 
   protected:
     virtual std::map<ACD, std::vector<double>*>
-        executeQuery(const ACDV& acds, const Tools::LatLngCoord& geoCoord,
-                     const Tools::Date& startDate,
-                     const Tools::Date& endDate) const;
+				executeQuery(const ACDV& acds, const Tools::LatLngCoord& geoCoord,
+										 const Tools::Date& startDate,
+										 const Tools::Date& endDate) const;
   };
 
 	//----------------------------------------------------------------------------
@@ -765,14 +790,14 @@ namespace Climate
 
 		DataAccessor dataAccessorFor(const std::vector<AvailableClimateData>& acds,
 		                             const std::string& stationName,
-		                             const Tools::Date& startDate,
-		                             const Tools::Date& endDate);
+																 const Tools::Date& startDate,
+																 const Tools::Date& endDate);
 
 	protected:
 		virtual std::map<ACD, std::vector<double>*>
-        executeQuery(const ACDV& acds, const Tools::LatLngCoord& geoCoord,
-                     const Tools::Date& startDate,
-                     const Tools::Date& endDate) const;
+				executeQuery(const ACDV& acds, const Tools::LatLngCoord& geoCoord,
+										 const Tools::Date& startDate,
+										 const Tools::Date& endDate) const;
 
 	private: //state
 		//! realization belongs to this scenario

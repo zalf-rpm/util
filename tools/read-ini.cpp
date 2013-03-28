@@ -28,9 +28,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 
 #include "read-ini.h"
-#include "algorithms.h"
+#include "tools/algorithms.h"
 
-using namespace Util;
+using namespace Tools;
 using namespace std;
 
 IniParameterMap::IniParameterMap(const string& pathToIniFile)

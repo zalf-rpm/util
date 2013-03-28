@@ -1,0 +1,967 @@
+/**
+Authors:
+Michael Berg <michael.berg@zalf.de>
+
+Maintainers:
+Currently maintained by the authors.
+
+This file is part of the util library used by models created at the Institute of
+Landscape Systems Analysis at the ZALF.
+Copyright (C) 2007-2013, Leibniz Centre for Agricultural Landscape Research (ZALF)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include <sstream>
+#include <algorithm>
+#include <functional>
+#include <list>
+
+#include <boost/foreach.hpp>
+
+#include "tools/use-stl-algo-boost-lambda.h"
+
+#ifdef WIN32
+#include <dirent.h>
+#include <direct.h>
+#else
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif
+
+#include "grid+.h"
+#include "tools/algorithms.h"
+#include "tools/helper.h"
+
+using namespace Grids;
+using namespace std;
+using namespace Tools;
+using namespace boost;
+
+namespace
+{
+  list<string> splitPath(string path)
+  {
+    list<string> p;
+    int prevIndex = path.at(0) == '/' ? 1 : 0;
+    int index = path.find_first_of('/', prevIndex);
+    while(index != int(string::npos))
+    {
+      p.push_back(path.substr(prevIndex, index-prevIndex));
+      prevIndex = index + 1;
+      index = path.find_first_of('/', prevIndex);
+    }
+    if(prevIndex < int(path.length()))
+      p.push_back(path.substr(prevIndex));
+    return p;
+  }
+
+  //! return true if successfully checked or created
+  bool ensureDirExists(string pathToDir)
+  {
+    //cout << "pathToDir: " << pathToDir << endl;
+
+    DIR* dp = NULL;
+    dp = opendir(pathToDir.c_str());
+    if(dp)
+    {
+      closedir(dp);
+      return true;
+    }
+
+    list<string> subpaths = splitPath(pathToDir);
+
+    string subpath = pathToDir.at(0) == '/' ? "/" : "";
+    BOOST_FOREACH(string sp, subpaths)
+    {
+      subpath += sp + "/";
+
+      dp = opendir(subpath.c_str());
+      if(dp)
+        closedir(dp);
+      else
+      {
+        int status = -1;
+#ifdef WIN32
+        status = _mkdir(subpath.c_str());
+#else
+        status = mkdir(subpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
+        if(status == -1)
+          return false;
+      }
+    }
+    return true;
+  }
+}
+
+grid* Grids::loadGrid(const string& gridName, const std::string& pathToHdf)
+{
+	//cout << "reading hdf-file via |the-path-to-the-hdf-file|: |"
+	//<< pathToHdf() << "|";
+
+	grid* g = new grid(100);
+	g->read_hdf((char*)pathToHdf.c_str(), (char*)gridName.c_str());
+	return g;
+}
+
+void Grids::printGridFields(const grid& g, bool onlyDataFields)
+{
+  for(int i = 0; i < g.nrows; i++)
+  {
+		cout << "row: " << i << endl;
+    for(int k = 0; k < g.ncols; k++)
+    {
+			if(g.feld[i][k] != g.nodata || !onlyDataFields)
+				cout << g.feld[i][k] << " ";
+		}
+		cout << endl;
+	}
+}
+
+void Grids::setAllGridFieldsTo(grid* g, double newValue, bool keepNoData)
+{
+  for(int i = 0; i < g->nrows; i++)
+    for(int k = 0; k < g->ncols; k++)
+			if(g->feld[i][k] != g->nodata || !keepNoData)
+				g->feld[i][k] = newValue;
+}
+
+//------------------------------------------------------------------------------
+
+bool GK5Rect::contains(const GK5Rect& o) const
+{
+  return
+      o.tl.r >= tl.r && o.tl.h <= tl.h &&
+      o.br.r <= br.r && o.br.h >= br.h;
+}
+
+bool GK5Rect::intersects(const GK5Rect& other) const
+{
+  return
+      max(tl.r, other.tl.r) <= min(br.r, other.br.r) &&
+      min(tl.h, other.tl.h) >= max(br.h, other.br.h);
+}
+
+GK5Rect GK5Rect::intersected(const GK5Rect& other) const
+{
+	//cout << "intersecting: this: " << toString()
+	//<< " other: " << other.toString() << endl;
+	if (isNull() || other.isNull())
+		return GK5Rect();
+	GK5Rect temp;
+	temp.tl.r = max(tl.r, other.tl.r);
+	temp.tl.h = min(tl.h, other.tl.h);
+	temp.br.r = min(br.r, other.br.r);
+	temp.br.h = max(br.h, other.br.h);
+	return temp.isEmpty() ? GK5Rect() : temp;
+}
+
+string GK5Rect::toString() const
+{
+	ostringstream s;
+	s << "tl: " << tl.toString() << " br: " << br.toString()
+	<< " w: " << (br.r - tl.r) << " h: " << (tl.h - br.h);
+	return s.str();
+}
+
+vector<GK5Coord> GK5Rect::toTlTrBrBlVector() const
+{
+	vector<GK5Coord> v(4);
+	v[0]=tl;
+	v[1]=GK5Coord(br.r, tl.h);
+	v[2]=br;
+	v[3]=GK5Coord(tl.r, br.h);
+	return v;
+}
+
+//------------------------------------------------------------------------------
+
+GridMetaData::GridMetaData() : ncols(-1), nrows(-1) { }
+
+GridMetaData::GridMetaData(const grid* g)
+: ncols(g->ncols), nrows(g->nrows), nodata(g->nodata),
+xllcorner(int(g->xcorner)), yllcorner(int(g->ycorner)),
+cellsize(int(g->csize)) { }
+
+GridMetaData::GridMetaData(const GridP* g)
+: ncols(g->cols()), nrows(g->rows()), nodata(g->noDataValue()),
+xllcorner(int(g->gridPtr()->xcorner)), yllcorner(int(g->gridPtr()->ycorner)),
+cellsize(int(g->cellSize())) { }
+
+bool GridMetaData::operator==(const GridMetaData& other) const
+{
+	return ncols == other.ncols && nrows == other.nrows &&
+      nodata == other.nodata && xllcorner == other.xllcorner
+      && yllcorner == other.yllcorner && cellsize == other.cellsize;
+}
+
+string GridMetaData::toString() const
+{
+	ostringstream s;
+	s.precision(7);
+	s << "ncols: " << ncols << " nrows: " << nrows << " nodata: " << nodata
+      << " cellsize: " << cellsize
+			<< fixed
+			<< " llx: " << xllcorner << " lly: " << yllcorner;
+	return s.str();
+}
+
+string GridMetaData::toShortDescription() const
+{
+	ostringstream s;
+	s << "Grid [" << ncols << "x" << nrows << "], ZG:" << cellsize;
+	//"llx:" << xllcorner << "/lly:" << yllcorner << ", ZG:" << cellsize;
+	return s.str();
+}
+
+string GridMetaData::toCanonicalString(const std::string& sep) const
+{
+	ostringstream s;
+	s.precision(7);
+  s << ncols << sep << nrows << sep << nodata << sep << cellsize << sep
+      << ios::fixed << xllcorner << sep << yllcorner;
+	return s.str();
+}
+
+//------------------------------------------------------------------------------
+
+pair<GridMetaData, time_t>
+Grids::readGridMetadataFromHdf(const char* hdfFileName,
+                               const char* datasetName)
+{
+	GridMetaData gmd;
+
+	hdf5 hd;
+  if(hd.open_f((char*)hdfFileName)!=0)
+  {
+		cerr << "error (readGridMetadataFromHdf): can not open hdf_file: "
+		<< hdfFileName << endl;
+		return make_pair(gmd, -1);
+	}
+  if (hd.open_d((char*)datasetName)!=0)
+  {
+		cerr << "error (readGridMetadataFromHdf): can not open dataset: "
+		<< hdfFileName << endl;
+		return make_pair(gmd, -1);
+	}
+
+	gmd.ncols = hd.get_i_attribute((char*)"ncols");
+	gmd.nrows = hd.get_i_attribute((char*)"nrows");
+	gmd.nodata = hd.get_i_attribute((char*)"nodata");
+	gmd.xllcorner = hd.get_d_attribute((char*)"xcorner");
+	gmd.yllcorner = hd.get_d_attribute((char*)"ycorner");
+	gmd.cellsize = hd.get_f_attribute((char*)"csize");
+
+	char* rn = hd.get_s_attribute((char*)"Modell");
+	gmd.regionName = rn;
+	free(rn);
+
+	time_t time = hd.get_l_attribute((char*)"time");
+
+	return make_pair(gmd, time);
+}
+
+//------------------------------------------------------------------------------
+
+string SubData::toString() const
+{
+	ostringstream s;
+	s << "(row/col): (" << row << "/" << col << ") "
+      << " (rows/cols): " << rows << "/" << cols << ")";
+	return s.str();
+}
+
+GK5Rect Grids::extendedBoundingRect(const GridMetaData& gmd,
+																		const Quadruple<GK5Coord>& gk5poly,
+                                    double cellSize)
+{
+	//get bounding rect of gk5 polygon
+	GK5Coord tl(min(gk5poly.tl.r, gk5poly.bl.r), max(gk5poly.tl.h, gk5poly.tr.h));
+	GK5Coord br(max(gk5poly.tr.r, gk5poly.br.r), min(gk5poly.bl.h, gk5poly.br.h));
+	GK5Rect boundingRect(tl, br);
+
+	//first find position in choosen grid metadata
+	//might in a grid if top left corner of bounding rect is inside
+	//the gmd or 0,0 (aka the top left of gmd) if the top left corner of
+	//the bounding rect is outside the gmd
+	const GK5Rect& intersectedRect = gmd.gk5Rect().intersected(boundingRect);
+	//cout << "intersectedRect: " << intersectedRect.toString() << endl;
+	const GK5Coord& delta1 = intersectedRect.tl - gmd.topLeftCorner();
+	int indexR = int(std::floor(delta1.r / cellSize));
+	int indexH = int(std::floor(abs(delta1.h / cellSize)));
+	//cout << "delta1: " << delta1.toString() << " indexR: " << indexR
+	//<< " indexH: " << indexH << endl;
+	//gk5 position into choosen grid-class
+	GK5Coord gmdTl(gmd.topLeftCorner().r + (indexR * cellSize),
+                 gmd.topLeftCorner().h - (indexH * cellSize));
+	//cout << "grid-class top left: " << firstGmdTl.toString() << endl;
+
+	//now expand the top left corner of the bounding rect to the full
+	//outer (hypethetical) grid-cell bound
+	//this might be either the same as the previous calculated corner
+	//of a grid cell in the gmd (or gmd's 0,0 is case of an exact match)
+	//or the bounds have to be extended if the top left corner of bounding rect
+	//(of the users selection) was originally outside of the gmd
+	GK5Coord delta2 = boundingRect.tl - gmdTl;
+	int nocsToTlr = delta1.r > 0 ? 0 : int(std::ceil(abs(delta2.r / cellSize))); //no of cells
+	int nocsToTlh = delta1.h < 0 ? 0 : int(std::ceil(abs(delta2.h / cellSize)));
+	//cout << "delta2: " << delta2.toString() << " nocsToTlr: " << nocsToTlr
+	//<< " nocsToTlh: " << nocsToTlh << endl;
+	//extended tl
+	GK5Coord etl(gmdTl.r - (nocsToTlr * cellSize),
+	             gmdTl.h + (nocsToTlh * cellSize));
+	//cout << "extended top left: " << etl.toString() << endl;
+
+	//adjust br to multiple of cellSize
+	GK5Coord delta3 = br - etl;
+	Cols nocsR = Cols(std::ceil(abs(delta3.r / cellSize))); //no of cells
+	if(nocsR == 0) nocsR++; //the selection is choosing at least one cell
+	Rows nocsH = Rows(std::ceil(abs(delta3.h / cellSize)));
+	if(nocsH == 0) nocsH++;
+	//cout << "delta3: " << delta3.toString() << " nocsR: " << nocsR
+	//<< " nocsH: " << nocsH << endl;
+	//the extended final bounding rect
+	GK5Coord ebr(etl.r + (nocsR * cellSize), etl.h - (nocsH * cellSize));
+
+	return GK5Rect(etl, ebr);
+}
+
+pair<Row, Col> Grids::rowColInGrid(const GridMetaData& gmd, const GK5Coord& c)
+{
+	const GK5Coord& delta = c - gmd.topLeftCorner();
+	Col indexR = Col(std::floor(abs(delta.r / gmd.cellsize)));
+	if(int(indexR) == gmd.ncols) --indexR; //max border is in last cell included
+	Row indexH = Row(std::floor(abs(delta.h / gmd.cellsize)));
+	if(int(indexH) == gmd.nrows) --indexH;
+	return make_pair(indexH, indexR);
+}
+
+//------------------------------------------------------------------------------
+
+GridP::GridP() { }
+
+//! new grid with given size and initialized to no data
+GridP::GridP(const std::string& datasetName,
+             int nrows, int ncols,
+             float cellSize, double llx, double lly, float noDataValue)
+               : _datasetName(datasetName)
+{
+	_grid = GridPtr(new grid(nrows, ncols));
+  _grid->rgr = int(cellSize); // setze Rastergroesse
+	setAllFieldsTo(noDataValue);
+	_grid->has_nodata = 1;
+	_grid->csize=cellSize;
+	_grid->nodata=noDataValue;
+	_grid->xcorner=llx;
+	_grid->ycorner=lly;
+}
+
+GridP::GridP(GridMetaData gmd, const string& datasetName) :
+	_datasetName(datasetName)
+{
+  _grid = GridPtr(new grid(gmd.nrows, gmd.ncols));
+  _grid->rgr = int(gmd.cellsize); // setze Rastergroesse
+  setAllFieldsTo(gmd.nodata);
+  _grid->has_nodata = 1;
+  _grid->csize=gmd.cellsize;
+  _grid->nodata=gmd.nodata;
+  _grid->xcorner=gmd.xllcorner;
+  _grid->ycorner=gmd.yllcorner;
+}
+
+GridP::GridP(const string& datasetName, FileType ft, const string& pathToFile)
+  : _datasetName(datasetName)
+{
+  switch(ft)
+  {
+  case HDF:
+    _grid = GridPtr(new grid(100));
+    _grid->read_hdf((char*)pathToFile.c_str(), (char*)datasetName.c_str());
+    break;
+  case ASCII:
+    _grid = GridPtr(new grid(100));
+    _grid->read_ascii((char*)pathToFile.c_str());
+    break;
+	}
+}
+
+GridP::GridP(grid* wrapThisGrid)
+  : _grid(GridPtr(wrapThisGrid)) {}
+
+//! copy constructor
+GridP::GridP(const GridP& other)
+  : _grid(GridPtr(other._grid->grid_copy())),
+  _datasetName(other._datasetName),
+  _descriptiveLabel(other._descriptiveLabel),
+  _unit(other._unit)
+{
+}
+
+GridP::~GridP() { }
+
+GridP::GridP(const grid& other)
+  : _grid(GridPtr(const_cast<grid*>(&other)->grid_copy())){ }
+
+GridP::GridP(grid const *const other)
+  : _grid(GridPtr(const_cast<grid*>(other)->grid_copy())){ }
+
+GridP& GridP::operator=(const GridP& other)
+                       {
+	_grid = GridPtr(other._grid->grid_copy());
+	_datasetName = other._datasetName;
+	_descriptiveLabel = other._descriptiveLabel;
+  _unit = other._unit;
+	return *this;
+}
+
+GridP& GridP::operator=(const grid& other)
+                       {
+	_grid = GridPtr(const_cast<grid*>(&other)->grid_copy());
+	return *this;
+}
+
+bool GridP::operator==(const GridP& other) const
+{
+	if(descriptiveLabel() != other.descriptiveLabel())
+		return false;
+	if(datasetName() != other.datasetName())
+		return false;
+  if(unit() != other.unit())
+    return false;
+
+  for(int i = 0; i < rows(); i++)
+    for(int j = 0; j < cols(); j++)
+			if(dataAt(i, j) != other.dataAt(i, j))
+				return false;
+
+	return true;
+}
+
+bool GridP::writeHdf(const string& pathToHdfFile, const string& datasetName,
+                     const string& regionName, time_t t)
+{
+  //cout << "pathToHdfFile: " << pathToHdfFile << endl;
+  if(!ensureDirExists(pathToHdfFile.substr(0, pathToHdfFile.find_last_of('/'))))
+    return false;
+
+	char* fname = (char*)pathToHdfFile.c_str();
+	char* datasetn = (char*)datasetName.c_str();
+	char* modell = (char*)regionName.c_str();
+	int ncols = _grid->ncols;
+	int nrows = _grid->nrows;
+	float** feld = _grid->feld;
+
+  //cerr << "hdf " << fname << " " << datasetn << endl;
+	float* f1 = new float[nrows * ncols];
+  if(f1 == NULL)
+  {
+		cerr << "error (write_hdf): no space on device\n";
+		exit(2);
+	}
+	for(int i = 0; i < nrows; i++)
+		for(int j = 0; j < ncols; j++)
+			f1[i * ncols + j] = feld[i][j];
+	hdf5* hd = new hdf5;
+	if(hd->open_f(fname) != 0)
+		hd->create_f(fname);
+	bool success = false;
+  if(hd->open_d(datasetn) != 0)
+  {
+		hd->write_f_feld(datasetn, f1, nrows, ncols);
+		hd->write_s_attribute((char*)"Autor", (char*)"LandcareDSS-GridManager");
+		hd->write_s_attribute((char*)"Modell", modell);
+		hd->write_l_attribute((char*)"time", t);
+		hd->write_d_attribute((char*)"xcorner", _grid->xcorner);
+		hd->write_d_attribute((char*)"ycorner", _grid->ycorner);
+		hd->write_f_attribute((char*)"csize", _grid->csize);
+		hd->write_i_attribute((char*)"nodata", _grid->nodata);
+		hd->write_i_attribute((char*)"ncols", ncols);
+		hd->write_i_attribute((char*)"nrows", nrows);
+		success = true;
+	}
+	delete[] f1;
+	delete hd;
+	return success;
+}
+
+void GridP::writeAscii(const std::string& pathToAsciiFile)
+{
+	return _grid->write_ascii((char*)pathToAsciiFile.c_str());
+}
+
+vector<double> GridP::allDataAsLinearVector() const
+{
+	vector<double> linear;
+	for(int i = 0; i < rows(); i++)
+		for(int j = 0; j < cols(); j++)
+			if(isDataField(i, j))
+				linear.push_back(dataAt(i, j));
+
+	return linear;
+}
+
+HistogramData GridP::histogram(int noOfClasses)
+{
+	HistogramData res;
+
+	vector<double> linear(rows() * cols());
+	int k = -1;
+	int nop = 0; // number of pixels
+  for(int i = 0; i < rows(); i++)
+  {
+    for(int j = 0; j < cols(); j++)
+    {
+      if(isDataField(i, j))
+      {
+				linear[++k] = dataAt(i, j);
+				nop++;
+			}
+		}
+	}
+
+	if(nop == 0) return res;
+
+	pair<double, double> mima = Tools::minMax(linear);
+	double diff = mima.second - mima.first;
+	double stepSize = diff / double(noOfClasses);
+	double ceiledStepSize = stepSize == 0 ? 1 : std::ceil(stepSize);
+
+	res = histogramDataByStepSize
+		(vector<double>(linear.begin(), linear.begin() + k + 1), ceiledStepSize);
+	for(int i = 0, size = res.classes.size(); i < size; i++)
+		//store percent of pixels in a certain class
+		res.classes[i] = (res.classes[i] / nop) * 100;
+
+	return res;
+}
+
+multimap<double, double, greater<double> > GridP::frequency()
+{
+	typedef map<double, int> Map;
+	Map m;
+	int nops = 0; //number of pixels
+  for(int i = 0; i < rows(); i++)
+  {
+    for(int j = 0; j < cols(); j++)
+    {
+      if(isDataField(i, j))
+      {
+				double v = dataAt(i, j);
+				if(m.find(v) == m.end())
+					m[v] = 1;
+				else
+					m[v]++;
+				nops++;
+			}
+		}
+	}
+
+	multimap<double, double, greater<double> > res;
+
+  BOOST_FOREACH(Map::value_type p, m)
+  {
+		double percent = double(p.second) / double(nops) * 100.0;
+		double rp = round(percent, 1);
+		res.insert(make_pair(rp, p.first));
+	}
+
+	return res;
+}
+
+GridP* GridP::setAllFieldsTo(double newValue, bool keepNoData)
+{
+  for(int i = 0; i < rows(); i++)
+    for(int k = 0; k < cols(); k++)
+			if(!isNoDataField(i, k) || !keepNoData)
+				setDataAt(i, k, newValue);
+	return this;
+}
+
+GridP* GridP::setAllFieldsWithoutTo(float withoutValue, float toNewValue, bool includeNoData)
+{
+	for(int r = 0, rs = rows(); r < rs; r++)
+		for(int c = 0, cs = cols(); c < cs; c++)
+			if((includeNoData || isDataField(r, c)) && !fuzzyCompare(dataAt(r, c), withoutValue))
+				setDataAt(r, c, toNewValue);
+	return this;
+}
+
+pair<int, int> GridP::gk52rowCol(Tools::GK5Coord gk5c) const
+{
+	grid& g = gridRef();
+	int row = -1, col = -1;
+	if(g.xcorner <= gk5c.r && gk5c.r <= (g.xcorner + cellSize() * cols())
+    && g.ycorner <= gk5c.h && gk5c.h <= (g.ycorner + cellSize() * rows()))
+    {
+		col = int(std::floor((gk5c.r - g.xcorner) / cellSize()));
+		if(col == cols()) --col;
+		row = rows() - int(std::ceil((gk5c.h - g.ycorner) / cellSize()));
+		if(row == rows()) --row;
+	} 
+	return make_pair(row, col);
+}
+
+float GridP::dataAt(GK5Coord gk5c) const
+{
+	pair<int, int> p = gk52rowCol(gk5c);
+	return p.first == -1 || p.second == -1
+		? noDataValue() : dataAt(p.first, p.second);
+}
+
+GridP* GridP::setDataAt(Tools::GK5Coord gk5c, float value)
+{
+	pair<int, int> p = gk52rowCol(gk5c);
+	if(p.first != -1 || p.second == -1)
+		setDataAt(p.first, p.second, value);
+	return this;
+}
+
+string GridP::toString() const
+{
+	ostringstream s;
+  for(int i = 0; i < rows(); i++)
+  {
+    for(int k = 0; k < cols(); k++)
+    {
+			s << dataAt(i, k) << " ";
+		}
+		s << "\n";
+	}
+	return s.str();
+}
+
+GK5Rect GridP::gk5Rect() const
+{
+	return GridMetaData(gridPtr()).gk5Rect();
+}
+
+GK5Coord GridP::gk5CoordAt(int row, int col) const
+{
+	grid& g = gridRef();
+	return GK5Coord(g.xcorner+col*cellSize(),
+									g.ycorner + (rows() - row) * cellSize());
+}
+
+GridP* GridP::subGridClone(int top, int left, int nrows, int ncols) const
+{
+	GridP* subGrid = new GridP(datasetName(), nrows, ncols, cellSize(),
+	                           _grid->xcorner + left * cellSize(),
+	                           _grid->ycorner + (rows()-top) * cellSize(),
+	                           noDataValue());
+
+  for(int i = top, j = 0; i < top + nrows; i++, j++)
+  {
+    for(int k = left, l = 0; k < left + ncols; k++, l++)
+    {
+			float data = dataAt(i, k);
+			if(data == noDataValue())
+				subGrid->_grid->has_nodata = 1;
+			subGrid->setDataAt(j, l, data);
+		}
+	}
+
+	return subGrid;
+}
+
+GridP* GridP::fillClone(double fillValue, bool keepNodata) const
+{
+	GridP* c = clone();
+	c->setAllFieldsTo(fillValue, keepNodata);
+	return c;
+}
+
+string GridP::descriptiveLabel() const
+{
+	return _descriptiveLabel.empty()
+		? Tools::capitalize(datasetName()) + " [" + unit() + "]"
+		: _descriptiveLabel;
+}
+
+std::pair<double, double> GridP::minMax() const
+{
+	if(rows() < 1 && cols() < 1)
+		return make_pair(0.0, 0.0);
+
+	double min = 0;
+	for(int i = 0; i < rows(); i++)
+  {
+		for(int j = 0; j < cols(); j++)
+    {
+      if(isDataField(i, j))
+      {
+        min = dataAt(i, j);
+        goto foundValidValue;
+      }
+    }
+  }
+  foundValidValue:
+	double max = min;
+
+  for(int i = 0; i < rows(); i++)
+  {
+    for(int j = 0; j < cols(); j++)
+    {
+      if(isDataField(i, j))
+      {
+				double v = dataAt(i, j);
+				if(v < min) min = v;
+				if(v > max) max = v;
+			}
+		}
+	}
+
+	return make_pair(min, max);
+}
+
+bool GridP::isCompatible(const GridP* other) const
+{
+	return cols() == other->cols() && rows() == other->rows();
+}
+
+/*
+GridP* GridP::subtract(const GridP* other) const {
+	if(!isCompatible(other)) return NULL;
+
+	GridP* res = clone();
+	for(int i = 0; i < rows(); i++){
+		for(int j = 0; j < cols(); j++){
+			if(isDataField(i, j) && other->isDataField(i, j))
+				res->setDataAt(i, j, dataAt(i, j) - other->dataAt(i, j));
+			else
+				res->setDataAt(i, j, noDataValue());
+		}
+	}
+	return res;
+}
+*/
+
+double GridP::average() const
+{
+	double sum = 0;
+	int count = 0;
+  for(int r = 0, rs = rows(); r < rs; r++)
+  {
+    for(int c = 0, cs = cols(); c < cs; c++)
+    {
+      if(isDataField(r, c))
+      {
+				sum += dataAt(r, c);
+				++count;
+			}
+		}
+	}
+	return sum / double(count);
+}
+
+GridP* GridP::transformInPlace(boost::function<float(float)> transformFunction)
+{
+  for(int r = 0, rs = rows(); r < rs; r++)
+    for(int c = 0, cs = cols(); c < cs; c++)
+      if(isDataField(r, c))
+        setDataAt(r, c, transformFunction(dataAt(r, c)));
+	return this;
+}
+
+GridP* GridP::transformP(boost::function<float(float)> transformFunction) const
+{
+	GridP* res = clone();
+  res->transformInPlace(transformFunction);
+	return res;
+}
+
+GridP* GridP::invert(float value)
+{
+  for(int r = 0, rs = rows(); r < rs; r++)
+  {
+    for(int c = 0, cs = cols(); c < cs; c++)
+    {
+      if(isNoDataField(r, c))
+        setDataAt(r, c, value);
+      else
+        setNoDataValueAt(r, c);
+    }
+  }
+	return this;
+}
+
+GridP* GridP::setFieldsTo(const GridP* other, bool keepNoData)
+{
+  if(!isCompatible(other))
+		return this;
+
+  for(int r = 0, rs = other->rows(); r < rs; r++)
+  {
+    for(int c = 0, cs = other->cols(); c < cs; c++)
+    {
+      if(isNoDataField(r, c) && keepNoData)
+        continue;
+      setDataAt(r, c, other->dataAt(r, c));
+    }
+  }
+
+	return this;
+}
+
+GridP* GridP::maskOut(const GridP* maskGrid, float byValueInMaskGrid, bool keep)
+{
+  bool discard = !keep;
+
+  if(!isCompatible(maskGrid))
+		return this;
+
+  for(int r = 0, rs = maskGrid->rows(); r < rs; r++)
+  {
+    for(int c = 0, cs = maskGrid->cols(); c < cs; c++)
+    {
+      bool found = fuzzyCompare(maskGrid->dataAt(r, c), byValueInMaskGrid);
+      if((found && discard) || (keep && !found))
+				setNoDataValueAt(r, c);
+    }
+  }
+
+	return this;
+}
+
+GridP* GridP::maskTo(const GridP* maskGrid, float matchMaskValueTo,
+									 float newValue, bool keepNoData)
+{
+	bool replaceNoData = !keepNoData;
+
+	if(!isCompatible(maskGrid))
+		return this;
+
+	for(int r = 0, rs = maskGrid->rows(); r < rs; r++)
+		for(int c = 0, cs = maskGrid->cols(); c < cs; c++)
+			if((isDataField(r, c) || replaceNoData)
+					&& fuzzyCompare(maskGrid->dataAt(r, c), matchMaskValueTo))
+				setDataAt(r, c, newValue);
+
+	return this;
+}
+
+GridP* GridP::adjustToP(GridMetaData gmd) const
+{
+  //the result
+  GridP* res = new GridP(gmd, datasetName());
+
+  //just return empty grid if they don't even intersect
+  GK5Rect ir = gk5Rect().intersected(res->gk5Rect());
+  if(ir.isEmpty())
+    return res;
+
+  GridPPtr transSelf;
+  const GridP* self = this;
+
+  //make both grids the same cellsize
+  int cs = int(cellSize());
+  int mcs = int(res->cellSize());
+  if(cs > mcs)
+  {
+    if(cs % mcs == 0)
+    {
+      transSelf = GridPPtr(new GridP(gridPtr()->downscale(cs / mcs)));
+      self = transSelf.get();
+    }
+    else
+      return NULL;
+  }
+  else if(cs < mcs)
+  {
+    if(mcs % cs == 0)
+    {
+      transSelf = GridPPtr(new GridP(gridPtr()->upscale(mcs / cs)));
+      self = transSelf.get();
+    }
+    else
+      return NULL;
+  }
+
+  for(int h = ir.tl.h, hs = ir.br.h; h > hs; h -= mcs)
+  {
+    for(int r = ir.tl.r, rs = ir.br.r; r < rs; r += mcs)
+    {
+      GK5Coord gk5c(r, h);
+      res->setDataAt(gk5c, dataAt(gk5c));
+    }
+  }
+
+  return res;
+}
+
+/*
+int GridP::countDataFields() const
+{
+  //float ndv = noDataValue();
+  function<int(int,float)> f =
+      ret<int>(if_then_else_return(ll_static_cast<int>(_2) == noDataValue(),
+                                   _1, _1 + 1));
+  return foldF(0, f);
+}
+*/
+
+vector<double> Grids::allDataAsLinearVector(const grid* g)
+{
+  vector<double> linear;
+  for(int r = 0, rs = g->nrows; r < rs; r++)
+    for(int c = 0, cs = g->ncols; c < cs; c++)
+      if(g->feld[r][c] != g->nodata)
+        linear.push_back(g->feld[r][c]);
+
+  return linear;
+}
+
+//------------------------------------------------------------------------------
+
+string GridProxy::toString() const
+{
+	ostringstream s;
+	s << "gfn: (" << fileName << ") hfn: (" << hdfFileName << ") modT: ("
+		<< ctime(&modificationTime) << ")";// << " (" << ((long int)modificationTime) << ")";
+	return s.str();
+}
+
+GridP* GridProxy::gridPtr()
+{
+  if(!g)
+  {
+		Lock lock(this);
+    if(!g)
+    {
+			if(!pathToHdf.empty())
+				g = GridPPtr(new GridP(datasetName, GridP::HDF,
+                               pathToHdf + "/" + hdfFileName));
+			else
+				g = GridPPtr(new GridP(datasetName, GridP::ASCII,
+                               pathToGrid + "/" + fileName));
+		}
+	}
+	return g.get();
+}
+
+GridPPtr GridProxy::gridPPtr()
+{
+	if(!g)
+		gridPtr();
+	
+	return g;
+}
+
+void GridProxy::resetToLoadFromAscii(const string& ptg)
+{
+	pathToHdf = "";
+	hdfFileName = "";
+	pathToGrid = ptg;
+}

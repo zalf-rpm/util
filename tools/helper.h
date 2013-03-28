@@ -34,8 +34,31 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "boost/algorithm/string/case_conv.hpp"
 #include "loki/TypeTraits.h"
 
-namespace Util
+namespace Tools
 {
+	template<typename T, typename S>
+	struct Cast { S operator()(const T& in) const { return S(in); } };
+
+	//! Identity functor
+	template<class T>
+	struct Id { T operator()(const T& in) const { return in; } };
+
+	//! functor returning the first value of a given pair
+	template<class Pair>
+	struct ExtractFirst
+	{
+		typename Pair::first_type
+		operator()(const Pair& p) const { return p.first; }
+	};
+
+	//! functor returning the second value of a given pair
+	template<class Pair>
+	struct ExtractSecond
+	{
+		typename Pair::second_type
+		operator()(const Pair& p) const { return p.second; }
+	};
+
   inline double atof_comma(const char* c)
   {
     std::string s(c);

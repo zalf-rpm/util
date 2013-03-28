@@ -31,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "boost/shared_ptr.hpp"
 
-#include "util/date.h"
+#include "tools/date.h"
 
 //! All climate data related classes.
 namespace Climate
@@ -136,7 +136,7 @@ namespace Climate
 	public:
 		DataAccessor();
 
-		DataAccessor(const Util::Date& startDate, const Util::Date& endDate);
+		DataAccessor(const Tools::Date& startDate, const Tools::Date& endDate);
 
 		DataAccessor(const DataAccessor& other);
 
@@ -153,9 +153,9 @@ namespace Climate
 
     unsigned int noOfStepsPossible() const { return _numberOfSteps; }
 
-		Util::Date startDate() const { return _startDate; }
+		Tools::Date startDate() const { return _startDate; }
 
-		Util::Date endDate() const { return _endDate; }
+		Tools::Date endDate() const { return _endDate; }
 
 		unsigned int julianDayForStep(int stepNo) const;
 
@@ -171,8 +171,8 @@ namespace Climate
     }
 
 	private: //state
-		Util::Date _startDate;
-		Util::Date _endDate;
+		Tools::Date _startDate;
+		Tools::Date _endDate;
 
 		typedef std::vector<std::vector<double> > VVD;
 		boost::shared_ptr<VVD> _data;

@@ -35,7 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "date.h"
 
-using namespace Util;
+using namespace Tools;
 using namespace std;
 
 const unsigned int Date::_dim[] =
@@ -400,7 +400,7 @@ Date Date::toAbsoluteDate(unsigned int absYear, bool ignoreDeltaYears) const
  * @param mysqlDateString
  * @return date parsed from a mysql date string
  */
-Date Util::fromMysqlString(const char* mysqlDateString)
+Date Tools::fromMysqlString(const char* mysqlDateString)
 {
 	string d(mysqlDateString ? mysqlDateString : "1951-01-01");
 	int year = atoi(d.substr(0, 4).c_str());
@@ -415,7 +415,7 @@ Date Util::fromMysqlString(const char* mysqlDateString)
 /*!
  * function testing the date class
  */
-void Util::testDate()
+void Tools::testDate()
 {
 	assert(Date(1,1,2001).numberOfDaysTo(Date(2,1,2001))== 1);
 	assert(Date(1,1,2001).numberOfDaysTo(Date(1,1,2001))== 0);

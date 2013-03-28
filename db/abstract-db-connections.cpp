@@ -25,10 +25,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
 
-#include "util/abstract-db-connections.h"
+#include "db/abstract-db-connections.h"
 
 using namespace std;
-using namespace Util;
+using namespace Tools;
 using namespace Db;
 
 IniParameterMap& Db::dbConnectionParameters(const std::string& pathToIniFile)

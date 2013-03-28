@@ -1,3 +1,28 @@
+/**
+Authors:
+Michael Berg <michael.berg@zalf.de>
+
+Maintainers:
+Currently maintained by the authors.
+
+This file is part of the util library used by models created at the Institute of
+Landscape Systems Analysis at the ZALF.
+Copyright (C) 2007-2013, Leibniz Centre for Agricultural Landscape Research (ZALF)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
@@ -14,16 +39,16 @@
 
 #include "tools/use-stl-algo-boost-lambda.h"
 
-#include "util/climate.h"
-#include "util/abstract-db-connections.h"
-#include "util/coord-trans.h"
-#include "util/algorithms.h"
-#include "util/datastructures.h"
-#include "util/helper.h"
+#include "climate/climate.h"
+#include "db/abstract-db-connections.h"
+#include "tools/coord-trans.h"
+#include "tools/algorithms.h"
+#include "tools/datastructures.h"
+#include "tools/helper.h"
 
 using namespace std;
 using namespace Climate;
-using namespace Util;
+using namespace Tools;
 
 using namespace Loki;
 
@@ -32,21 +57,6 @@ using boost::shared_ptr;
 namespace
 {
   struct L : public ObjectLevelLockable<L> {};
-}
-
-vector<string> splitString(string s, string splitElements)
-{
-	vector<string> v;
-	v.push_back("");
-	for(auto cit = s.begin(); cit != s.end(); cit++)
-	{
-		if(splitElements.find(*cit) == string::npos)
-			v.back().append(1, *cit);
-		else if(v.back().size() > 0)
-			v.push_back("");
-	}
-
-	return v;
 }
 
 //------------------------------------------------------------------------------
@@ -227,7 +237,7 @@ Star2Simulation::Star2Simulation(Db::MysqlDB* con)
 void Star2Simulation::setScenariosAndRealizations()
 {
 	string reals = Db::dbConnectionParameters().value("used-realizations", "star2", "1, 25, 50, 75, 100");
-	vector<string> vsr = splitString(reals, ", ");
+	vector<string> vsr = Tools::splitString(reals, ", ");
 	vector<int> realizationNumbers;
 	BOOST_FOREACH(string s, vsr) { realizationNumbers.push_back(atoi(s.c_str())); }
 
@@ -396,7 +406,7 @@ void DDClimateDataServerSimulation::setClimateStations()
 		ClimateStation* cs =
 			new ClimateStation(atoi(row[0]),
 			                   convertCommaToDot
-			                   ? LatLngCoord(Tools::atof_comma(row[4]), Tools::atof_comma(row[5]))
+												 ? LatLngCoord(Tools::atof_comma(row[4]), Tools::atof_comma(row[5]))
                          : LatLngCoord(atof(row[4]), atof(row[5])),
 												 (row[6] ? atof(row[6]) : 0.0), name, this);
 		cs->setDbName(row[7]);
@@ -461,7 +471,7 @@ CLMSimulation::CLMSimulation(Db::MysqlDB* con)
 void CLMSimulation::setScenariosAndRealizations()
 {
 	string reals = Db::dbConnectionParameters().value("used-realizations", "clm20-9", "1, 2");
-	vector<string> vsr = splitString(reals, ", ");
+	vector<string> vsr = Tools::splitString(reals, ", ");
 
 	ClimateScenario* sc = new ClimateScenario("A1B", this);
 	Realizations rs;
@@ -629,82 +639,6 @@ ClimateRealization* ClimateScenario::realization(const string& name) const
       return r;
   }
   return NULL;
-}
-
-//------------------------------------------------------------------------------
-
-DataAccessor::DataAccessor()
-: _data(new VVD), _acd2dataIndex(availableClimateDataSize(), -1),
-_fromStep(0), _numberOfSteps(0){}
-
-DataAccessor::DataAccessor(const Tools::Date& startDate,
-                           const Tools::Date& endDate)
-: _startDate(startDate), _endDate(endDate),
-_data(new VVD), _acd2dataIndex(availableClimateDataSize(), -1),
-_fromStep(0), _numberOfSteps(0){}
-
-DataAccessor::DataAccessor(const DataAccessor& other)
-: _startDate(other._startDate), _endDate(other._endDate),
-_data(other._data), _acd2dataIndex(other._acd2dataIndex),
-_fromStep(other._fromStep), _numberOfSteps(other._numberOfSteps) {}
-
-double DataAccessor::dataForTimestep(AvailableClimateData acd,
-    unsigned int stepNo) const
-{
-  short cacheIndex = _acd2dataIndex.at(int(acd));
-  return cacheIndex < 0 ? 0.0 : _data->at(cacheIndex).at(_fromStep + stepNo);
-}
-
-vector<double> DataAccessor::dataAsVector(AvailableClimateData acd) const
-{
-  short cacheIndex = _acd2dataIndex.at(int(acd));
-  return cacheIndex < 0 ? vector<double>()
-    :vector<double>(_data->at(cacheIndex).begin()+_fromStep,
-                    _data->at(cacheIndex).begin()+_fromStep+noOfStepsPossible());
-}
-
-DataAccessor DataAccessor::cloneForRange(unsigned int fromStep,
-                                         unsigned int numberOfSteps) const
-{
-	//cout << "cloneForRange fromStep: " << fromStep <<
-	//" numberOfSteps: " << numberOfSteps << endl;
-  if(!isValid()
-    || fromStep > noOfStepsPossible()
-    || (fromStep + numberOfSteps) > noOfStepsPossible())
-    return DataAccessor(); //numberOfSteps = fromStep = 0;
-
-	DataAccessor clone(*this);
-  clone._fromStep += fromStep;
-	clone._numberOfSteps = numberOfSteps;
-  clone._startDate = clone._startDate + clone._fromStep;
-  clone._endDate = clone._startDate + numberOfSteps - 1;
-	return clone;
-}
-
-void DataAccessor::addClimateData(AvailableClimateData acd,
-                                  const vector<double>& data)
-{
-  if(!_data->empty())
-    assert(_numberOfSteps = data.size());
-
-	_data->push_back(data);
-	_acd2dataIndex[int(acd)] = _data->size() - 1;
-	_numberOfSteps = _data->empty() ? 0 : _data->front().size();
-}
-
-void DataAccessor::addOrReplaceClimateData(AvailableClimateData acd,
-                                           const vector<double>& data)
-{
-  int index = _acd2dataIndex[int(acd)];
-  if(index < 0)
-    addClimateData(acd, data);
-  else
-    (*_data)[index] = data;
-}
-
-unsigned int DataAccessor::julianDayForStep(int stepNo) const
-{
-	return (_startDate + stepNo).julianDay();
 }
 
 //------------------------------------------------------------------------------
@@ -1677,7 +1611,7 @@ DDClimateDataServerSimulation* Climate::newDDWettReg2006(string userRs)
 	setup._scenarioIds.push_back("B1");
 
 	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "wettreg2006", "tro_a, nor_a, feu_a") : userRs;
-	vector<string> vsr = splitString(rs, ", ");
+	vector<string> vsr = Tools::splitString(rs, ", ");
 	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
 
 	return new DDClimateDataServerSimulation(setup, Db::toMysqlDB(Db::newConnection("wettreg2006")));
@@ -1692,7 +1626,7 @@ DDClimateDataServerSimulation* Climate::newDDWettReg2010(string userRs)
 	setup._scenarioIds.push_back("A2");
 
 	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "wettreg2010", "00, 55, 99") : userRs;
-	vector<string> vsr = splitString(rs, ", ");
+	vector<string> vsr = Tools::splitString(rs, ", ");
 	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
 
 	return new DDClimateDataServerSimulation(setup, Db::toMysqlDB(Db::newConnection("wettreg2010")));
@@ -1717,7 +1651,7 @@ DDClimateDataServerSimulation* Climate::newDDWerex4(string userRs)
 	setup._scenarioIds.push_back("B1");
 
 	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "werex4", "tro, nor, feu") : userRs;
-	vector<string> vsr = splitString(rs, ", ");
+	vector<string> vsr = Tools::splitString(rs, ", ");
 	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
 
 	return new DDClimateDataServerSimulation(setup, Db::toMysqlDB(Db::newConnection("werex4")));
@@ -1731,7 +1665,7 @@ DDClimateDataServerSimulation* Climate::newDDClm20(string userRs)
 	setup._scenarioIds.push_back("B1");
 
 	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "clm20", "1, 2") : userRs;
-	vector<string> vsr = splitString(rs, ", ");
+	vector<string> vsr = Tools::splitString(rs, ", ");
 	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
 
 	return new DDClimateDataServerSimulation(setup, Db::toMysqlDB(Db::newConnection("clm20")));
@@ -1744,7 +1678,7 @@ DDClimateDataServerSimulation* Climate::newDDEcham5(string userRs)
 	setup._scenarioIds.push_back("A1B");
 
 	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "echam5", "1") : userRs;
-	vector<string> vsr = splitString(rs, ", ");
+	vector<string> vsr = Tools::splitString(rs, ", ");
 	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
 
 	return new DDClimateDataServerSimulation(setup, Db::toMysqlDB(Db::newConnection("echam5")));
@@ -1760,7 +1694,7 @@ DDClimateDataServerSimulation* Climate::newDDHrm3(YearRange yr, string userRs)
 	setup._scenarioIds.push_back("A2");
 
 	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "hrm3", "1") : userRs;
-	vector<string> vsr = splitString(rs, ", ");
+	vector<string> vsr = Tools::splitString(rs, ", ");
 	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
 
 	return new DDClimateDataServerSimulation(setup, Db::toMysqlDB(Db::newConnection("hrm3")));
@@ -1774,7 +1708,7 @@ DDClimateDataServerSimulation* Climate::newDDCru(string userRs)
 	setup._scenarioIds.push_back("CRU");
 
 	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "cru", "3.1") : userRs;
-	vector<string> vsr = splitString(rs, ", ");
+	vector<string> vsr = Tools::splitString(rs, ", ");
 	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
 
 	return new DDClimateDataServerSimulation(setup, Db::toMysqlDB(Db::newConnection("cru")));
