@@ -175,6 +175,15 @@ void MysqlDB::freeResultSet()
   }
 }
 
+std::string MysqlDB::toDBDate(Tools::Date date) const
+{
+	ostringstream s;
+	s << date.year()
+	<< "-" << (date.month() < 10 ? "0" : "") << date.month()
+	<< "-" << (date.day() < 10 ? "0" : "") << date.day();
+	return s.str();
+}
+
 void MysqlDB::setCharacterSet(const char* charsetName)
 {
   lazyInit();
@@ -362,6 +371,15 @@ void SqliteDB::freeResultSet()
 		}
     _ppStmt = NULL;
   }
+}
+
+std::string SqliteDB::toDBDate(Tools::Date date) const
+{
+	ostringstream s;
+	s << date.year()
+	<< "-" << (date.month() < 10 ? "0" : "") << date.month()
+	<< "-" << (date.day() < 10 ? "0" : "") << date.day();
+	return s.str();
 }
 
 void SqliteDB::setCharacterSet(const char* charsetName)

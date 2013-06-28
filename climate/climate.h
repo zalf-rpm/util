@@ -408,6 +408,22 @@ namespace Climate
 
 	//----------------------------------------------------------------------------
 
+	class CarbiocialSimulation : public ClimateSimulation
+	{
+	public:
+		CarbiocialSimulation(Db::DB* connection);
+
+		virtual ClimateScenario* defaultScenario() const;
+
+		virtual YearRange availableYearRange() { return YearRange(2010, 2055); }
+
+	private:
+		//! loads all climate stations
+		void setClimateStations();
+	};
+
+	//----------------------------------------------------------------------------
+
 	//! Star simulation data
 	/*!
 	 * Access to star simulation data, Zalf only.
@@ -699,6 +715,29 @@ namespace Climate
 	};
 
   //----------------------------------------------------------------------------
+
+	class CarbiocialRealization : public ClimateRealization
+	{
+	public:
+		CarbiocialRealization(CarbiocialSimulation* simulation, ClimateScenario* s,
+													Db::DB* connection) :
+			ClimateRealization("1", simulation, s, connection) {}
+
+		virtual ~CarbiocialRealization(){}
+
+		DataAccessor dataAccessorFor(const std::vector<AvailableClimateData>& acds,
+																 const std::string& stationName,
+																 const Tools::Date& startDate,
+																 const Tools::Date& endDate);
+
+	protected:
+		virtual std::map<ACD, std::vector<double>*>
+		executeQuery(const ACDV& acds, const Tools::LatLngCoord& geoCoord,
+								 const Tools::Date& startDate,
+								 const Tools::Date& endDate) const;
+	};
+
+	//----------------------------------------------------------------------------
 
   class Star2Realization : public ClimateRealization
   {

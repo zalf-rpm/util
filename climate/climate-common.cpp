@@ -111,6 +111,31 @@ string Climate::availableClimateData2WettRegDBColName(AvailableClimateData col)
 	return "error";
 }
 
+pair<string, int>
+Climate::availableClimateData2CarbiocialDBColNameAndScaleFactor(AvailableClimateData col)
+{
+	switch(col)
+	{
+	case day: return make_pair("day", 0);
+	case month: return make_pair("month", 0);
+	case year: return make_pair("year", 0);
+	case tmin: return make_pair("t_min_times_10", 10);
+	case tavg: return make_pair("t_avg_times_10", 10);
+	case tmax: return make_pair("t_max_times_10", 10);
+	case precip: return make_pair("precipitation_mm_times_10", 10);
+	case precipOrig: return make_pair("precipitation_mm_times_10", 10);
+	case globrad: return make_pair("global_radiation_mj_per_m2_times_100", 100);
+	case relhumid: return make_pair("relative_humidity_percent_times_10", 10);
+	//case airpress: return make_pair("ludr", 0);
+	//case sunhours: return make_pair("sonn", 0);
+	//case cloudamount: return make_pair("bewo", 0);
+	//case vaporpress: return make_pair("dadr", 0);
+	case wind: return make_pair("windspeed_m_per_s_times_10", 10);
+	default: ;
+	}
+	return make_pair("error", 0);
+}
+
 std::string Climate::availableClimateData2Name(AvailableClimateData col)
 {
 	switch(col)

@@ -227,6 +227,49 @@ ClimateScenario* StarSimulation::defaultScenario() const
 
 //------------------------------------------------------------------------------
 
+CarbiocialSimulation::CarbiocialSimulation(Db::DB* con)
+: ClimateSimulation("carbiocial", "Carbiocial", con)
+{
+	setClimateStations();
+
+	ClimateScenario* cs = new ClimateScenario("---", this);
+	_realizations.push_back(new CarbiocialRealization(this, cs, connection().clone()));
+	cs->setRealizations(_realizations);
+	_scenarios.push_back(cs);
+}
+
+void CarbiocialSimulation::setClimateStations()
+{
+	connection().select("select id, wgs84_lat, wgs84_lng, utm21s_r, utm21s_h "
+											"from raster_point");
+
+	Db::DBRow row;
+	while(!(row = connection().getRow()).empty())
+	{
+		LatLngCoord llc = RC2latLng(RectCoord(UTM21S_EPSG32721, satoi(row[3]), satoi(row[4])));
+
+		ostringstream ss;
+		ss << "LatLng(" << llc.lat << "," << llc.lng << ")";
+		string name(ss.str());
+		//cout << "name: " << name << endl;
+		ClimateStation* cs =
+				new ClimateStation(satoi(row[0]), LatLngCoord(llc.lat, llc.lng),
+													 0.0, name, this);
+		cs->setDbName("");
+		_stations.push_back(cs);
+	}
+
+	sort(_stations.begin(), _stations.end(), cmpClimateStationPtrs);
+	connection().freeResultSet();
+}
+
+ClimateScenario* CarbiocialSimulation::defaultScenario() const
+{
+	return _scenarios.back();
+}
+
+//------------------------------------------------------------------------------
+
 Star2Simulation::Star2Simulation(Db::DB* con)
 : ClimateSimulation("star2", "Star2", con)
 {
@@ -1085,8 +1128,8 @@ StarRealization::executeQuery(const ACDV& acds,
 
 	query <<
   "from " << cs.dbName() << " "
-  "where " << dbDate << " >= " << startDate.toMysqlString() << " "
-  "and " << dbDate << " <= " << endDate.toMysqlString() << " "
+	"where " << dbDate << " >= " << connection().toDBDate(startDate) << " "
+	"and " << dbDate << " <= " << connection().toDBDate(endDate) << " "
   "and not (mo = 2 and tag = 29) "
 	"order by jahr, mo, tag";
 
@@ -1108,6 +1151,88 @@ StarRealization::executeQuery(const ACDV& acds,
     {
       (*(acd2ds[acd]))[count] = (*(fs.at(c++)))(row);
     }
+		count++;
+	}
+
+	for(unsigned int i = 0; i < fs.size(); i++)
+		delete fs.at(i);
+
+	return acd2ds;
+}
+
+//------------------------------------------------------------------------------
+
+DataAccessor CarbiocialRealization::
+dataAccessorFor(const vector<AvailableClimateData>& acds,
+												const string& stationName,
+												const Date& startDate,
+												const Date& endDate)
+{
+	return ClimateRealization::
+	dataAccessorFor(acds, simulation()->climateStation2geoCoord(stationName),
+									startDate, endDate);
+}
+
+map<ACD, vector<double>*>
+CarbiocialRealization::executeQuery(const ACDV& acds,
+																		const LatLngCoord& gc, const Date& startDate,
+																		const Date& endDate) const
+{
+	const ClimateStation& cs = simulation()->geoCoord2climateStation(gc);
+
+	ostringstream query; query << "select ";
+	int c = 0;
+	vector<Fun*> fs;
+
+	for(ACDV::const_iterator acdi = acds.begin(); acdi != acds.end(); acdi++)
+	{
+		ACD acd = *acdi;
+		auto colname = availableClimateData2CarbiocialDBColNameAndScaleFactor(acd).first;
+		switch(acd)
+		{
+		case Climate::globrad:
+			query << colname;
+			fs.push_back(new CalcStarGlobrad(c++));
+			break;
+		default:
+			query << colname;
+			fs.push_back(new ParseAsDouble(c++));
+		}
+		query << (acdi+1 != acds.end() ? ", " : " ");
+	}
+
+	string dbDate =
+			"year || \'-\' || "
+			"case when month<10 then \'0\' || month else month end || \'-\' || "
+			"case when day<10 then \'0\' || day  else day end";
+
+	query <<
+					 "from data "
+					 "where " << dbDate << " >= " << connection().toDBDate(startDate) << " "
+					 "and " << dbDate << " <= " << connection().toDBDate(endDate) << " "
+					 "and not (month = 2 and day = 29) "
+					 "order by year, month, day "
+					 "and raster_point_id = " << cs.id();
+
+	//cout << "query: " << query.str() << endl;
+	connection().select(query.str().c_str());
+
+	int rowCount = connection().getNumberOfRows();
+	map<ACD, vector<double>*> acd2ds;
+	BOOST_FOREACH(ACD acd, acds)
+	{
+		acd2ds[acd] = new vector<double>(rowCount);
+	}
+
+	Db::DBRow row;
+	int count = 0;
+	while(!(row = connection().getRow()).empty()) {
+		int c = 0;
+		BOOST_FOREACH(ACD acd, acds)
+		{
+			auto scaleFactor = availableClimateData2CarbiocialDBColNameAndScaleFactor(acd).second;
+			(*(acd2ds[acd]))[count] = (*(fs.at(c++)))(row) / double(scaleFactor);
+		}
 		count++;
 	}
 
@@ -1166,14 +1291,14 @@ Star2Realization::executeQuery(const ACDV& acds,
   query2 << query.str();
 
 	query << "from " << scenario()->id() << "_" << id() << " "
-					 "where " << dbDate << " >= " << startDate.toMysqlString() << " "
-					 "and " << dbDate << " <= " << endDate.toMysqlString() << " "
+					 "where " << dbDate << " >= " << connection().toDBDate(startDate) << " "
+					 "and " << dbDate << " <= " << connection().toDBDate(endDate) << " "
 					 "and not (mo = 2 and tag = 29) "
 					 "and id = " << cs.id();
 
 	query2 << "from refzen "
-						"where " << dbDate << " >= " << startDate.toMysqlString() << " "
-						"and " << dbDate << " <= " << endDate.toMysqlString() << " "
+						"where " << dbDate << " >= " << connection().toDBDate(startDate) << " "
+						"and " << dbDate << " <= " << connection().toDBDate(endDate) << " "
 						"and not (mo = 2 and tag = 29) "
 						"and id = " << cs.id();
 
@@ -1255,8 +1380,8 @@ map<ACD, vector<double>*>
       "if(tag<10,concat(\'0\',tag),tag))";
 
 	query << "from " << cs.dbName() << " "
-					 "where " << dbDate << " >= " << startDate.toMysqlString() << " "
-					 "and " << dbDate << " <= " << endDate.toMysqlString() << " "
+					 "where " << dbDate << " >= " << connection().toDBDate(startDate) << " "
+					 "and " << dbDate << " <= " << connection().toDBDate(endDate) << " "
 					 "and not (mo = 2 and tag = 29) "
 					 "and id = " << cs.id() << " "
 					 "order by jahr, mo, tag";
@@ -1377,8 +1502,8 @@ DDClimateDataServerRealization::executeQuery(const ACDV& acds,
 					 "where szenario = '" << _scenario->name() << "' "
 					 "and realisierung = '" << id() << "' "
 					 "and dat_id = " << cs.dbName() << " "
-					 "and " << dbDate << " >= " << startDate.toMysqlString() << " "
-					 "and " << dbDate << " <= " << endDate.toMysqlString() << " "
+					 "and " << dbDate << " >= " << connection().toDBDate(startDate) << " "
+					 "and " << dbDate << " <= " << connection().toDBDate(endDate) << " "
 					 "and not (monat = 2 and tag = 29) "
 					 "order by jahr, monat, tag";
 
@@ -1485,8 +1610,8 @@ CLMRealization::executeQuery(const ACDV& acds,
 					 "where szenario = '" << _scenario->name() << "' "
 					 "and realisierung = '" << _realizationNo << "' "
 					 "and dat_id in " << sl << " "//cs.dbName() << " "
-					 "and " << dbDate << " >= " << startDate.toMysqlString() << " "
-					 "and " << dbDate << " <= " << endDate.toMysqlString() << " "
+					 "and " << dbDate << " >= " << connection().toDBDate(startDate) << " "
+					 "and " << dbDate << " <= " << connection().toDBDate(endDate) << " "
 					 "and not (monat = 2 and tag = 29) "
 					 "group by szenario, realisierung, tag, monat, jahr "
 					 "order by jahr, monat, tag";
@@ -1581,6 +1706,8 @@ void ClimateDataManager::loadAvailableSimulations(set<string> ass)
 	}
 	if(ass.find("cru") != ass.end())
 		_simulations.push_back(newDDCru());
+	if(ass.find("carbiocial") != ass.end())
+		_simulations.push_back(new CarbiocialSimulation(newConnection("carbiocial")));
 }
 
 ClimateDataManager::~ClimateDataManager()
@@ -1755,8 +1882,8 @@ void Climate::testClimate()
 		<< " - " << e0.toMysqlString() << endl;
 		Climate::LWDataAccessor da0 = climate.dataAccessorFor(station, s0, e0);
 		const Climate::Cache& c = da0._cache;
-		cout << "c.startDate: " << c.startDate.toMysqlString()
-		<< " c.endDate: " << c.endDate.toMysqlString() << endl;
+		cout << "c.startDate: " << c.toDBDate(startDate)
+		<< " c.endDate: " << c.toDBDate(endDate) << endl;
 		assert(c.startDate == s0 && c.endDate == e0);
 		cout << "c.size(): " << c.size() << endl;
 		assert(c.size() == 31);
@@ -1767,8 +1894,8 @@ void Climate::testClimate()
 		cout << "caching range: " << s1.toMysqlString()
 		<< " - " << e1.toMysqlString() << endl;
 		Climate::LWDataAccessor da1 = climate.dataAccessorFor(station, s1, e1);
-		cout << "c.startDate: " << c.startDate.toMysqlString()
-		<< " c.endDate: " << c.endDate.toMysqlString() << endl;
+		cout << "c.startDate: " << c.toDBDate(startDate)
+		<< " c.endDate: " << c.toDBDate(endDate) << endl;
 		assert(c.startDate == s0 && c.endDate == e1);
 		cout << "c.size(): " << c.size() << endl;
 		assert(c.size() == 31 + (365 - 31) + 365 + 365);
@@ -1781,8 +1908,8 @@ void Climate::testClimate()
 		cout << "caching range: " << s2.toMysqlString()
 		<< " - " << e2.toMysqlString() << endl;
 		Climate::LWDataAccessor da2 = climate.dataAccessorFor(station, s2, e2);
-		cout << "c.startDate: " << c.startDate.toMysqlString()
-		<< " c.endDate: " << c.endDate.toMysqlString() << endl;
+		cout << "c.startDate: " << c.toDBDate(startDate)
+		<< " c.endDate: " << c.toDBDate(endDate) << endl;
 		assert(c.startDate == s2 && c.endDate == e1);
 		cout << "c.size(): " << c.size() << endl;
 		assert(c.size() == 6 + 6 + 31 + (365 - 31) + 365 + 365);
@@ -1797,8 +1924,8 @@ void Climate::testClimate()
 		cout << "caching range: " << s3.toMysqlString()
 		<< " - " << e3.toMysqlString() << endl;
 		Climate::LWDataAccessor da3 = climate.dataAccessorFor(station, s3, e3);
-		cout << "c.startDate: " << c.startDate.toMysqlString()
-		<< " c.endDate: " << c.endDate.toMysqlString() << endl;
+		cout << "c.startDate: " << c.toDBDate(startDate)
+		<< " c.endDate: " << c.toDBDate(endDate) << endl;
 		assert(c.startDate == s3 && c.endDate == e1);
 		cout << "c.size(): " << c.size() << endl;
 		assert(c.size() == 10 + 6 + 6 + 31 + (365 - 31) + 365 + 365);
@@ -1815,8 +1942,8 @@ void Climate::testClimate()
 		cout << "caching range: " << s4.toMysqlString()
 		<< " - " << e4.toMysqlString() << endl;
 		Climate::LWDataAccessor da4 = climate.dataAccessorFor(station, s4, e4);
-		cout << "c.startDate: " << c.startDate.toMysqlString()
-		<< " c.endDate: " << c.endDate.toMysqlString() << endl;
+		cout << "c.startDate: " << c.toDBDate(startDate)
+		<< " c.endDate: " << c.toDBDate(endDate) << endl;
 		assert(c.startDate == s3 && c.endDate == e4);
 		cout << "c.size(): " << c.size() << endl;
 		assert(c.size() == 10 + 6 + 6 + 31 + (365 - 31) + 365 + 365 + 46);
@@ -1835,8 +1962,8 @@ void Climate::testClimate()
 		cout << "caching range: " << s5.toMysqlString()
 		<< " - " << e5.toMysqlString() << endl;
 		Climate::LWDataAccessor da5 = climate.dataAccessorFor(station, s5, e5);
-		cout << "c.startDate: " << c.startDate.toMysqlString()
-		<< " c.endDate: " << c.endDate.toMysqlString() << endl;
+		cout << "c.startDate: " << c.toDBDate(startDate)
+		<< " c.endDate: " << c.toDBDate(endDate) << endl;
 		assert(c.startDate == s3 && c.endDate == e4);
 		cout << "c.size(): " << c.size() << endl;
 		assert(c.size() == 10 + 6 + 6 + 31 + (365 - 31) + 365 + 365 + 46);

@@ -90,6 +90,9 @@ namespace Climate
 	 */
 	std::string availableClimateData2WettRegDBColName(AvailableClimateData col);
 
+	std::pair<std::string, int>
+	availableClimateData2CarbiocialDBColNameAndScaleFactor(AvailableClimateData col);
+
 	/*!
 	 * helper function
 	 * @param col available climate data element
@@ -99,6 +102,8 @@ namespace Climate
   {
 		return availableClimateData2WettRegDBColName(col);
 	}
+
+
 
 	/*!
 	 * helper function and just a different name for the WettReg mapping right now

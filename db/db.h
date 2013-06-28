@@ -45,6 +45,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/shared_ptr.hpp>
 
+#include "tools/date.h"
+
 #ifndef NO_SQLITE
 #include "sqlite3.h"
 #endif
@@ -78,6 +80,8 @@ namespace Db
 
 		virtual std::string now() const = 0;
 
+		virtual std::string toDBDate(Tools::Date date) const = 0;
+
 		virtual void setCharacterSet(const char* charsetName) = 0;
 
 		virtual DB* clone() const = 0; // { return new DB(_host, _user, _pwd, _schema, _port); }
@@ -107,6 +111,8 @@ namespace Db
 		virtual int insertId();
 
 		virtual std::string now() const { return "now()"; }
+
+		virtual std::string toDBDate(Tools::Date date) const;
 
 		virtual void setCharacterSet(const char* charsetName);
 
@@ -157,6 +163,8 @@ namespace Db
 		virtual std::string errorMsg();
 
 		virtual std::string now() const { return "datetime('now')"; }
+
+		virtual std::string toDBDate(Tools::Date date) const;
 
 		virtual void setCharacterSet(const char* charsetName);
 
