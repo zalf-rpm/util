@@ -39,9 +39,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 
-#define LOKI_OBJECT_LEVEL_THREADING
-
-#include "loki/Threads.h"
 #include "tools/date.h"
 #include "db/db.h"
 #include "tools/coord-trans.h"
@@ -49,6 +46,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "tools/helper.h"
 
 #include "climate/climate-common.h"
+
+#define LOKI_OBJECT_LEVEL_THREADING
+#include "loki/Threads.h"
 
 //! All climate data related classes.
 namespace Climate
@@ -168,7 +168,8 @@ namespace Climate
 		/*!
 		 * @return the stations Gauss-Krüger 5. Meridian coordinate
 		 */
-		Tools::GK5Coord gk5Coord() const { return Tools::latLng2GK5(geoCoord()); }
+		Tools::RectCoord rcCoord(Tools::CoordinateSystem cs = Tools::GK5_EPSG31469) const
+		{ return Tools::latLng2RC(geoCoord(), cs); }
 
 		/*!
 		* @return the climate simulation this station belongs to
@@ -226,7 +227,7 @@ namespace Climate
 	public:
 		//! takes ownerwhip of connection
     ClimateSimulation(const std::string& id, const std::string& name,
-											Db::MysqlDB* connection) :
+											Db::DB* connection) :
     _name(name), _id(id), _connection(connection) {}
 
 		virtual ~ClimateSimulation();
@@ -286,7 +287,7 @@ namespace Climate
 		 * (right now all realizations of a simulation use the
 		 * same database connection, this one)
 		 */
-		Db::MysqlDB& connection() const { return *(_connection.get()); }
+		Db::DB& connection() const { return *(_connection.get()); }
 
     virtual YearRange availableYearRange() { return _yearRange; }
 
@@ -310,7 +311,7 @@ namespace Climate
     std::string _id;
 
 		//! connection to db
-		Db::MysqlDBPtr _connection;
+		Db::DBPtr _connection;
 	};
 
 	//----------------------------------------------------------------------------
@@ -385,7 +386,7 @@ namespace Climate
 	{
 	public:
 		DDClimateDataServerSimulation(const DDServerSetup& setupData,
-																	Db::MysqlDB* connection);
+																	Db::DB* connection);
 
 		virtual ClimateScenario* defaultScenario() const;
 
@@ -416,7 +417,7 @@ namespace Climate
   class StarSimulation : public ClimateSimulation
   {
 	public:
-		StarSimulation(Db::MysqlDB* connection);
+		StarSimulation(Db::DB* connection);
 
 		virtual ClimateScenario* defaultScenario() const;
 
@@ -432,7 +433,7 @@ namespace Climate
   class Star2Simulation : public ClimateSimulation
   {
   public:
-		Star2Simulation(Db::MysqlDB* connection);
+		Star2Simulation(Db::DB* connection);
 
     virtual ClimateScenario* defaultScenario() const;
 
@@ -449,7 +450,7 @@ namespace Climate
   class Star2MeasuredDataSimulation : public ClimateSimulation
   {
   public:
-		Star2MeasuredDataSimulation(Db::MysqlDB* connection);
+		Star2MeasuredDataSimulation(Db::DB* connection);
 
     virtual ClimateScenario* defaultScenario() const;
 
@@ -471,7 +472,7 @@ namespace Climate
   class CLMSimulation : public ClimateSimulation
   {
 	public:
-		CLMSimulation(Db::MysqlDB* connection);
+		CLMSimulation(Db::DB* connection);
 
 		virtual ClimateScenario* defaultScenario() const;
 
@@ -606,7 +607,7 @@ namespace Climate
   {
   public:
 		ClimateRealization(const std::string& id, ClimateSimulation* simulation,
-											 ClimateScenario* s, Db::MysqlDB* connection) :
+											 ClimateScenario* s, Db::DB* connection) :
 		_id(id), _con(connection), _simulation(simulation), _scenario(s){}
 
     virtual ~ClimateRealization(){}
@@ -634,7 +635,7 @@ namespace Climate
 		virtual void setName(std::string newName){ _name = newName; }
 
   protected:
-		Db::MysqlDB& connection() const { return *(_con.get()); }
+		Db::DB& connection() const { return *(_con.get()); }
 
     //! caller takes care of returned pointer to data-vector
     virtual std::map<ACD, std::vector<double>*>
@@ -663,7 +664,7 @@ namespace Climate
 		std::string _name;
 
     //! the connection to a climate database
-		Db::MysqlDBPtr _con;
+		Db::DBPtr _con;
     ClimateSimulation* _simulation;
     ClimateScenario* _scenario;
 
@@ -680,7 +681,7 @@ namespace Climate
   {
 	public:
 		StarRealization(StarSimulation* simulation, ClimateScenario* s,
-										Db::MysqlDB* connection) :
+										Db::DB* connection) :
     ClimateRealization("1", simulation, s, connection) {}
 
 		virtual ~StarRealization(){}
@@ -703,7 +704,7 @@ namespace Climate
   {
   public:
     Star2Realization(Star2Simulation* simulation, Star2Scenario* s,
-										 Db::MysqlDB* connection, int realizationNo) :
+										 Db::DB* connection, int realizationNo) :
 		ClimateRealization(Tools::toString(realizationNo), simulation, s,
                        connection){}
 
@@ -728,7 +729,7 @@ namespace Climate
   public:
     Star2MeasuredDataRealization(Star2MeasuredDataSimulation* simulation,
                                  ClimateScenario* s,
-																 Db::MysqlDB* connection) :
+																 Db::DB* connection) :
     ClimateRealization("measured", simulation, s, connection) {}
 
     virtual ~Star2MeasuredDataRealization(){}
@@ -752,7 +753,7 @@ namespace Climate
 	public:
 		DDClimateDataServerRealization(std::string id,
 																	 DDClimateDataServerSimulation* simulation,
-																	 ClimateScenario* s, Db::MysqlDB* connection,
+																	 ClimateScenario* s, Db::DB* connection,
 																	 const DDServerSetup& setupData)
 			: ClimateRealization(id, simulation, s, connection), _scenario(s),
 				_setupData(setupData)
@@ -782,7 +783,7 @@ namespace Climate
   {
 	public:
 		CLMRealization(CLMSimulation* simulation, ClimateScenario* s,
-									 std::string realizationNo, Db::MysqlDB* connection) :
+									 std::string realizationNo, Db::DB* connection) :
     ClimateRealization(realizationNo, simulation, s, connection),
     _scenario(s), _realizationNo(realizationNo) { }
 

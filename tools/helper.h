@@ -59,10 +59,9 @@ namespace Tools
 		operator()(const Pair& p) const { return p.second; }
 	};
 
-  inline double atof_comma(const char* c)
+	inline double atof_comma(std::string s)
   {
-    std::string s(c);
-    int pos = s.find_first_of(',');
+		int pos = s.find_first_of(',');
     if(pos != std::string::npos)
       return std::atof(s.replace(pos, 1, ".").c_str());
 
