@@ -29,10 +29,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/foreach.hpp>
 
-#define LOKI_OBJECT_LEVEL_THREADING
-
-#include "loki/Threads.h"
-
 #include "tools/use-stl-algo-boost-lambda.h"
 
 #include "regionalization.h"
@@ -41,6 +37,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "db/abstract-db-connections.h"
 #include "tools/helper.h"
 #include "tools/algorithms.h"
+
+#define LOKI_OBJECT_LEVEL_THREADING
+#include "loki/Threads.h"
 
 using namespace std;
 using namespace Climate;
@@ -55,10 +54,10 @@ namespace
   struct X
   {
     X()  { }
-		X(ClimateStation cs, GK5Coord gk5, vector<double> vs)
-      : station(cs), gk5(gk5), values(vs) { }
+		X(ClimateStation cs, RectCoord rc, vector<double> vs)
+			: station(cs), rc(rc), values(vs) { }
 		ClimateStation station;
-		GK5Coord gk5;
+		RectCoord rc;
 		vector<double> values;
 		vector<double> residua;
   };
@@ -158,20 +157,20 @@ namespace
 				return fcss;
 		}
 
-		GK5Rect extendedRegion = gmd.gk5Rect();
+		RCRect extendedRegion = gmd.rcRect();
 		int bs = borderSize * 1000; //m
-		extendedRegion.tl = extendedRegion.tl + GK5Coord(-bs, bs);
-		extendedRegion.br = extendedRegion.br + GK5Coord(bs, -bs);
-		cout << "region: " << gmd.gk5Rect().toString()
+		extendedRegion.tl = extendedRegion.tl + RectCoord(-bs, bs);
+		extendedRegion.br = extendedRegion.br + RectCoord(bs, -bs);
+		cout << "region: " << gmd.rcRect().toString()
 				 << " with border-size-increment of " << borderSize << " [km] -> "
 				 << " extendedRegion: " << extendedRegion.toString() << endl;
 
 		vector<const ClimateStation*> filteredStations;
     BOOST_FOREACH(const ClimateStation* cs, sim->climateStations())
     {
-      if(extendedRegion.contains(cs->gk5Coord()))
+			if(extendedRegion.contains(cs->rcCoord()))
       {
-				cout << "----> included: " << cs->name() << " gk5c: " << cs->gk5Coord().toString() << endl;
+				cout << "----> included: " << cs->name() << " rcc: " << cs->rcCoord().toString() << endl;
 				filteredStations.push_back(cs);
 			}
 		}
@@ -288,11 +287,11 @@ namespace
   template <typename Pair>
   struct Contains
   {
-    GK5Rect _r;
-    Contains(GridMetaData gmd) : _r(gmd.gk5Rect()) {}
+		RCRect _r;
+		Contains(GridMetaData gmd) : _r(gmd.rcRect()) {}
     bool operator()(Pair p) const
     {
-      return p.first.gk5Rect().contains(_r);
+			return p.first.rcRect().contains(_r);
     }
   };
 }
@@ -358,7 +357,7 @@ Results Regionalization::regionalize(Env env)
                    Contains<GMD2Res::value_type>(gmd));
     if(ci != cache.end())
     {
-      bool gmdIsSubregion = ci->first.gk5Rect().contains(gmd.gk5Rect()) &&
+			bool gmdIsSubregion = ci->first.rcRect().contains(gmd.rcRect()) &&
                             ci->first != gmd;
 			//if so check for the correct simulation
 			Sim2Res::const_iterator ci2 = ci->second.find(sim->id());
@@ -539,8 +538,8 @@ Results Regionalization::regionalize(Env env)
 						values.push_back(p.second);
 					}
 
-					//cache also gk5 coordinate of station
-					year2xs[currentYear].push_back(X(*cs, cs->gk5Coord(), values));
+					//cache also rc coordinate of station
+					year2xs[currentYear].push_back(X(*cs, cs->rcCoord(), values));
 //					cout << "current year: " << currentYear << " station: " << cs->name();
 //					BOOST_FOREACH(FuncResult::value_type p, vals)
 //					{
@@ -602,7 +601,7 @@ Results Regionalization::regionalize(Env env)
 
               BOOST_FOREACH(const X& x, xs)
               {
-                double dist = x.gk5.distanceTo(GK5Coord(r + (cellSize * j),
+								double dist = x.rc.distanceTo(RectCoord(r + (cellSize * j),
                                                         h - (cellSize * i)));
                 if(dist > 1.0)
                 {
@@ -634,9 +633,9 @@ Results Regionalization::regionalize(Env env)
                 {
                   const X& f = xs.at(0);
                   const X& s = xs.at(1);
-                  GK5Coord cellGk5 = GK5Coord(r+(cellSize*j), h-(cellSize*i));
-                  double df = f.gk5.distanceTo(cellGk5);
-                  double ds = s.gk5.distanceTo(cellGk5);
+									RectCoord cellRC = RectCoord(r+(cellSize*j), h-(cellSize*i));
+									double df = f.rc.distanceTo(cellRC);
+									double ds = s.rc.distanceTo(cellRC);
                   double fv = df/(df+ds)*f.values[k];
                   double sv = ds/(df+ds)*s.values[k];
 									gs[k]->setDataAt(i, j, float(fv + sv));

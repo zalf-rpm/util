@@ -26,13 +26,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef GRIDPLUS_H_
 #define GRIDPLUS_H_
 
+#ifdef WINSOCK2
+#include <WinSock2.h>
+#endif
+
 #include <vector>
 #include <functional>
 #include <iostream>
-
-#define LOKI_OBJECT_LEVEL_THREADING
-
-#include "loki/Threads.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
@@ -46,6 +46,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "tools/algorithms.h"
 #include "tools/datastructures.h"
 
+#define LOKI_OBJECT_LEVEL_THREADING
+#include "loki/Threads.h"
+
 namespace Grids
 {
 grid* loadGrid(const std::string& gridName,
@@ -57,13 +60,13 @@ void setAllGridFieldsTo(grid* g, double newValue, bool keepNodata = true);
 
 //----------------------------------------------------------------------------
 
-struct GK5Rect
+struct RCRect
 {
-	GK5Rect() {}
-	GK5Rect(const Tools::GK5Coord& tl, const Tools::GK5Coord& br)
+	RCRect() {}
+	RCRect(const Tools::RectCoord& tl, const Tools::RectCoord& br)
 		: tl(tl), br(br) {}
 
-	bool contains(const Tools::GK5Coord& p,
+	bool contains(const Tools::RectCoord& p,
 								bool exclusiveBottomRightBorder = false) const
 	{
 		return exclusiveBottomRightBorder ?
@@ -71,11 +74,11 @@ struct GK5Rect
           (tl.r <= p.r && p.r <= br.r) && (br.h <= p.h && p.h <= tl.h);
 	}
 
-	bool contains(const GK5Rect& other) const;
+	bool contains(const RCRect& other) const;
 
-	bool intersects(const GK5Rect& other) const;
+	bool intersects(const RCRect& other) const;
 
-	GK5Rect intersected(const GK5Rect& other) const;
+	RCRect intersected(const RCRect& other) const;
 
 	bool isEmpty() const
 	{
@@ -89,9 +92,9 @@ struct GK5Rect
 
 	std::string toString() const;
 
-	std::vector<Tools::GK5Coord> toTlTrBrBlVector() const;
+	std::vector<Tools::RectCoord> toTlTrBrBlVector() const;
 
-	Tools::GK5Coord tl, br;
+	Tools::RectCoord tl, br;
 };
 
 //----------------------------------------------------------------------------
@@ -101,11 +104,11 @@ class GridP;
 //! metadata common to all grids
 struct GridMetaData
 {
-	GridMetaData();
+	GridMetaData(Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
 
-	GridMetaData(const grid* g);
+	GridMetaData(const grid* g, Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
 
-	GridMetaData(const GridP* g);
+	GridMetaData(const GridP* g, Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
 
 	bool isValid() const { return ncols > -1 && nrows > -1; }
 
@@ -121,30 +124,35 @@ struct GridMetaData
 		return toCanonicalString() < other.toCanonicalString();
 	}
 
-	Tools::GK5Coord topLeftCorner() const
+	Tools::RectCoord topLeftCorner() const
 	{
-		return Tools::GK5Coord(xllcorner, yllcorner+(nrows*cellsize));
+		return Tools::RectCoord(coordinateSystem,
+														xllcorner,
+														yllcorner+(nrows*cellsize));
 	}
 
-	Tools::GK5Coord topRightCorner() const
+	Tools::RectCoord topRightCorner() const
 	{
-		return Tools::GK5Coord(xllcorner+(ncols*cellsize),
-													 yllcorner+(nrows*cellsize));
+		return Tools::RectCoord(coordinateSystem,
+														xllcorner+(ncols*cellsize),
+														yllcorner+(nrows*cellsize));
 	}
 
-	Tools::GK5Coord bottomRightCorner() const
+	Tools::RectCoord bottomRightCorner() const
 	{
-		return Tools::GK5Coord(xllcorner+(ncols*cellsize), yllcorner);
+		return Tools::RectCoord(coordinateSystem,
+														xllcorner+(ncols*cellsize),
+														yllcorner);
 	}
 
-	Tools::GK5Coord bottomLeftCorner() const
+	Tools::RectCoord bottomLeftCorner() const
 	{
-		return Tools::GK5Coord(xllcorner, yllcorner);
+		return Tools::RectCoord(coordinateSystem, xllcorner, yllcorner);
 	}
 
-	GK5Rect gk5Rect() const
+	RCRect rcRect() const
 	{
-		return GK5Rect(topLeftCorner(), bottomRightCorner());
+		return RCRect(topLeftCorner(), bottomRightCorner());
 	}
 
 	std::string toString() const;
@@ -156,6 +164,7 @@ struct GridMetaData
 	int xllcorner, yllcorner;
 	int cellsize;
 	std::string regionName;
+	Tools::CoordinateSystem coordinateSystem;
 };
 
 //----------------------------------------------------------------------------
@@ -183,13 +192,13 @@ struct SubData
 	bool isValid() const { return rows > 0 && cols > 0; }
 };
 
-GK5Rect
+RCRect
 extendedBoundingRect(const GridMetaData& gmd,
-										 const Tools::Quadruple<Tools::GK5Coord>& gk5poly,
+										 const Tools::Quadruple<Tools::RectCoord>& rcpoly,
 										 double cellSize);
 
 std::pair<Row, Col> rowColInGrid(const GridMetaData& gmd,
-																 const Tools::GK5Coord& c);
+																 const Tools::RectCoord& c);
 
 //----------------------------------------------------------------------------
 
@@ -319,7 +328,7 @@ public:
 
 	float dataAt(int row, int col) const { return _grid->feld[row][col]; }
 
-	float dataAt(Tools::GK5Coord gk5c) const;
+	float dataAt(Tools::RectCoord rcc) const;
 
 	GridP* setDataAt(int row, int col, float value)
 	{
@@ -329,16 +338,16 @@ public:
 
 	float* operator[](int row){ return _grid->feld[row]; }
 
-	GridP* setDataAt(Tools::GK5Coord gk5c, float value);
+	GridP* setDataAt(Tools::RectCoord rcc, float value);
 
 	GridP* setNoDataValueAt(int row, int col)
 	{
 		return setDataAt(row, col, float(noDataValue()));
 	}
 
-	GridP* setNoDataValueAt(Tools::GK5Coord gk5c)
+	GridP* setNoDataValueAt(Tools::RectCoord rcc)
 	{
-		return setDataAt(gk5c, float(noDataValue()));
+		return setDataAt(rcc, float(noDataValue()));
 	}
 
 	bool isNoDataField(int row, int col) const
@@ -346,9 +355,9 @@ public:
 		return int(dataAt(row, col)) == noDataValue();
 	}
 
-	bool isNoDataField(Tools::GK5Coord gk5c) const
+	bool isNoDataField(Tools::RectCoord rcc) const
 	{
-		return int(dataAt(gk5c)) == noDataValue();
+		return int(dataAt(rcc)) == noDataValue();
 	}
 
 	bool isDataField(int row, int col) const
@@ -356,9 +365,9 @@ public:
 		return !isNoDataField(row, col);
 	}
 
-	bool isDataField(Tools::GK5Coord gk5c) const
+	bool isDataField(Tools::RectCoord rcc) const
 	{
-		return !isNoDataField(gk5c);
+		return !isNoDataField(rcc);
 	}
 
 	std::string toString() const;
@@ -383,13 +392,13 @@ public:
 		return this;
 	}
 
-	GK5Rect gk5Rect() const;
+	RCRect rcRect() const;
 
-	Tools::GK5Coord gk5CoordAt(int row, int col) const;
+	Tools::RectCoord rcCoordAt(int row, int col) const;
 
-	Tools::GK5Coord gk5CoordAtCenter() const
+	Tools::RectCoord rcCoordAtCenter() const
 	{
-		return gk5CoordAt(int(double(rows()) / 2.0), int(double(cols()) / 2.0));
+		return rcCoordAt(int(double(rows()) / 2.0), int(double(cols()) / 2.0));
 	}
 
 	bool isCompatible(const GridP* other) const;
@@ -416,7 +425,7 @@ public:
 
 	GridP* transformP(boost::function<float(float)> transformFunction) const;
 
-	std::pair<int, int> gk52rowCol(Tools::GK5Coord gk5c) const;
+	std::pair<int, int> rc2rowCol(Tools::RectCoord rcc) const;
 
 	GridP* invert(float value);
 

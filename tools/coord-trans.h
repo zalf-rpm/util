@@ -28,36 +28,68 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <vector>
 #include <cmath>
+#include <cassert>
+
+#include "proj_api.h"
 
 namespace Tools
 {
-	struct GK5Coord
+	enum CoordinateSystem
 	{
-    GK5Coord() : r(0), h(0) { }
+		LatLng_EPSG4326 = 0,
+		UTM21S_EPSG32721,
+		GK5_EPSG31469,
+		UndefinedCoordinateSystem
+	};
 
-    GK5Coord(double r, double h) : r(r), h(h) { }
+	std::string coordinateSystemToString(CoordinateSystem cs);
+	std::string coordinateSystemToShortString(CoordinateSystem cs);
 
-		GK5Coord operator+(const GK5Coord & other) const
+	template<typename T>
+	struct Coord2D
+	{
+		Coord2D() : coordinateSystem(UndefinedCoordinateSystem) {}
+		Coord2D(CoordinateSystem cs) : coordinateSystem(cs) {}
+		virtual T firstDimension() const = 0;
+		virtual T secondDimension() const = 0;
+		CoordinateSystem coordinateSystem;
+	};
+
+	struct RectCoord : public Coord2D<double>
+	{
+		RectCoord() : Coord2D(UndefinedCoordinateSystem), r(0), h(0) { }
+
+		RectCoord(CoordinateSystem cs) : Coord2D(cs), r(0), h(0) { }
+
+		RectCoord(double r, double h) : Coord2D(GK5_EPSG31469), r(r), h(h) { }
+
+		RectCoord(CoordinateSystem cs, double r, double h)
+			: Coord2D(cs), r(r), h(h) { }
+
+		virtual double firstDimension() const { return r; }
+		virtual double secondDimension() const { return h; }
+
+		RectCoord operator+(const RectCoord& other) const
 		{
-			return GK5Coord(r + other.r, h + other.h);
+			return RectCoord(coordinateSystem, r + other.r, h + other.h);
 		}
 
-		GK5Coord operator-(const GK5Coord & other) const
+		RectCoord operator-(const RectCoord & other) const
 		{
 			return (*this) + (other*-1);
 		}
 
-		GK5Coord operator*(double value) const
+		RectCoord operator*(double value) const
 		{
-			return GK5Coord(r*value, h * value);
+			return RectCoord(coordinateSystem, r*value, h * value);
 		}
 
-		GK5Coord operator/(double value) const
+		RectCoord operator/(double value) const
 		{
 			return (*this) * (1.0 / value);
 		}
 
-		double distanceTo(const GK5Coord & other) const
+		double distanceTo(const RectCoord & other) const
 		{
 			return std::sqrt(((r - other.r)*(r - other.r))
 											+((h - other.h)*(h - other.h)));
@@ -79,11 +111,22 @@ namespace Tools
 	/*! A Geocoordinate Pair (latitude, longitude)
 	 * geocoordinates
 	 */
-	struct LatLngCoord
+	struct LatLngCoord : public Coord2D<double>
 	{
-    LatLngCoord() : lat(0), lng(0) {}
+		LatLngCoord() : Coord2D(LatLng_EPSG4326), lat(0), lng(0) {}
 
-		LatLngCoord(double lat, double lng) : lat(lat), lng(lng) {}
+		LatLngCoord(CoordinateSystem cs) : Coord2D(LatLng_EPSG4326), lat(0), lng(0)
+		{ assert(cs == LatLng_EPSG4326); }
+
+		LatLngCoord(double lat, double lng)
+			: Coord2D(LatLng_EPSG4326), lat(lat), lng(lng) {}
+
+		LatLngCoord(CoordinateSystem cs, double lat, double lng)
+					: Coord2D(LatLng_EPSG4326), lat(lat), lng(lng)
+		{ assert(cs == LatLng_EPSG4326); }
+
+		virtual double firstDimension() const { return lat; }
+		virtual double secondDimension() const { return lng; }
 
     bool operator==(const LatLngCoord& other) const;
 
@@ -119,22 +162,158 @@ namespace Tools
 
 	//----------------------------------------------------------------------------
 
-	//! convert lat lng geocoords in decimal degrees to gk5
-	/*!
-	 * returns empty vector on error
-	 */
-	std::vector<GK5Coord> latLng2GK5(const std::vector<LatLngCoord>& lls);
+	struct CoordConversionParams
+	{
+		double sourceConversionFactor;
+		double targetConversionFactor;
+		bool switch2DCoordinates;
+		std::string projectionParams;
+	};
 
-	GK5Coord latLng2GK5(LatLngCoord llc);
+	CoordConversionParams coordConversionParams(CoordinateSystem cs);
 
-	//! convert gk5 coords to lat lng geocoords in decimal degrees
-	/*!
-	 * returns empty vector on error
-	 */
-	std::vector<LatLngCoord> GK52latLng(const std::vector<GK5Coord>& gk5s);
+	template<typename SourceCoordType, typename TargetCoordType>
+	std::vector<typename TargetCoordType>
+	sourceProj2targetProj(const std::vector<SourceCoordType>& sourceCoords,
+												CoordinateSystem targetCoordinateSystem);
 
-	LatLngCoord GK52latLng(GK5Coord gk5c);
+	template<typename SourceCoordType, typename TargetCoordType>
+	TargetCoordType singleSourceProj2targetProj(SourceCoordType s,
+																							CoordinateSystem targetCoordinateSystem);
 
+//	template<typename SP, typename TP>
+//	std::vector<typename TP::CoordType>
+//	sourceProj2targetProj(const std::vector<typename SP::CoordType>& sourceCoords);
+
+//	template<typename SP, typename TP>
+//	typename TP::CoordType sourceProj2targetProj(typename SP::CoordType s);
+
+	//Lat/Lng to GK5
+
+//	inline std::vector<RectCoord> latLng2GK5(const std::vector<LatLngCoord>& lls)
+//	{ return sourceProj2targetProj<LatLng_EPSG4326_Params, GK5_Params>(lls); }
+
+//	inline RectCoord latLng2GK5(LatLngCoord llc)
+//	{ return sourceProj2targetProj<LatLng_EPSG4326_Params, GK5_Params>(llc); }
+
+
+	inline std::vector<RectCoord> latLng2RC(const std::vector<LatLngCoord>& lls,
+																					CoordinateSystem targetCoordinateSystem
+																					= GK5_EPSG31469)
+	{
+		return sourceProj2targetProj<LatLngCoord, RectCoord>(lls, targetCoordinateSystem);
+	}
+
+	inline RectCoord latLng2RC(LatLngCoord llc,
+														 CoordinateSystem targetCoordinateSystem
+														 = GK5_EPSG31469)
+	{
+		return singleSourceProj2targetProj<LatLngCoord, RectCoord>(llc, targetCoordinateSystem);
+	}
+
+//	inline std::vector<RectCoord> latLng2RC(const std::vector<LatLngCoord>& lls)
+//	{ return sourceProj2targetProj<LatLng_EPSG4326_Params, GK5_Params>(lls); }
+
+//	inline RectCoord latLng2RC(LatLngCoord llc)
+//	{ return sourceProj2targetProj<LatLng_EPSG4326_Params, GK5_Params>(llc); }
+
+	//Gk5 to Lat/Lng
+//	inline std::vector<LatLngCoord> GK52latLng(const std::vector<RectCoord>& rcs)
+//	{ return sourceProj2targetProj<GK5_Params, LatLng_EPSG4326_Params>(rcs); }
+
+//	inline LatLngCoord GK52latLng(RectCoord rcc)
+//	{ return sourceProj2targetProj<GK5_Params, LatLng_EPSG4326_Params>(rcc); }
+
+	inline std::vector<LatLngCoord> RC2latLng(const std::vector<RectCoord>& rcs)
+	{
+		return sourceProj2targetProj<RectCoord, LatLngCoord>(rcs, LatLng_EPSG4326);
+	}
+
+	inline LatLngCoord RC2latLng(RectCoord rcc)
+	{
+		return singleSourceProj2targetProj<RectCoord, LatLngCoord>(rcc, LatLng_EPSG4326);
+	}
+
+	//Lat/Lng to UTM21S
+//	inline std::vector<UTM21SCoord> latLng2UTM21S(const std::vector<LatLngCoord>& lls)
+//	{ return sourceProj2targetProj<LatLng_EPSG4326_Params, UTM21S_EPSG32721_Params>(lls); }
+
+//	inline UTM21SCoord latLng2UTM21S(LatLngCoord llc)
+//	{ return sourceProj2targetProj<LatLng_EPSG4326_Params, UTM21S_EPSG32721_Params>(llc); }
+
+	//UTM21S to Lat/Lng
+//	inline std::vector<LatLngCoord> UTM21S2latLng(const std::vector<UTM21SCoord>& utms)
+//	{ return sourceProj2targetProj<UTM21S_EPSG32721_Params, LatLng_EPSG4326_Params>(utms); }
+
+//	inline LatLngCoord UTM21S2latLng(UTM21SCoord utmc)
+//	{ return sourceProj2targetProj<UTM21S_EPSG32721_Params, LatLng_EPSG4326_Params>(utmc); }
+}
+
+//template implementations
+//-------------------------------
+
+template<typename SCT, typename TCT>
+std::vector<TCT>
+Tools::sourceProj2targetProj(const std::vector<SCT>& scs, CoordinateSystem targetCS)
+{
+	if(scs.empty())
+		return vector<TCT>();
+
+	CoordConversionParams sccp = coordConversionParams(scs.front().coordinateSystem);
+	CoordConversionParams tccp = coordConversionParams(targetCS);
+
+	unsigned int nocs = (unsigned int)scs.size(); //no of coordinates
+	double* xs = new double[nocs];
+	double* ys = new double[nocs];
+	double* zs = new double[nocs];
+
+	double scv = sccp.sourceConversionFactor;
+	bool ss2Dc = sccp.switch2DCoordinates;
+	for(unsigned int i = 0; i < nocs; i++)
+	{
+		xs[i] = ss2Dc ? scs.at(i).secondDimension() * scv
+									: scs.at(i).firstDimension() * scv;
+		ys[i] = ss2Dc ? scs.at(i).firstDimension() * scv
+									: scs.at(i).secondDimension() * scv;
+		zs[i] = 0;
+	}
+
+	projPJ sourcePJ = pj_init_plus(sccp.projectionParams.c_str());
+	projPJ targetPJ = pj_init_plus(tccp.projectionParams.c_str());
+
+	if(sourcePJ && targetPJ){
+		int error = pj_transform(sourcePJ, targetPJ, nocs, 0, xs, ys, zs);
+		if(error)
+		{
+			cerr << "error: " << error << endl;
+			return vector<TCT>();
+		}
+	}
+
+	vector<TCT> tcs(nocs);
+	double tcv = tccp.targetConversionFactor;
+	bool ts2Dc = tccp.switch2DCoordinates;
+	for(unsigned int i = 0; i < nocs; i++)
+		tcs[i] = ts2Dc ? TCT(targetCS, ys[i]*tcv, xs[i]*tcv)
+									 : TCT(targetCS, xs[i]*tcv, ys[i]*tcv);
+
+	if(sourcePJ)
+		pj_free(sourcePJ);
+	if(targetPJ)
+		pj_free(targetPJ);
+
+	delete[] xs;
+	delete[] ys;
+	delete[] zs;
+
+	return !sourcePJ || !targetPJ ? std::vector<TCT>() : tcs;
+}
+
+template<typename SCT, typename TCT>
+TCT Tools::singleSourceProj2targetProj(SCT sc, CoordinateSystem targetCS)
+{
+	auto v = sourceProj2targetProj<SCT, TCT>(std::vector<SCT>(1, sc), targetCS);
+	return v.empty() ? TCT(targetCS) : v.front();
 }
 
 #endif

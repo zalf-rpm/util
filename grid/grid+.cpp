@@ -141,35 +141,35 @@ void Grids::setAllGridFieldsTo(grid* g, double newValue, bool keepNoData)
 
 //------------------------------------------------------------------------------
 
-bool GK5Rect::contains(const GK5Rect& o) const
+bool RCRect::contains(const RCRect& o) const
 {
   return
       o.tl.r >= tl.r && o.tl.h <= tl.h &&
       o.br.r <= br.r && o.br.h >= br.h;
 }
 
-bool GK5Rect::intersects(const GK5Rect& other) const
+bool RCRect::intersects(const RCRect& other) const
 {
   return
       max(tl.r, other.tl.r) <= min(br.r, other.br.r) &&
       min(tl.h, other.tl.h) >= max(br.h, other.br.h);
 }
 
-GK5Rect GK5Rect::intersected(const GK5Rect& other) const
+RCRect RCRect::intersected(const RCRect& other) const
 {
 	//cout << "intersecting: this: " << toString()
 	//<< " other: " << other.toString() << endl;
 	if (isNull() || other.isNull())
-		return GK5Rect();
-	GK5Rect temp;
+		return RCRect();
+	RCRect temp;
 	temp.tl.r = max(tl.r, other.tl.r);
 	temp.tl.h = min(tl.h, other.tl.h);
 	temp.br.r = min(br.r, other.br.r);
 	temp.br.h = max(br.h, other.br.h);
-	return temp.isEmpty() ? GK5Rect() : temp;
+	return temp.isEmpty() ? RCRect() : temp;
 }
 
-string GK5Rect::toString() const
+string RCRect::toString() const
 {
 	ostringstream s;
 	s << "tl: " << tl.toString() << " br: " << br.toString()
@@ -177,35 +177,50 @@ string GK5Rect::toString() const
 	return s.str();
 }
 
-vector<GK5Coord> GK5Rect::toTlTrBrBlVector() const
+vector<RectCoord> RCRect::toTlTrBrBlVector() const
 {
-	vector<GK5Coord> v(4);
+	vector<RectCoord> v(4);
 	v[0]=tl;
-	v[1]=GK5Coord(br.r, tl.h);
+	v[1]=RectCoord(br.r, tl.h);
 	v[2]=br;
-	v[3]=GK5Coord(tl.r, br.h);
+	v[3]=RectCoord(tl.r, br.h);
 	return v;
 }
 
 //------------------------------------------------------------------------------
 
-GridMetaData::GridMetaData() : ncols(-1), nrows(-1) { }
+GridMetaData::GridMetaData(CoordinateSystem cs)
+	: ncols(-1),
+		nrows(-1),
+		coordinateSystem(cs)
+{}
 
-GridMetaData::GridMetaData(const grid* g)
-: ncols(g->ncols), nrows(g->nrows), nodata(g->nodata),
-xllcorner(int(g->xcorner)), yllcorner(int(g->ycorner)),
-cellsize(int(g->csize)) { }
+GridMetaData::GridMetaData(const grid* g, CoordinateSystem cs)
+: ncols(g->ncols),
+	nrows(g->nrows),
+	nodata(g->nodata),
+	xllcorner(int(g->xcorner)),
+	yllcorner(int(g->ycorner)),
+	cellsize(int(g->csize)),
+	coordinateSystem(cs)
+{}
 
-GridMetaData::GridMetaData(const GridP* g)
-: ncols(g->cols()), nrows(g->rows()), nodata(g->noDataValue()),
-xllcorner(int(g->gridPtr()->xcorner)), yllcorner(int(g->gridPtr()->ycorner)),
-cellsize(int(g->cellSize())) { }
+GridMetaData::GridMetaData(const GridP* g, CoordinateSystem cs)
+: ncols(g->cols()),
+	nrows(g->rows()),
+	nodata(g->noDataValue()),
+	xllcorner(int(g->gridPtr()->xcorner)),
+	yllcorner(int(g->gridPtr()->ycorner)),
+	cellsize(int(g->cellSize())),
+	coordinateSystem(cs)
+{}
 
 bool GridMetaData::operator==(const GridMetaData& other) const
 {
 	return ncols == other.ncols && nrows == other.nrows &&
       nodata == other.nodata && xllcorner == other.xllcorner
-      && yllcorner == other.yllcorner && cellsize == other.cellsize;
+			&& yllcorner == other.yllcorner && cellsize == other.cellsize
+			&& coordinateSystem == other.coordinateSystem;
 }
 
 string GridMetaData::toString() const
@@ -213,17 +228,18 @@ string GridMetaData::toString() const
 	ostringstream s;
 	s.precision(7);
 	s << "ncols: " << ncols << " nrows: " << nrows << " nodata: " << nodata
-      << " cellsize: " << cellsize
-			<< fixed
-			<< " llx: " << xllcorner << " lly: " << yllcorner;
+		<< " cellsize: " << cellsize
+		<< fixed
+		<< " llx: " << xllcorner << " lly: " << yllcorner
+		<< " coordinateSystem: " << coordinateSystemToString(coordinateSystem);
 	return s.str();
 }
 
 string GridMetaData::toShortDescription() const
 {
 	ostringstream s;
-	s << "Grid [" << ncols << "x" << nrows << "], ZG:" << cellsize;
-	//"llx:" << xllcorner << "/lly:" << yllcorner << ", ZG:" << cellsize;
+	s << "Grid [" << ncols << "x" << nrows << "], ZG:" << cellsize
+		<< ", CS:" << coordinateSystemToShortString(coordinateSystem);
 	return s.str();
 }
 
@@ -231,8 +247,9 @@ string GridMetaData::toCanonicalString(const std::string& sep) const
 {
 	ostringstream s;
 	s.precision(7);
-  s << ncols << sep << nrows << sep << nodata << sep << cellsize << sep
-      << ios::fixed << xllcorner << sep << yllcorner;
+	s << ncols << sep << nrows << sep << nodata << sep << cellsize << sep
+		<< ios::fixed << xllcorner << sep << yllcorner
+		<< sep << coordinateSystemToShortString(coordinateSystem);
 	return s.str();
 }
 
@@ -284,28 +301,28 @@ string SubData::toString() const
 	return s.str();
 }
 
-GK5Rect Grids::extendedBoundingRect(const GridMetaData& gmd,
-																		const Quadruple<GK5Coord>& gk5poly,
+RCRect Grids::extendedBoundingRect(const GridMetaData& gmd,
+																		const Quadruple<RectCoord>& rcpoly,
                                     double cellSize)
 {
-	//get bounding rect of gk5 polygon
-	GK5Coord tl(min(gk5poly.tl.r, gk5poly.bl.r), max(gk5poly.tl.h, gk5poly.tr.h));
-	GK5Coord br(max(gk5poly.tr.r, gk5poly.br.r), min(gk5poly.bl.h, gk5poly.br.h));
-	GK5Rect boundingRect(tl, br);
+	//get bounding rect of rc polygon
+	RectCoord tl(min(rcpoly.tl.r, rcpoly.bl.r), max(rcpoly.tl.h, rcpoly.tr.h));
+	RectCoord br(max(rcpoly.tr.r, rcpoly.br.r), min(rcpoly.bl.h, rcpoly.br.h));
+	RCRect boundingRect(tl, br);
 
 	//first find position in choosen grid metadata
 	//might in a grid if top left corner of bounding rect is inside
 	//the gmd or 0,0 (aka the top left of gmd) if the top left corner of
 	//the bounding rect is outside the gmd
-	const GK5Rect& intersectedRect = gmd.gk5Rect().intersected(boundingRect);
+	const RCRect& intersectedRect = gmd.rcRect().intersected(boundingRect);
 	//cout << "intersectedRect: " << intersectedRect.toString() << endl;
-	const GK5Coord& delta1 = intersectedRect.tl - gmd.topLeftCorner();
+	const RectCoord& delta1 = intersectedRect.tl - gmd.topLeftCorner();
 	int indexR = int(std::floor(delta1.r / cellSize));
 	int indexH = int(std::floor(abs(delta1.h / cellSize)));
 	//cout << "delta1: " << delta1.toString() << " indexR: " << indexR
 	//<< " indexH: " << indexH << endl;
-	//gk5 position into choosen grid-class
-	GK5Coord gmdTl(gmd.topLeftCorner().r + (indexR * cellSize),
+	//rc position into choosen grid-class
+	RectCoord gmdTl(gmd.topLeftCorner().r + (indexR * cellSize),
                  gmd.topLeftCorner().h - (indexH * cellSize));
 	//cout << "grid-class top left: " << firstGmdTl.toString() << endl;
 
@@ -315,18 +332,18 @@ GK5Rect Grids::extendedBoundingRect(const GridMetaData& gmd,
 	//of a grid cell in the gmd (or gmd's 0,0 is case of an exact match)
 	//or the bounds have to be extended if the top left corner of bounding rect
 	//(of the users selection) was originally outside of the gmd
-	GK5Coord delta2 = boundingRect.tl - gmdTl;
+	RectCoord delta2 = boundingRect.tl - gmdTl;
 	int nocsToTlr = delta1.r > 0 ? 0 : int(std::ceil(abs(delta2.r / cellSize))); //no of cells
 	int nocsToTlh = delta1.h < 0 ? 0 : int(std::ceil(abs(delta2.h / cellSize)));
 	//cout << "delta2: " << delta2.toString() << " nocsToTlr: " << nocsToTlr
 	//<< " nocsToTlh: " << nocsToTlh << endl;
 	//extended tl
-	GK5Coord etl(gmdTl.r - (nocsToTlr * cellSize),
+	RectCoord etl(gmdTl.r - (nocsToTlr * cellSize),
 	             gmdTl.h + (nocsToTlh * cellSize));
 	//cout << "extended top left: " << etl.toString() << endl;
 
 	//adjust br to multiple of cellSize
-	GK5Coord delta3 = br - etl;
+	RectCoord delta3 = br - etl;
 	Cols nocsR = Cols(std::ceil(abs(delta3.r / cellSize))); //no of cells
 	if(nocsR == 0) nocsR++; //the selection is choosing at least one cell
 	Rows nocsH = Rows(std::ceil(abs(delta3.h / cellSize)));
@@ -334,14 +351,14 @@ GK5Rect Grids::extendedBoundingRect(const GridMetaData& gmd,
 	//cout << "delta3: " << delta3.toString() << " nocsR: " << nocsR
 	//<< " nocsH: " << nocsH << endl;
 	//the extended final bounding rect
-	GK5Coord ebr(etl.r + (nocsR * cellSize), etl.h - (nocsH * cellSize));
+	RectCoord ebr(etl.r + (nocsR * cellSize), etl.h - (nocsH * cellSize));
 
-	return GK5Rect(etl, ebr);
+	return RCRect(etl, ebr);
 }
 
-pair<Row, Col> Grids::rowColInGrid(const GridMetaData& gmd, const GK5Coord& c)
+pair<Row, Col> Grids::rowColInGrid(const GridMetaData& gmd, const RectCoord& c)
 {
-	const GK5Coord& delta = c - gmd.topLeftCorner();
+	const RectCoord& delta = c - gmd.topLeftCorner();
 	Col indexR = Col(std::floor(abs(delta.r / gmd.cellsize)));
 	if(int(indexR) == gmd.ncols) --indexR; //max border is in last cell included
 	Row indexH = Row(std::floor(abs(delta.h / gmd.cellsize)));
@@ -599,31 +616,31 @@ GridP* GridP::setAllFieldsWithoutTo(float withoutValue, float toNewValue, bool i
 	return this;
 }
 
-pair<int, int> GridP::gk52rowCol(Tools::GK5Coord gk5c) const
+pair<int, int> GridP::rc2rowCol(Tools::RectCoord rcc) const
 {
 	grid& g = gridRef();
 	int row = -1, col = -1;
-	if(g.xcorner <= gk5c.r && gk5c.r <= (g.xcorner + cellSize() * cols())
-    && g.ycorner <= gk5c.h && gk5c.h <= (g.ycorner + cellSize() * rows()))
+	if(g.xcorner <= rcc.r && rcc.r <= (g.xcorner + cellSize() * cols())
+		&& g.ycorner <= rcc.h && rcc.h <= (g.ycorner + cellSize() * rows()))
     {
-		col = int(std::floor((gk5c.r - g.xcorner) / cellSize()));
+		col = int(std::floor((rcc.r - g.xcorner) / cellSize()));
 		if(col == cols()) --col;
-		row = rows() - int(std::ceil((gk5c.h - g.ycorner) / cellSize()));
+		row = rows() - int(std::ceil((rcc.h - g.ycorner) / cellSize()));
 		if(row == rows()) --row;
 	} 
 	return make_pair(row, col);
 }
 
-float GridP::dataAt(GK5Coord gk5c) const
+float GridP::dataAt(RectCoord rcc) const
 {
-	pair<int, int> p = gk52rowCol(gk5c);
+	pair<int, int> p = rc2rowCol(rcc);
 	return p.first == -1 || p.second == -1
 		? noDataValue() : dataAt(p.first, p.second);
 }
 
-GridP* GridP::setDataAt(Tools::GK5Coord gk5c, float value)
+GridP* GridP::setDataAt(Tools::RectCoord rcc, float value)
 {
-	pair<int, int> p = gk52rowCol(gk5c);
+	pair<int, int> p = rc2rowCol(rcc);
 	if(p.first != -1 || p.second == -1)
 		setDataAt(p.first, p.second, value);
 	return this;
@@ -643,15 +660,15 @@ string GridP::toString() const
 	return s.str();
 }
 
-GK5Rect GridP::gk5Rect() const
+RCRect GridP::rcRect() const
 {
-	return GridMetaData(gridPtr()).gk5Rect();
+	return GridMetaData(gridPtr()).rcRect();
 }
 
-GK5Coord GridP::gk5CoordAt(int row, int col) const
+RectCoord GridP::rcCoordAt(int row, int col) const
 {
 	grid& g = gridRef();
-	return GK5Coord(g.xcorner+col*cellSize(),
+	return RectCoord(g.xcorner+col*cellSize(),
 									g.ycorner + (rows() - row) * cellSize());
 }
 
@@ -858,7 +875,7 @@ GridP* GridP::adjustToP(GridMetaData gmd) const
   GridP* res = new GridP(gmd, datasetName());
 
   //just return empty grid if they don't even intersect
-  GK5Rect ir = gk5Rect().intersected(res->gk5Rect());
+	RCRect ir = rcRect().intersected(res->rcRect());
   if(ir.isEmpty())
     return res;
 
@@ -893,8 +910,8 @@ GridP* GridP::adjustToP(GridMetaData gmd) const
   {
     for(int r = ir.tl.r, rs = ir.br.r; r < rs; r += mcs)
     {
-      GK5Coord gk5c(r, h);
-      res->setDataAt(gk5c, dataAt(gk5c));
+			RectCoord rcc(r, h);
+			res->setDataAt(rcc, dataAt(rcc));
     }
   }
 

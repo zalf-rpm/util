@@ -35,10 +35,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cassert>
 #include <set>
 
-#define LOKI_OBJECT_LEVEL_THREADING
-
-#include "loki/Threads.h"
-
 #include <boost/foreach.hpp>
 
 #include "tools/use-stl-algo-boost-lambda.h"
@@ -49,6 +45,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "tools/read-ini.h"
 #include "tools/helper.h"
 #include "grid+.h"
+
+#define LOKI_OBJECT_LEVEL_THREADING
+#include "loki/Threads.h"
 
 using namespace Grids;
 using namespace std;
@@ -117,7 +116,7 @@ const LatLngPolygonsMatrix& VirtualGrid::latLngCellPolygons()
   {
 		//_cellPolygons.resize((_cols-1)*(_rows-1));
 
-		vector<GK5Coord> gk5cs((_cols+1) * (_rows+1));
+		vector<RectCoord> rccs((_cols+1) * (_rows+1));
 		//paint the grid cells
     for(unsigned int j = 0; j < _rows+1; j++)
     {
@@ -125,12 +124,12 @@ const LatLngPolygonsMatrix& VirtualGrid::latLngCellPolygons()
       {
 				double left = _rect.tl.r + (double(i) * _cellSize);
 				double top = _rect.tl.h - (double(j) * _cellSize);
-				gk5cs[(j*(_cols+1))+i] = GK5Coord(left, top);
+				rccs[(j*(_cols+1))+i] = RectCoord(left, top);
 				//cout << "(" << left << "," << top << ") ";
 			}
 		}
 		//cout << endl;
-		const vector<LatLngCoord>& llcs = GK52latLng(gk5cs);
+		const vector<LatLngCoord>& llcs = RC2latLng(rccs);
 
 		_cellPolygons.resize(_rows, _cols);
     for(unsigned int j = 0; j < _rows; j++)
@@ -152,11 +151,13 @@ const LatLngPolygonsMatrix& VirtualGrid::latLngCellPolygons()
 
 //------------------------------------------------------------------------------
 
-NoVirtualGrid::NoVirtualGrid(const std::vector<GridProxyPtr>* gps,
-                             const Grids::GK5Rect& rect,
-                             double cellSize, unsigned int rows,
-                             unsigned int cols, int noDataValue)
-	: VirtualGrid(rect, cellSize, rows, cols, noDataValue),
+NoVirtualGrid::NoVirtualGrid(CoordinateSystem cs,
+														 const std::vector<GridProxyPtr>* gps,
+														 const Grids::RCRect& rect,
+														 double cellSize, unsigned int rows,
+														 unsigned int cols,
+														 int noDataValue)
+	: VirtualGrid(cs, rect, cellSize, rows, cols, noDataValue),
 		_gps(gps)
 {
 }
@@ -181,11 +182,11 @@ string NoVirtualGrid::toShortDescription() const
 	return s.str();
 }
 
-vector<VirtualGrid::Data> NoVirtualGrid::dataAt(const GK5Coord& gk5c) const
+vector<VirtualGrid::Data> NoVirtualGrid::dataAt(const RectCoord& rcc) const
 {
-	int ix = int(std::floor((gk5c.r - _rect.tl.r) / _cellSize));
+	int ix = int(std::floor((rcc.r - _rect.tl.r) / _cellSize));
 	if(ix == int(_cols)) ix--;
-	int iy = _rows - int(std::floor((gk5c.h - _rect.br.h) / _cellSize)) - 1;
+	int iy = _rows - int(std::floor((rcc.h - _rect.br.h) / _cellSize)) - 1;
 	if(iy < 0) iy = 0;
 
 	return dataAt(iy, ix);
@@ -193,11 +194,13 @@ vector<VirtualGrid::Data> NoVirtualGrid::dataAt(const GK5Coord& gk5c) const
 
 //------------------------------------------------------------------------------
 
-RealVirtualGrid::RealVirtualGrid(const GK5Rect& rect, double cellSize,
+RealVirtualGrid::RealVirtualGrid(CoordinateSystem cs, const RCRect& rect,
+																 double cellSize,
                                  unsigned int rows, unsigned int cols,
-                                 const VVGP& proxies, int noDataValue)
-: VirtualGrid(rect, cellSize, rows, cols, noDataValue), _data(rows, cols),
-_usedGridProxies(proxies.begin(), proxies.end())
+																 const VVGP& proxies, int noDataValue)
+	: VirtualGrid(cs, rect, cellSize, rows, cols, noDataValue),
+		_data(rows, cols),
+		_usedGridProxies(proxies.begin(), proxies.end())
 {
 	//for_each(_data.begin(), _data.end(),
 	//         _1 = boost::lambda::bind(new_ptr<vector<Data> >(), _cols));
@@ -238,7 +241,7 @@ vector<const GridP*> RealVirtualGrid::availableGrids()
                                  static_cast<GridP*>(NULL));
               if(!tg)
               {
-								GK5Coord bl = gk5Rect().toTlTrBrBlVector().at(3);
+								RectCoord bl = rcRect().toTlTrBrBlVector().at(3);
                 tg = new GridP(gp->datasetName, rows(), cols(), cellSize(),
                                bl.r, bl.h, noDataValue());
                 dsn2g[gp->datasetName] = tg;
@@ -314,23 +317,23 @@ void GridManager::init(const Path& userSubPath)
 
 VirtualGrid* GridManager::
 createVirtualGrid(const Quadruple<LatLngCoord>& llrect, double cellSize,
-                  const Path& userSubPath)
+									const Path& userSubPath, CoordinateSystem tcs)
 {
-	const vector<GK5Coord>& gk5s =
-      latLng2GK5(asTlTrBrBl<vector<LatLngCoord> >(llrect));
-	//cout << "llrect after conversion to gk5s" << endl;
-	//for_each(gk5s.begin(), gk5s.end(),
-	//         cout << boost::lambda::bind(&GK5Coord::toString, _1) << '\n');
-	return createVirtualGrid(Quadruple<GK5Coord>(gk5s), cellSize, userSubPath);
+	const vector<RectCoord>& rcs =
+			latLng2RC(asTlTrBrBl<vector<LatLngCoord> >(llrect), tcs);
+	//cout << "llrect after conversion to rcs" << endl;
+	//for_each(rcs.begin(), rcs.end(),
+	//         cout << boost::lambda::bind(&RECTCoord::toString, _1) << '\n');
+	return createVirtualGrid(Quadruple<RectCoord>(rcs), cellSize, userSubPath);
 }
 
-VirtualGrid* GridManager::createVirtualGrid(const Quadruple<GK5Coord>& gk5poly,
+VirtualGrid* GridManager::createVirtualGrid(const Quadruple<RectCoord>& rcpoly,
                                             double cellSize,
                                             const Path& userSubPath)
 {
 	Path2GPS::const_iterator ci = _gmdMap.find(userSubPath);
 	if(ci != _gmdMap.end())
-		return createVirtualGrid(ci->second, gk5poly, cellSize);
+		return createVirtualGrid(ci->second, rcpoly, cellSize);
 	return NULL;
 }
 
@@ -338,24 +341,26 @@ namespace
 {
   struct Contains
   {
-    GK5Coord _c;
-    Contains(GK5Coord c) : _c(c) {}
+    RectCoord _c;
+    Contains(RectCoord c) : _c(c) {}
     bool operator()(const GridMetaData& gmd) const
     {
-      return gmd.gk5Rect().contains(_c, true);
+			return gmd.rcRect().contains(_c, true);
     }
   };
 }
 
 VirtualGrid*
 GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
-															 const Quadruple<GK5Coord>& gk5poly,
+															 const Quadruple<RectCoord>& rcpoly,
 															 double cellSize)
 {
-	//get bounding rect of gk5 polygon
-	GK5Coord tl(min(gk5poly.tl.r, gk5poly.bl.r), max(gk5poly.tl.h, gk5poly.tr.h));
-	GK5Coord br(max(gk5poly.tr.r, gk5poly.br.r), min(gk5poly.bl.h, gk5poly.br.h));
-	GK5Rect boundingRect(tl, br);
+	CoordinateSystem usedCS = rcpoly.tl.coordinateSystem;
+
+	//get bounding rect of rc polygon
+	RectCoord tl(usedCS, min(rcpoly.tl.r, rcpoly.bl.r), max(rcpoly.tl.h, rcpoly.tr.h));
+	RectCoord br(usedCS, max(rcpoly.tr.r, rcpoly.br.r), min(rcpoly.bl.h, rcpoly.br.h));
+	RCRect boundingRect(tl, br);
 
 	vector<GridMetaData> gmds;
 	//filter all GridMetaData with correct cellsize and intersecting rect
@@ -363,7 +368,7 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 	{
 		//cout << "checking gmd: " << it->first.toString() << endl;
 		if(p.first.cellsize == cellSize
-			&& p.first.gk5Rect().intersects(boundingRect))
+			&& p.first.rcRect().intersects(boundingRect))
 			gmds.push_back(p.first);
 	}
 
@@ -383,16 +388,17 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 	//might in a grid if top left corner of bounding rect is inside
 	//the gmd or 0,0 (aka the top left of gmd) if the top left corner of
 	//the bounding rect is outside the gmd
-	const GK5Rect& intersectedRect = firstGmd.gk5Rect().intersected(boundingRect);
+	const RCRect& intersectedRect = firstGmd.rcRect().intersected(boundingRect);
 	//cout << "intersectedRect: " << intersectedRect.toString() << endl;
-	const GK5Coord& delta1 = intersectedRect.tl - firstGmd.topLeftCorner();
+	const RectCoord& delta1 = intersectedRect.tl - firstGmd.topLeftCorner();
 	int indexR = int(std::floor(delta1.r / cellSize));
 	int indexH = int(std::floor(abs(delta1.h / cellSize)));
 	//cout << "delta1: " << delta1.toString() << " indexR: " << indexR
 	//<< " indexH: " << indexH << endl;
-	//gk5 position into choosen grid-class
-	GK5Coord firstGmdTl(firstGmd.topLeftCorner().r + (indexR * cellSize),
-	                    firstGmd.topLeftCorner().h - (indexH * cellSize));
+	//rc position into choosen grid-class
+	RectCoord firstGmdTl(usedCS,
+											 firstGmd.topLeftCorner().r + (indexR * cellSize),
+											 firstGmd.topLeftCorner().h - (indexH * cellSize));
 	//cout << "grid-class top left: " << firstGmdTl.toString() << endl;
 
 	//now expand the top left corner of the bounding rect to the full
@@ -401,18 +407,19 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 	//of a grid cell in the gmd (or gmd's 0,0 is case of an exact match)
 	//or the bounds have to be extended if the top left corner of bounding rect
 	//(of the users selection) was originally outside of the gmd
-	GK5Coord delta2 = boundingRect.tl - firstGmdTl;
+	RectCoord delta2 = boundingRect.tl - firstGmdTl;
 	int nocsToTlr = delta1.r > 0 ? 0 : int(std::ceil(abs(delta2.r / cellSize))); //no of cells
 	int nocsToTlh = delta1.h < 0 ? 0 : int(std::ceil(abs(delta2.h / cellSize)));
 	//cout << "delta2: " << delta2.toString() << " nocsToTlr: " << nocsToTlr
 	//<< " nocsToTlh: " << nocsToTlh << endl;
 	//extended tl
-	GK5Coord etl(firstGmdTl.r - (nocsToTlr * cellSize),
-	             firstGmdTl.h + (nocsToTlh * cellSize));
+	RectCoord etl(usedCS,
+								firstGmdTl.r - (nocsToTlr * cellSize),
+								firstGmdTl.h + (nocsToTlh * cellSize));
 	//cout << "extended top left: " << etl.toString() << endl;
 
 	//adjust br to multiple of cellSize
-	GK5Coord delta3 = br - etl;
+	RectCoord delta3 = br - etl;
 	int nocsR = int(std::ceil(abs(delta3.r / cellSize))); //no of cells
   if(nocsR == 0)
     nocsR++; //the selection is choosing at least one cell
@@ -422,8 +429,10 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 	//cout << "delta3: " << delta3.toString() << " nocsR: " << nocsR
 	//<< " nocsH: " << nocsH << endl;
 	//the extended final bounding rect
-	GK5Coord ebr(etl.r + (nocsR * cellSize), etl.h - (nocsH * cellSize));
-	GK5Rect extendedBoundingRect(etl, ebr);
+	RectCoord ebr(usedCS,
+								etl.r + (nocsR * cellSize),
+								etl.h - (nocsH * cellSize));
+	RCRect extendedBoundingRect(etl, ebr);
 	//cout << "extended bounding rect: " << extendedBoundingRect.toString() << endl;
 
 	//for efficiency reasons every data element just references a vector
@@ -461,10 +470,13 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 	//         cout << _1 << '\n');
 	vector<GridProxies*> gpss;
 	transform(gmd2gps.begin(), gmd2gps.end(), back_inserter(gpss),
-						boost::lambda::bind<GridProxies*>(&pair<const GridMetaData, GridProxies*>::second,
-                               _1));
+						[](pair<const GridMetaData, GridProxies*> v){ return v.second; }
+						//boost::lambda::bind<GridProxies*>(&pair<const GridMetaData, GridProxies*>::second,
+															 //_1)
+																	 );
 
-	RealVirtualGrid* vg = new RealVirtualGrid(extendedBoundingRect, cellSize,
+	RealVirtualGrid* vg = new RealVirtualGrid(usedCS, extendedBoundingRect,
+																						cellSize,
 	                                          nocsH, nocsR, gpss);
 	//now we have to iterate through the virtual grid and fill its cells
 	//either with no data values or with references to the potential grids
@@ -474,10 +486,10 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
     for(unsigned int k = 0; k < vg->cols(); k++)
     {
 			vector<GridMetaData>::iterator it = gmds.begin();// - 1;
-			const GK5Coord& c = vg->gk5CoordAt(i, k);
+			const RectCoord& c = vg->rcCoordAt(i, k);
       while((it = find_if(it, gmds.end(), Contains(c))) != gmds.end())
-				//boost::lambda::bind(&GK5Rect::contains,
-				//   boost::lambda::bind(&GridMetaData::gk5Rect,
+				//boost::lambda::bind(&RCRect::contains,
+				//   boost::lambda::bind(&GridMetaData::rcRect,
         //     _1), c, true))) != gmds.end())
       {
 				//else it vg is preinitialized with no data values
@@ -517,7 +529,9 @@ GridManager::virtualGridForGridMetaData(const GridMetaData& gmd,
     if(ci2 != ci->second.end())
     {
 			NoVirtualGrid* nvg =
-          new NoVirtualGrid(&(ci2->second), gmd.gk5Rect(), gmd.cellsize,
+					new NoVirtualGrid(gmd.coordinateSystem,
+														&(ci2->second),
+														gmd.rcRect(), gmd.cellsize,
                             gmd.nrows, gmd.ncols);
 			//cout << "gmd.regionName: " << gmd.regionName << endl;
 			nvg->setName(gmd.regionName);
@@ -578,9 +592,9 @@ GridPPtr GridManager::createSubgrid(GridPPtr g, GridMetaData subgridMetaData,
 	GridMetaData gmd(g.get());
   if(subgridMetaData.isValid() && gmd != subgridMetaData)
   {
-		GK5Rect r = gmd.gk5Rect().intersected(subgridMetaData.gk5Rect());
-		pair<int, int> tlRowCol = g->gk52rowCol(r.tl);
-		pair<int, int> brRowCol = g->gk52rowCol(r.br);
+		RCRect r = gmd.rcRect().intersected(subgridMetaData.rcRect());
+		pair<int, int> tlRowCol = g->rc2rowCol(r.tl);
+		pair<int, int> brRowCol = g->rc2rowCol(r.br);
 		int top = tlRowCol.first;
 		int left = tlRowCol.second;
 		int rows = brRowCol.first - tlRowCol.first;
@@ -735,7 +749,8 @@ void GridManager::checkAndUpdateHdfStore(const Path& userSubPath)
 pair<string, GridMetaData>
 GridManager::addNewGridProxy(const Path& userSubPath,
 														 const string& gridFileName, time_t modTime,
-                             const std::string& pathToGrid)
+														 const std::string& pathToGrid,
+														 CoordinateSystem cs)
 {
 //	cout << "entering GridManager::addNewGridProxy(" << userSubPath
 //		<< ", " << gridFileName << ", " << modTime << ", " << pathToGrid << ")" << endl;
@@ -747,7 +762,7 @@ GridManager::addNewGridProxy(const Path& userSubPath,
 //	cout << "userSubPath: " << userSubPath
 //		<< " pathToGrid: " << ptg
 //		<< " pathToGridFile: " << pathToGridFile << endl;
-	GridMetaData gmd = extractMetadataFromGrid(pathToGridFile);
+	GridMetaData gmd = extractMetadataFromGrid(pathToGridFile, cs);
 	string dsn = extractDatasetName(gridFileName);
 	gmd.regionName = extractRegionName(gridFileName);
 //	cout << "gmd: " << gmd.toString() << endl;
@@ -768,10 +783,10 @@ GridManager::addNewGridProxy(const Path& userSubPath,
 
 //! GridMetaData will contain no hdf name, as this is unknown to a grid
 GridMetaData GridManager::
-extractMetadataFromGrid(const string& pathToGridFile) const
+extractMetadataFromGrid(const string& pathToGridFile, CoordinateSystem cs) const
 {
 	ifstream fin(pathToGridFile.c_str());
-	GridMetaData gmd;
+	GridMetaData gmd(cs);
   if(fin)
   {
 		string temp;
@@ -1256,7 +1271,7 @@ vector<vector<LatLngCoord> > GridManager::regions(const Path& userSubPath) const
   {
     BOOST_FOREACH(GMD2GPS::value_type p, ci->second)
     {
-			v.push_back(GK52latLng(p.first.gk5Rect().toTlTrBrBlVector()));
+			v.push_back(RC2latLng(p.first.rcRect().toTlTrBrBlVector()));
 		}
 	}
 	return v;

@@ -43,25 +43,19 @@ namespace Grids
 	typedef Tools::StdMatrix<LatLngPolygon> LatLngPolygonsMatrix;
 
 	//! abstract class being the interface to the user
-	class VirtualGrid {
+	class VirtualGrid
+	{
 	public:
-		struct Data {
-			Data() : _isNoData(true), _gps(NULL), _row(0), _col(0) { }
+		struct Data
+		{
+			Data() : _isNoData(true), _gps(NULL), _row(0), _col(0) {}
 			Data(const std::vector<GridProxyPtr>* grids,
 					unsigned int row, unsigned int col)
-			: _isNoData(false), _gps(grids), _row(row), _col(col) { }
-			bool isNoData() const {
-				return _isNoData;
-			}
-			const std::vector<GridProxyPtr>* gridProxies() const {
-				return _gps;
-			}
-			unsigned int row() const {
-				return _row;
-			}
-			unsigned int col() const {
-				return _col;
-			}
+			: _isNoData(false), _gps(grids), _row(row), _col(col) {}
+			bool isNoData() const { return _isNoData; }
+			const std::vector<GridProxyPtr>* gridProxies() const { return _gps; }
+			unsigned int row() const { return _row; }
+			unsigned int col() const { return _col; }
 		private:
 			bool _isNoData;
 			const std::vector<GridProxyPtr>* _gps;
@@ -70,17 +64,19 @@ namespace Grids
 		};
 
 	public:
-		VirtualGrid(const Grids::GK5Rect& rect, double cellSize,
+		VirtualGrid(Tools::CoordinateSystem cs,
+								const Grids::RCRect& rect, double cellSize,
 		            unsigned int rows, unsigned int cols, int noDataValue = -9999)
 		            : _noDataValue(noDataValue), _rect(rect), _cellSize(cellSize),
 		            _rows(rows), _cols(cols) {}
 
 		virtual ~VirtualGrid();
 
-		//! get GK5 coord at the given cell position (corner)
-		Tools::GK5Coord gk5CoordAt(unsigned int row, unsigned int col) const
+		//! get RC coord at the given cell position (corner)
+		Tools::RectCoord rcCoordAt(unsigned int row, unsigned int col) const
 		{
-			return Tools::GK5Coord(_rect.tl.r+(col*_cellSize),
+			return Tools::RectCoord(_coordinateSystem,
+															_rect.tl.r+(col*_cellSize),
 			                       _rect.tl.h-(row*_cellSize));
 		}
 
@@ -96,7 +92,7 @@ namespace Grids
 		dataAt(unsigned int row, unsigned int col) const = 0;
 
 		virtual std::vector<Data>
-		dataAt(const Tools::GK5Coord& gk5c) const = 0;
+		dataAt(const Tools::RectCoord& rcc) const = 0;
 
 		//! number of rows of virtual grid
 		unsigned int rows() const { return _rows; }
@@ -110,13 +106,13 @@ namespace Grids
 		//! cell size
 		double cellSize() const { return _cellSize; }
 
-		//! gk5 rectangle represented by the virtual grid
-		GK5Rect gk5Rect() const { return _rect; }
+		//! rc rectangle represented by the virtual grid
+		RCRect rcRect() const { return _rect; }
 
 		//! bounding rect polygon for the whole virtual grid
 		LatLngPolygon latLngBoundingPolygon() const
 		{
-			return Tools::GK52latLng(_rect.toTlTrBrBlVector());
+			return Tools::RC2latLng(_rect.toTlTrBrBlVector());
 		}
 
 		//! get a polygon matrix for all the cells
@@ -148,7 +144,7 @@ namespace Grids
 		GridP* emptyGrid() const
 		{
 			return new GridP("template", rows(), cols(), cellSize(),
-											 gk5Rect().tl.r, gk5Rect().br.h, noDataValue());
+											 rcRect().tl.r, rcRect().br.h, noDataValue());
 		}
 
 		std::string name() const
@@ -164,9 +160,11 @@ namespace Grids
 
 		virtual bool isNoVirtualGrid() const { return false; }
 
+		Tools::CoordinateSystem coordinateSystem() const { return _coordinateSystem; }
+
 	protected:
 		int _noDataValue;
-		GK5Rect _rect;
+		RCRect _rect;
 		double _cellSize;
 		unsigned int _rows;
 		unsigned int _cols;
@@ -176,22 +174,27 @@ namespace Grids
 
 		std::string _name;
 		std::string _customId;
+		Tools::CoordinateSystem _coordinateSystem;
 	};
 
 	//----------------------------------------------------------------------------
 
 	//! actually just a normal grid, but with a VirtualGrid face
-	class NoVirtualGrid : public VirtualGrid {
+	class NoVirtualGrid : public VirtualGrid
+	{
 	public:
-		NoVirtualGrid(const std::vector<GridProxyPtr>* gps, const Grids::GK5Rect& rect,
-		              double cellSize, unsigned int rows, unsigned int cols,
-                  int noDataValue = -9999);
+		NoVirtualGrid(Tools::CoordinateSystem cs,
+									const std::vector<GridProxyPtr>* gps,
+									const Grids::RCRect& rect,
+									double cellSize, unsigned int rows, unsigned int cols,
+									int noDataValue = -9999);
 
-		virtual std::vector<Data> dataAt(unsigned int row, unsigned int col) const {
+		virtual std::vector<Data> dataAt(unsigned int row, unsigned int col) const
+		{
 			return std::vector<Data>(1, Data(_gps, row, col));
 		}
 
-		virtual std::vector<Data> dataAt(const Tools::GK5Coord& gk5c) const;
+		virtual std::vector<Data> dataAt(const Tools::RectCoord& rcc) const;
 
 		virtual std::vector<const GridP*> availableGrids();
 
@@ -212,22 +215,21 @@ namespace Grids
 		typedef std::vector<std::vector<GridProxyPtr>*> VVGP;
 
 	public:
-		RealVirtualGrid(const Grids::GK5Rect& rect, double cellSize,
-		                unsigned int rows, unsigned int cols,
-		                const VVGP& proxies, int noDataValue = -9999);
+		RealVirtualGrid(Tools::CoordinateSystem cs,
+										const Grids::RCRect& rect, double cellSize,
+										unsigned int rows, unsigned int cols,
+										const VVGP& proxies, int noDataValue = -9999);
 
 		~RealVirtualGrid();
 
 		virtual std::vector<Data> dataAt(unsigned int row, unsigned int col) const;
 
 		virtual std::vector<Data>
-		dataAt(const Tools::GK5Coord& /*gk5c*/) const {
-			return std::vector<Data>();
-		}
+		dataAt(const Tools::RectCoord& /*rcc*/) const
+		{ return std::vector<Data>(); }
 
-		void addDataAt(unsigned int row, unsigned int col, const Data& data){
-			_data[row][col].push_back(data);
-		}
+		void addDataAt(unsigned int row, unsigned int col, const Data& data)
+		{ _data[row][col].push_back(data); }
 
 		virtual std::vector<const GridP*> availableGrids();
 
@@ -237,8 +239,6 @@ namespace Grids
 		std::vector<std::vector<GridProxyPtr>*> _usedGridProxies;
 	};
 
-	//----------------------------------------------------------------------------
-	//----------------------------------------------------------------------------
 	//----------------------------------------------------------------------------
 
 	typedef std::string Path;
@@ -284,7 +284,8 @@ namespace Grids
 
 		VirtualGrid*
 		createVirtualGrid(const Tools::Quadruple<Tools::LatLngCoord>& llrect,
-		                  double cellSize, const Path& userSubPath = "general");
+											double cellSize, const Path& userSubPath = "general",
+											Tools::CoordinateSystem targetCoordinateSystem = Tools::GK5_EPSG31469);
 		
 		VirtualGrid* virtualGridForGridMetaData(const GridMetaData& gmd,
 																						const Path& userSubPath = "general");
@@ -329,8 +330,9 @@ namespace Grids
 		std::pair<std::string, GridMetaData>
 		addNewGridProxy(const Path& userSubPath,
 										const std::string& gridFileName,
-		                time_t modificationTime = 0,
-		                const std::string& pathToGrid = std::string());
+										time_t modificationTime = 0,
+										const std::string& pathToGrid = std::string(),
+										Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
 
 	private: //methods
 		const RegDataMap* regionalizedData(const std::string& region) const;
@@ -342,12 +344,13 @@ namespace Grids
 		 * grids available in the system and can be used to create
 		 * particular virtual grids from the grid types available (eg. dgm, stt ...)
 		 */
-		VirtualGrid* createVirtualGrid(const Tools::Quadruple<Tools::GK5Coord>& gk5rect,
-		                               double cellSize, const Path& userSubPath = "general");
+		VirtualGrid* createVirtualGrid(const Tools::Quadruple<Tools::RectCoord>& rcrect,
+																	 double cellSize,
+																	 const Path& userSubPath = "general");
 
 		VirtualGrid* createVirtualGrid(const GMD2GPS& gmd2gridProxies,
-																	const Tools::Quadruple<Tools::GK5Coord>& gk5rect,
-																	double cellSize);
+																	 const Tools::Quadruple<Tools::RectCoord>& rcrect,
+																	 double cellSize);
 
 		//! read all the regionalized data and create GridProxies for the maps
 		void readRegionalizedData();
@@ -368,7 +371,9 @@ namespace Grids
 		std::string extractRegionName(const string& gfn) const;
 
 		//! extract metadata from a grid file
-		GridMetaData extractMetadataFromGrid(const std::string& gridFileName) const;
+		GridMetaData extractMetadataFromGrid(const std::string& gridFileName,
+																				 Tools::CoordinateSystem cs
+																				 = Tools::GK5_EPSG31469) const;
 
 		//! update the store by any changes to the grids available
 		void updateHdfStore(const Path& userSubPath,
