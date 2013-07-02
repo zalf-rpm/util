@@ -199,19 +199,20 @@ StarSimulation::StarSimulation(Db::DB* con)
 
 void StarSimulation::setClimateStations()
 {
-  connection().select("select latitude, longitude, dat, bezeichnung, hnn, id "
+	connection().select("select latitude, longitude, dat, bezeichnung, hnn, id "
                       "from klimades");
 
-	Db::DBRow row;
-	while(!(row = connection().getRow()).empty())
+	Db::MysqlDB* con = Db::toMysqlDB(&connection());
+	MYSQL_ROW row;
+	while((row = con->getMysqlRow()) != 0)
   {
     string name(row[3]);
     capitalizeInPlace(name);
     //cout << "name: " << name << endl;
-    ClimateStation* cs =
-				new ClimateStation(satoi(row[5]),
-													 LatLngCoord(satof(row[0]), satof(row[1])),
-													 satof(row[4]), name, this);
+		ClimateStation* cs =
+				new ClimateStation(atoi(row[5]),
+				LatLngCoord(atof(row[0]), atof(row[1])),
+				atof(row[4]), name, this);
     cs->setDbName(row[2]);
     _stations.push_back(cs);
   }
@@ -311,16 +312,17 @@ void Star2Simulation::setClimateStations()
 {
 	connection().select("select lat, lon, name, id from station");// where klim = 1");
 
-	Db::DBRow row;
-	while(!(row = connection().getRow()).empty())
+	Db::MysqlDB* con = Db::toMysqlDB(&connection());
+	MYSQL_ROW row;
+	while((row = con->getMysqlRow()) != 0)
   {
     string name(row[2]);
     for_each(name.begin(), name.end(), ToLower());
     capitalizeInPlace(name);
     //cout << "name: " << name << endl;
     ClimateStation* cs =
-			new ClimateStation(satoi(row[3]),
-												 LatLngCoord(satof(row[0]), satof(row[1])),
+			new ClimateStation(atoi(row[3]),
+												 LatLngCoord(atof(row[0]), atof(row[1])),
                          0.0, name, this);
     cs->setDbName("");
     _stations.push_back(cs);
@@ -353,16 +355,17 @@ void Star2MeasuredDataSimulation::setClimateStations()
 {
   connection().select("select lat, lon, name, id from station where klim = 1");
 
-	Db::DBRow row;
-	while(!(row = connection().getRow()).empty())
+	Db::MysqlDB* con = Db::toMysqlDB(&connection());
+	MYSQL_ROW row;
+	while((row = con->getMysqlRow()) != 0)
   {
     string name(row[2]);
     for_each(name.begin(), name.end(), ToLower());
     capitalizeInPlace(name);
     //cout << "name: " << name << endl;
     ClimateStation* cs =
-			new ClimateStation(satoi(row[3]),
-												 LatLngCoord(satof(row[0]), satof(row[1])),
+			new ClimateStation(atoi(row[3]),
+												 LatLngCoord(atof(row[0]), atof(row[1])),
                          0.0, name, this);
     cs->setDbName("refzen");
     _stations.push_back(cs);
@@ -433,8 +436,9 @@ void DDClimateDataServerSimulation::setClimateStations()
 	bool commaDotConversionChecked = false;
 	bool convertCommaToDot = false;
 
-	Db::DBRow row;
-	while(!(row = connection().getRow()).empty())
+	Db::MysqlDB* con = Db::toMysqlDB(&connection());
+	MYSQL_ROW row;
+	while((row = con->getMysqlRow()) != 0)
   {
 		string name(row[1]);
 		for_each(name.begin(), name.end(), ToLower());
@@ -442,18 +446,18 @@ void DDClimateDataServerSimulation::setClimateStations()
 
     if(!commaDotConversionChecked)
     {
-			convertCommaToDot = strchr(row[4].c_str(), ',') != NULL;
+			convertCommaToDot = strchr(row[4], ',') != NULL;
 			commaDotConversionChecked = true;
 		}
 
 		ClimateStation* cs =
-			new ClimateStation(satoi(row[0]),
+			new ClimateStation(atoi(row[0]),
 			                   convertCommaToDot
 												 ? LatLngCoord(Tools::atof_comma(row[4]), Tools::atof_comma(row[5]))
-												 : LatLngCoord(satof(row[4]), satof(row[5])),
-													 (row[6].empty() ? 0.0 : satof(row[6])), name, this);
+												 : LatLngCoord(atof(row[4]), atof(row[5])),
+													 (row[6] ? atof(row[6]) : 0.0), name, this);
 		cs->setDbName(row[7]);
-		cs->setSL(ClimateStation::SL(row[8].empty() ? 1 : satoi(row[8])));
+		cs->setSL(ClimateStation::SL(row[8] ? atoi(row[8]) : 1));
 		_stations.push_back(cs);
 		//cout << "wrname: " << name << " : " << _stations.back()->toString() << endl;
 	}
@@ -997,10 +1001,10 @@ namespace
 		return res;
 	}
 
-
   struct Fun
   {
 		virtual ~Fun(){}
+		virtual double operator()(MYSQL_ROW row) const = 0;
 		virtual double operator()(const Db::DBRow& row) const = 0;
 	};
 
@@ -1009,6 +1013,12 @@ namespace
 		int _pos;
 		ParseAsDouble(int pos) : _pos(pos) {}
 		virtual ~ParseAsDouble(){}
+
+		double operator()(MYSQL_ROW row) const
+		{
+			return atof(row[_pos]);
+		}
+
 		double operator()(const Db::DBRow& row) const
     {
 			return satof(row.at(_pos));
@@ -1021,6 +1031,15 @@ namespace
     CalcStarGlobrad(int pos, bool asMJpm2pd = true) :
         _pos(pos), _asMJpm2pd(asMJpm2pd) {}
 		virtual ~CalcStarGlobrad(){}
+
+		double operator()(MYSQL_ROW row) const
+		{
+			//100.0*100.0/1000000.0 -> 1/100
+			//double gr = std::atof(row[_pos])*4.1868;
+			double gr = atof(row[_pos]);
+			return _asMJpm2pd ? gr / 100.0 : gr;
+		}
+
 		double operator()(const Db::DBRow& row) const
     {
       //100.0*100.0/1000000.0 -> 1/100
@@ -1036,6 +1055,14 @@ namespace
 		CalcWettRegGlobrad(int posSun, int posYd, double lat)
 		: _posSun(posSun), _posYd(posYd), _lat(lat) {}
 		virtual ~CalcWettRegGlobrad(){}
+
+		double operator()(MYSQL_ROW row) const
+		{
+			return Tools::sunshine2globalRadiation(atoi(row[_posYd]),
+																						 atof(row[_posSun]),
+																						 _lat);
+		}
+
 		double operator()(const Db::DBRow& row) const //[MJ/m²/d]
     {
 			return Tools::sunshine2globalRadiation(satoi(row.at(_posYd)),
@@ -1055,6 +1082,14 @@ namespace
 				_hnn(heightNN)
 		{}
 		virtual ~CalcRemoGlobrad(){}
+
+		double operator()(MYSQL_ROW row) const
+		{
+			return Tools::cloudAmount2globalRadiation(atoi(row[_posDoy]),
+																								atof(row[_posCloudAmount]),
+																								_lat, _hnn);
+		}
+
 		double operator()(const Db::DBRow& row) const //[MJ/m²/d]
 		{
 			return Tools::cloudAmount2globalRadiation(satoi(row.at(_posDoy)),
@@ -1069,6 +1104,17 @@ namespace
 		CalcCorrWRAndCLMPrecip(int posPrecip, int posTavg, int posMonth, SL sl)
 		: _posPrecip(posPrecip), _posTavg(posTavg), _posMonth(posMonth), _sl(sl) {}
 		virtual ~CalcCorrWRAndCLMPrecip(){}
+
+		double operator()(MYSQL_ROW row) const
+		{
+			int month = atoi(row[_posMonth]);
+			PArtPlus pap = createPArtPlus(PArt4tmit(atof(row[_posTavg])), month);
+			double P = atof(row[_posPrecip]);
+			double b = bKoeff(_sl, pap);
+			double epsilon = epsilonKoeff(pap);
+			return P+b*pow(P, epsilon);
+		}
+
 		double operator()(const Db::DBRow& row) const
     {
 			int month = satoi(row.at(_posMonth));
@@ -1121,17 +1167,16 @@ StarRealization::executeQuery(const ACDV& acds,
 		query << (acdi+1 != acds.end() ? ", " : " ");
 	}
 
-  string dbDate =
-      "concat(jahr, \'-\', "
-      "if(mo<10,concat(\'0\',mo),mo), \'-\', "
-      "if(tag<10,concat(\'0\',tag),tag))";
+	string dbDate =
+			"concat(jahr, \'-\', "
+			"if(mo<10,concat(\'0\',mo),mo), \'-\', "
+			"if(tag<10,concat(\'0\',tag),tag))";
 
-	query <<
-  "from " << cs.dbName() << " "
-	"where " << dbDate << " >= " << connection().toDBDate(startDate) << " "
-	"and " << dbDate << " <= " << connection().toDBDate(endDate) << " "
-  "and not (mo = 2 and tag = 29) "
-	"order by jahr, mo, tag";
+	query << "from " << cs.dbName() << " "
+					 "where " << dbDate << " >= '" << connection().toDBDate(startDate) << "' "
+					 "and " << dbDate << " <= '" << connection().toDBDate(endDate) << "' "
+					 "and not (mo = 2 and tag = 29) "
+					 "order by jahr, mo, tag";
 
   //cout << "query: " << query.str() << endl;
   connection().select(query.str().c_str());
@@ -1143,9 +1188,11 @@ StarRealization::executeQuery(const ACDV& acds,
     acd2ds[acd] = new vector<double>(rowCount);
   }
 
-	Db::DBRow row;
 	int count = 0;
-	while(!(row = connection().getRow()).empty()) {
+	Db::MysqlDB* con = Db::toMysqlDB(&connection());
+	MYSQL_ROW row;
+	while((row = con->getMysqlRow()) != 0)
+	{
 		int c = 0;
     BOOST_FOREACH(ACD acd, acds)
     {
@@ -1208,8 +1255,8 @@ CarbiocialRealization::executeQuery(const ACDV& acds,
 
 	query <<
 					 "from data "
-					 "where " << dbDate << " >= " << connection().toDBDate(startDate) << " "
-					 "and " << dbDate << " <= " << connection().toDBDate(endDate) << " "
+					 "where " << dbDate << " >= '" << connection().toDBDate(startDate) << "' "
+					 "and " << dbDate << " <= '" << connection().toDBDate(endDate) << "' "
 					 "and not (month = 2 and day = 29) "
 					 "order by year, month, day "
 					 "and raster_point_id = " << cs.id();
@@ -1291,14 +1338,14 @@ Star2Realization::executeQuery(const ACDV& acds,
   query2 << query.str();
 
 	query << "from " << scenario()->id() << "_" << id() << " "
-					 "where " << dbDate << " >= " << connection().toDBDate(startDate) << " "
-					 "and " << dbDate << " <= " << connection().toDBDate(endDate) << " "
+					 "where " << dbDate << " >= '" << connection().toDBDate(startDate) << "' "
+					 "and " << dbDate << " <= '" << connection().toDBDate(endDate) << "' "
 					 "and not (mo = 2 and tag = 29) "
 					 "and id = " << cs.id();
 
 	query2 << "from refzen "
-						"where " << dbDate << " >= " << connection().toDBDate(startDate) << " "
-						"and " << dbDate << " <= " << connection().toDBDate(endDate) << " "
+						"where " << dbDate << " >= '" << connection().toDBDate(startDate) << "' "
+						"and " << dbDate << " <= '" << connection().toDBDate(endDate) << "' "
 						"and not (mo = 2 and tag = 29) "
 						"and id = " << cs.id();
 
@@ -1315,9 +1362,10 @@ Star2Realization::executeQuery(const ACDV& acds,
     acd2ds[acd] = new vector<double>(rowCount);
   }
 
-	Db::DBRow row;
-  int count = 0;
-	while(!(row = connection().getRow()).empty())
+	int count = 0;
+	Db::MysqlDB* con = Db::toMysqlDB(&connection());
+	MYSQL_ROW row;
+	while((row = con->getMysqlRow()) != 0)
 	{
     int c = 0;
     BOOST_FOREACH(ACD acd, acds)
@@ -1380,8 +1428,8 @@ map<ACD, vector<double>*>
       "if(tag<10,concat(\'0\',tag),tag))";
 
 	query << "from " << cs.dbName() << " "
-					 "where " << dbDate << " >= " << connection().toDBDate(startDate) << " "
-					 "and " << dbDate << " <= " << connection().toDBDate(endDate) << " "
+					 "where " << dbDate << " >= '" << connection().toDBDate(startDate) << "' "
+					 "and " << dbDate << " <= '" << connection().toDBDate(endDate) << "' "
 					 "and not (mo = 2 and tag = 29) "
 					 "and id = " << cs.id() << " "
 					 "order by jahr, mo, tag";
@@ -1397,9 +1445,10 @@ map<ACD, vector<double>*>
     acd2ds[acd] = new vector<double>(rowCount);
   }
 
-	Db::DBRow row;
-  int count = 0;
-	while(!(row = connection().getRow()).empty())
+	int count = 0;
+	Db::MysqlDB* con = Db::toMysqlDB(&connection());
+	MYSQL_ROW row;
+	while((row = con->getMysqlRow()) != 0)
 	{
     int c = 0;
     BOOST_FOREACH(ACD acd, acds)
@@ -1502,8 +1551,8 @@ DDClimateDataServerRealization::executeQuery(const ACDV& acds,
 					 "where szenario = '" << _scenario->name() << "' "
 					 "and realisierung = '" << id() << "' "
 					 "and dat_id = " << cs.dbName() << " "
-					 "and " << dbDate << " >= " << connection().toDBDate(startDate) << " "
-					 "and " << dbDate << " <= " << connection().toDBDate(endDate) << " "
+					 "and " << dbDate << " >= '" << connection().toDBDate(startDate) << "' "
+					 "and " << dbDate << " <= '" << connection().toDBDate(endDate) << "' "
 					 "and not (monat = 2 and tag = 29) "
 					 "order by jahr, monat, tag";
 
@@ -1517,9 +1566,10 @@ DDClimateDataServerRealization::executeQuery(const ACDV& acds,
 		acd2ds[acd] = new vector<double>(rowCount);
 	}
 
-	Db::DBRow row;
 	int count = 0;
-	while(!(row = connection().getRow()).empty())
+	Db::MysqlDB* con = Db::toMysqlDB(&connection());
+	MYSQL_ROW row;
+	while((row = con->getMysqlRow()) != 0)
 	{
 		int c = 0;
 		BOOST_FOREACH(ACD acd, acds)
@@ -1610,8 +1660,8 @@ CLMRealization::executeQuery(const ACDV& acds,
 					 "where szenario = '" << _scenario->name() << "' "
 					 "and realisierung = '" << _realizationNo << "' "
 					 "and dat_id in " << sl << " "//cs.dbName() << " "
-					 "and " << dbDate << " >= " << connection().toDBDate(startDate) << " "
-					 "and " << dbDate << " <= " << connection().toDBDate(endDate) << " "
+					 "and " << dbDate << " >= '" << connection().toDBDate(startDate) << "' "
+					 "and " << dbDate << " <= '" << connection().toDBDate(endDate) << "' "
 					 "and not (monat = 2 and tag = 29) "
 					 "group by szenario, realisierung, tag, monat, jahr "
 					 "order by jahr, monat, tag";
@@ -1626,9 +1676,10 @@ CLMRealization::executeQuery(const ACDV& acds,
     acd2ds[acd] = new vector<double>(rowCount);
   }
 
-	Db::DBRow row;
 	int count = 0;
-	while(!(row = connection().getRow()).empty())
+	Db::MysqlDB* con = Db::toMysqlDB(&connection());
+	MYSQL_ROW row;
+	while((row = con->getMysqlRow()) != 0)
   {
 		int c = 0;
     BOOST_FOREACH(ACD acd, acds)
@@ -1707,7 +1758,7 @@ void ClimateDataManager::loadAvailableSimulations(set<string> ass)
 	if(ass.find("cru") != ass.end())
 		_simulations.push_back(newDDCru());
 	if(ass.find("carbiocial") != ass.end())
-		_simulations.push_back(new CarbiocialSimulation(newConnection("carbiocial")));
+		_simulations.push_back(new CarbiocialSimulation(newConnection("carbiocial-climate")));
 }
 
 ClimateDataManager::~ClimateDataManager()
