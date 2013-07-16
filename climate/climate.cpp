@@ -1750,6 +1750,8 @@ void ClimateDataManager::loadAvailableSimulations(set<string> ass)
 		_simulations.push_back(newDDWerex4());
 	if(ass.find("echam5") != ass.end())
 		_simulations.push_back(newDDEcham5());
+	if(ass.find("echam6") != ass.end())
+			_simulations.push_back(newDDEcham6());
 	if(ass.find("hrm3") != ass.end())
 	{
 		_simulations.push_back(newDDHrm3(YearRange(1971, 2000)));
@@ -1856,12 +1858,26 @@ DDClimateDataServerSimulation* Climate::newDDEcham5(string userRs)
 	DDServerSetup setup("echam5", "ECHAM5", "header_echam5", "echam5_stolist",
 											"project_mexiko", "echam5_data", string(), "project_mexiko");
 	setup._scenarioIds.push_back("A1B");
+	setup._scenarioIds.push_back("A2");
 
 	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "echam5", "1") : userRs;
 	vector<string> vsr = Tools::splitString(rs, ", ");
 	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
 
 	return new DDClimateDataServerSimulation(setup, Db::newConnection("echam5"));
+}
+
+DDClimateDataServerSimulation* Climate::newDDEcham6(string userRs)
+{
+	DDServerSetup setup("echam6", "ECHAM6", "header_echam6", "echam6_stolist",
+											"project_mexiko", "echam6_data", string(), "project_mexiko");
+	setup._scenarioIds.push_back("rcp85");
+
+	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "echam6", "1") : userRs;
+	vector<string> vsr = Tools::splitString(rs, ", ");
+	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
+
+	return new DDClimateDataServerSimulation(setup, Db::newConnection("echam6"));
 }
 
 DDClimateDataServerSimulation* Climate::newDDHrm3(YearRange yr, string userRs)
