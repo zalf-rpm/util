@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <sstream>
+#include <fstream>
 #include <algorithm>
 #include <functional>
 #include <list>
@@ -33,7 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "tools/use-stl-algo-boost-lambda.h"
 
 #ifdef WIN32
-#include <dirent.h>
+#include "grid/dirent.h"
 #include <direct.h>
 #else
 #include <dirent.h>
@@ -107,6 +108,7 @@ namespace
   }
 }
 
+#ifndef NO_HDF5
 grid* Grids::loadGrid(const string& gridName, const std::string& pathToHdf)
 {
 	//cout << "reading hdf-file via |the-path-to-the-hdf-file|: |"
@@ -116,6 +118,7 @@ grid* Grids::loadGrid(const string& gridName, const std::string& pathToHdf)
 	g->read_hdf((char*)pathToHdf.c_str(), (char*)gridName.c_str());
 	return g;
 }
+#endif
 
 void Grids::printGridFields(const grid& g, bool onlyDataFields)
 {
@@ -181,9 +184,9 @@ vector<RectCoord> RCRect::toTlTrBrBlVector() const
 {
 	vector<RectCoord> v(4);
 	v[0]=tl;
-	v[1]=RectCoord(br.r, tl.h);
+	v[1]=RectCoord(br.coordinateSystem, br.r, tl.h);
 	v[2]=br;
-	v[3]=RectCoord(tl.r, br.h);
+	v[3]=RectCoord(tl.coordinateSystem, tl.r, br.h);
 	return v;
 }
 
@@ -205,14 +208,14 @@ GridMetaData::GridMetaData(const grid* g, CoordinateSystem cs)
 	coordinateSystem(cs)
 {}
 
-GridMetaData::GridMetaData(const GridP* g, CoordinateSystem cs)
+GridMetaData::GridMetaData(const GridP* g)
 : ncols(g->cols()),
 	nrows(g->rows()),
 	nodata(g->noDataValue()),
 	xllcorner(int(g->gridPtr()->xcorner)),
 	yllcorner(int(g->gridPtr()->ycorner)),
 	cellsize(int(g->cellSize())),
-	coordinateSystem(cs)
+	coordinateSystem(g->coordinateSystem())
 {}
 
 bool GridMetaData::operator==(const GridMetaData& other) const
@@ -255,6 +258,7 @@ string GridMetaData::toCanonicalString(const std::string& sep) const
 
 //------------------------------------------------------------------------------
 
+#ifndef NO_HDF5
 pair<GridMetaData, time_t>
 Grids::readGridMetadataFromHdf(const char* hdfFileName,
                                const char* datasetName)
@@ -284,12 +288,15 @@ Grids::readGridMetadataFromHdf(const char* hdfFileName,
 
 	char* rn = hd.get_s_attribute((char*)"Modell");
 	gmd.regionName = rn;
+	if(gmd.regionName == "brazil")
+		gmd.coordinateSystem = UTM21S_EPSG32721;
 	free(rn);
 
 	time_t time = hd.get_l_attribute((char*)"time");
 
 	return make_pair(gmd, time);
 }
+#endif
 
 //------------------------------------------------------------------------------
 
@@ -302,12 +309,12 @@ string SubData::toString() const
 }
 
 RCRect Grids::extendedBoundingRect(const GridMetaData& gmd,
-																		const Quadruple<RectCoord>& rcpoly,
-                                    double cellSize)
+																	 const Quadruple<RectCoord>& rcpoly,
+																	 double cellSize)
 {
 	//get bounding rect of rc polygon
-	RectCoord tl(min(rcpoly.tl.r, rcpoly.bl.r), max(rcpoly.tl.h, rcpoly.tr.h));
-	RectCoord br(max(rcpoly.tr.r, rcpoly.br.r), min(rcpoly.bl.h, rcpoly.br.h));
+	RectCoord tl(gmd.coordinateSystem, min(rcpoly.tl.r, rcpoly.bl.r), max(rcpoly.tl.h, rcpoly.tr.h));
+	RectCoord br(gmd.coordinateSystem, max(rcpoly.tr.r, rcpoly.br.r), min(rcpoly.bl.h, rcpoly.br.h));
 	RCRect boundingRect(tl, br);
 
 	//first find position in choosen grid metadata
@@ -322,8 +329,9 @@ RCRect Grids::extendedBoundingRect(const GridMetaData& gmd,
 	//cout << "delta1: " << delta1.toString() << " indexR: " << indexR
 	//<< " indexH: " << indexH << endl;
 	//rc position into choosen grid-class
-	RectCoord gmdTl(gmd.topLeftCorner().r + (indexR * cellSize),
-                 gmd.topLeftCorner().h - (indexH * cellSize));
+	RectCoord gmdTl(gmd.coordinateSystem,
+									gmd.topLeftCorner().r + (indexR * cellSize),
+									gmd.topLeftCorner().h - (indexH * cellSize));
 	//cout << "grid-class top left: " << firstGmdTl.toString() << endl;
 
 	//now expand the top left corner of the bounding rect to the full
@@ -338,8 +346,9 @@ RCRect Grids::extendedBoundingRect(const GridMetaData& gmd,
 	//cout << "delta2: " << delta2.toString() << " nocsToTlr: " << nocsToTlr
 	//<< " nocsToTlh: " << nocsToTlh << endl;
 	//extended tl
-	RectCoord etl(gmdTl.r - (nocsToTlr * cellSize),
-	             gmdTl.h + (nocsToTlh * cellSize));
+	RectCoord etl(gmd.coordinateSystem,
+								gmdTl.r - (nocsToTlr * cellSize),
+								gmdTl.h + (nocsToTlh * cellSize));
 	//cout << "extended top left: " << etl.toString() << endl;
 
 	//adjust br to multiple of cellSize
@@ -351,7 +360,9 @@ RCRect Grids::extendedBoundingRect(const GridMetaData& gmd,
 	//cout << "delta3: " << delta3.toString() << " nocsR: " << nocsR
 	//<< " nocsH: " << nocsH << endl;
 	//the extended final bounding rect
-	RectCoord ebr(etl.r + (nocsR * cellSize), etl.h - (nocsH * cellSize));
+	RectCoord ebr(gmd.coordinateSystem,
+								etl.r + (nocsR * cellSize),
+								etl.h - (nocsH * cellSize));
 
 	return RCRect(etl, ebr);
 }
@@ -368,13 +379,16 @@ pair<Row, Col> Grids::rowColInGrid(const GridMetaData& gmd, const RectCoord& c)
 
 //------------------------------------------------------------------------------
 
-GridP::GridP() { }
+GridP::GridP(CoordinateSystem cs)
+	: _coordinateSystem(cs) { }
 
 //! new grid with given size and initialized to no data
 GridP::GridP(const std::string& datasetName,
-             int nrows, int ncols,
-             float cellSize, double llx, double lly, float noDataValue)
-               : _datasetName(datasetName)
+						 int nrows, int ncols,
+						 float cellSize, double llx, double lly, float noDataValue,
+						 CoordinateSystem cs)
+	: _datasetName(datasetName),
+		_coordinateSystem(cs)
 {
 	_grid = GridPtr(new grid(nrows, ncols));
   _grid->rgr = int(cellSize); // setze Rastergroesse
@@ -386,8 +400,9 @@ GridP::GridP(const std::string& datasetName,
 	_grid->ycorner=lly;
 }
 
-GridP::GridP(GridMetaData gmd, const string& datasetName) :
-	_datasetName(datasetName)
+GridP::GridP(GridMetaData gmd, const string& datasetName)
+	: _datasetName(datasetName),
+		_coordinateSystem(gmd.coordinateSystem)
 {
   _grid = GridPtr(new grid(gmd.nrows, gmd.ncols));
   _grid->rgr = int(gmd.cellsize); // setze Rastergroesse
@@ -399,15 +414,19 @@ GridP::GridP(GridMetaData gmd, const string& datasetName) :
   _grid->ycorner=gmd.yllcorner;
 }
 
-GridP::GridP(const string& datasetName, FileType ft, const string& pathToFile)
-  : _datasetName(datasetName)
+GridP::GridP(const string& datasetName, FileType ft, const string& pathToFile,
+						 CoordinateSystem cs)
+	: _datasetName(datasetName),
+		_coordinateSystem(cs)
 {
   switch(ft)
   {
+#ifndef NO_HDF5
   case HDF:
     _grid = GridPtr(new grid(100));
     _grid->read_hdf((char*)pathToFile.c_str(), (char*)datasetName.c_str());
     break;
+#endif
   case ASCII:
     _grid = GridPtr(new grid(100));
     _grid->read_ascii((char*)pathToFile.c_str());
@@ -415,25 +434,32 @@ GridP::GridP(const string& datasetName, FileType ft, const string& pathToFile)
 	}
 }
 
-GridP::GridP(grid* wrapThisGrid)
-  : _grid(GridPtr(wrapThisGrid)) {}
+GridP::GridP(grid* wrapThisGrid, CoordinateSystem cs)
+	: _grid(GridPtr(wrapThisGrid)),
+		_coordinateSystem(cs)
+{}
 
 //! copy constructor
 GridP::GridP(const GridP& other)
   : _grid(GridPtr(other._grid->grid_copy())),
   _datasetName(other._datasetName),
   _descriptiveLabel(other._descriptiveLabel),
-  _unit(other._unit)
+	_unit(other._unit),
+	_coordinateSystem(other._coordinateSystem)
 {
 }
 
 GridP::~GridP() { }
 
-GridP::GridP(const grid& other)
-  : _grid(GridPtr(const_cast<grid*>(&other)->grid_copy())){ }
+GridP::GridP(const grid& other, CoordinateSystem cs)
+	: _grid(GridPtr(const_cast<grid*>(&other)->grid_copy())),
+		_coordinateSystem(cs)
+{ }
 
-GridP::GridP(grid const *const other)
-  : _grid(GridPtr(const_cast<grid*>(other)->grid_copy())){ }
+GridP::GridP(grid const *const other, CoordinateSystem cs)
+	: _grid(GridPtr(const_cast<grid*>(other)->grid_copy())),
+		_coordinateSystem(cs)
+{ }
 
 GridP& GridP::operator=(const GridP& other)
                        {
@@ -441,11 +467,12 @@ GridP& GridP::operator=(const GridP& other)
 	_datasetName = other._datasetName;
 	_descriptiveLabel = other._descriptiveLabel;
   _unit = other._unit;
+	_coordinateSystem = other._coordinateSystem;
 	return *this;
 }
 
 GridP& GridP::operator=(const grid& other)
-                       {
+{
 	_grid = GridPtr(const_cast<grid*>(&other)->grid_copy());
 	return *this;
 }
@@ -458,6 +485,8 @@ bool GridP::operator==(const GridP& other) const
 		return false;
   if(unit() != other.unit())
     return false;
+	if(coordinateSystem() != other.coordinateSystem())
+		return false;
 
   for(int i = 0; i < rows(); i++)
     for(int j = 0; j < cols(); j++)
@@ -467,6 +496,7 @@ bool GridP::operator==(const GridP& other) const
 	return true;
 }
 
+#ifndef NO_HDF5
 bool GridP::writeHdf(const string& pathToHdfFile, const string& datasetName,
                      const string& regionName, time_t t)
 {
@@ -513,11 +543,12 @@ bool GridP::writeHdf(const string& pathToHdfFile, const string& datasetName,
 	delete hd;
 	return success;
 }
+#endif
 
-void GridP::writeAscii(const std::string& pathToAsciiFile)
-{
-	return _grid->write_ascii((char*)pathToAsciiFile.c_str());
-}
+//void GridP::writeAscii(const std::string& pathToAsciiFile)
+//{
+//	return _grid->write_ascii((char*)pathToAsciiFile.c_str());
+//}
 
 vector<double> GridP::allDataAsLinearVector() const
 {
@@ -534,7 +565,7 @@ HistogramData GridP::histogram(int noOfClasses)
 {
 	HistogramData res;
 
-	vector<double> linear(rows() * cols());
+	vector<double> linear(rows()*cols());
 	int k = -1;
 	int nop = 0; // number of pixels
   for(int i = 0; i < rows(); i++)
@@ -616,18 +647,20 @@ GridP* GridP::setAllFieldsWithoutTo(float withoutValue, float toNewValue, bool i
 	return this;
 }
 
-pair<int, int> GridP::rc2rowCol(Tools::RectCoord rcc) const
+pair<int, int> GridP::rc2rowCol(Tools::RectCoord rc) const
 {
 	grid& g = gridRef();
 	int row = -1, col = -1;
-	if(g.xcorner <= rcc.r && rcc.r <= (g.xcorner + cellSize() * cols())
-		&& g.ycorner <= rcc.h && rcc.h <= (g.ycorner + cellSize() * rows()))
-    {
-		col = int(std::floor((rcc.r - g.xcorner) / cellSize()));
-		if(col == cols()) --col;
-		row = rows() - int(std::ceil((rcc.h - g.ycorner) / cellSize()));
-		if(row == rows()) --row;
-	} 
+	if(g.xcorner <= rc.r && rc.r <= (g.xcorner + cellSize()*cols())
+		 && g.ycorner <= rc.h && rc.h <= (g.ycorner + cellSize()*rows()))
+	{
+		col = int(std::floor((rc.r - g.xcorner)/cellSize()));
+		if(col == cols())
+			--col;
+		row = rows() - int(std::ceil((rc.h - g.ycorner)/cellSize()));
+		if(row == rows())
+			--row;
+	}
 	return make_pair(row, col);
 }
 
@@ -662,22 +695,56 @@ string GridP::toString() const
 
 RCRect GridP::rcRect() const
 {
-	return GridMetaData(gridPtr()).rcRect();
+	return GridMetaData(this).rcRect();
+}
+
+RCRect GridP::cellRCRectAt(int row, int col) const
+{
+	grid& g = gridRef();
+	RectCoord tl(coordinateSystem(),
+							 g.xcorner + col*cellSize(),
+							 g.ycorner + (rows() - row -1 + 1)*cellSize());
+	RectCoord br(coordinateSystem(),
+							 g.xcorner + (col + 1)*cellSize(),
+							 g.ycorner + (rows() - row - 1)*cellSize());
+
+	return RCRect(tl, br);
 }
 
 RectCoord GridP::rcCoordAt(int row, int col) const
 {
 	grid& g = gridRef();
-	return RectCoord(g.xcorner+col*cellSize(),
-									g.ycorner + (rows() - row) * cellSize());
+	return RectCoord(coordinateSystem(),
+									 g.xcorner + col*cellSize(),
+									 g.ycorner + (rows() - row - 1)*cellSize());
+}
+
+RectCoord GridP::rcCoordAtCenter(int row, int col) const
+{
+	grid& g = gridRef();
+	return RectCoord(coordinateSystem(),
+									 g.xcorner + col*cellSize() + cellSize()/2.0,
+									 g.ycorner + (rows() - row - 1)*cellSize() + cellSize()/2.0);
+}
+
+RectCoord GridP::lowerLeftCorner() const
+{
+	grid& g = gridRef();
+	return RectCoord(coordinateSystem(), g.xcorner, g.ycorner);
+}
+
+RectCoord GridP::lowerLeftCenter() const
+{
+	return lowerLeftCorner() + cellSize()/2.0;
 }
 
 GridP* GridP::subGridClone(int top, int left, int nrows, int ncols) const
 {
 	GridP* subGrid = new GridP(datasetName(), nrows, ncols, cellSize(),
-	                           _grid->xcorner + left * cellSize(),
-	                           _grid->ycorner + (rows()-top) * cellSize(),
-	                           noDataValue());
+														 _grid->xcorner + left*cellSize(),
+														 _grid->ycorner + (rows() - top)*cellSize(),
+														 noDataValue(),
+														 coordinateSystem());
 
   for(int i = top, j = 0; i < top + nrows; i++, j++)
   {
@@ -889,7 +956,8 @@ GridP* GridP::adjustToP(GridMetaData gmd) const
   {
     if(cs % mcs == 0)
     {
-      transSelf = GridPPtr(new GridP(gridPtr()->downscale(cs / mcs)));
+			transSelf = GridPPtr(new GridP(gridPtr()->downscale(cs / mcs),
+																		 coordinateSystem()));
       self = transSelf.get();
     }
     else
@@ -899,7 +967,8 @@ GridP* GridP::adjustToP(GridMetaData gmd) const
   {
     if(mcs % cs == 0)
     {
-      transSelf = GridPPtr(new GridP(gridPtr()->upscale(mcs / cs)));
+			transSelf = GridPPtr(new GridP(gridPtr()->upscale(mcs / cs),
+																		 coordinateSystem()));
       self = transSelf.get();
     }
     else
@@ -910,7 +979,7 @@ GridP* GridP::adjustToP(GridMetaData gmd) const
   {
     for(int r = ir.tl.r, rs = ir.br.r; r < rs; r += mcs)
     {
-			RectCoord rcc(r, h);
+			RectCoord rcc(coordinateSystem(), r, h);
 			res->setDataAt(rcc, dataAt(rcc));
     }
   }
@@ -959,10 +1028,12 @@ GridP* GridProxy::gridPtr()
     {
 			if(!pathToHdf.empty())
 				g = GridPPtr(new GridP(datasetName, GridP::HDF,
-                               pathToHdf + "/" + hdfFileName));
+															 pathToHdf + "/" + hdfFileName,
+															 coordinateSystem));
 			else
 				g = GridPPtr(new GridP(datasetName, GridP::ASCII,
-                               pathToGrid + "/" + fileName));
+															 pathToGrid + "/" + fileName,
+															 coordinateSystem));
 		}
 	}
 	return g.get();

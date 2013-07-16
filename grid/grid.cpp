@@ -2957,6 +2957,7 @@ grid* grid::select(int a,int b,int c, int d)
 	return gx;
 }
 
+#ifndef NO_HDF5
 bool grid::write_hdf(char* fname, char* datasetn, char* autor, char* modell) {
   //cerr << "hdf " << fname << " " << datasetn << endl;
 	float* f1=new float[nrows*ncols];
@@ -2989,6 +2990,7 @@ bool grid::write_hdf(char* fname, char* datasetn, char* autor, char* modell) {
 	hd = NULL;
 	return success;
 }
+
 
 // saves a hdf file to R
 // if the size of the files <= bins then save the grids complete
@@ -3109,6 +3111,7 @@ int grid::read_hdf(char* fname, char* datasetn)
 	delete hd;
 	return 0;
 }
+#endif //NO_HDF5
 
 float grid::get_xy(int i, int j)
 {

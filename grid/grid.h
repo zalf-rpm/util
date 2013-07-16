@@ -54,7 +54,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <map>
 #include <vector>
 #include <cmath>
+
+#ifndef NO_HDF5
 #include "hdf5.h"
+#endif
+
 //#include <fftw3.h>
 
 using namespace std;
@@ -72,6 +76,7 @@ using namespace std;
 // eingefuehrt werden, so dass eine Berechnung nach "Bedarf"
 // erfolgen kann
 
+#ifndef NO_HDF5
 #define __HDF5
 #ifdef __HDF5
 class hdf5{
@@ -108,6 +113,7 @@ protected:
     hid_t file, dataset;
 };
 #endif
+#endif //NO_HDF5
 
 // Hauptklasse der Bibliothek
 // Sie erlaubt das Einlesen und Speichern von ASCII-Grids und
@@ -152,9 +158,11 @@ class grid{
     int read_ascii_inv(const char*);   // ASCII-Grid name
     void write_ascii(char*);   // ASCII-Grid name
     void write_ascii_inv(char*);   // ASCII-Grid name y=nrows-y
+#ifndef NO_HDF5
     bool write_hdf(char*,char*,char*,char*);
     // hdf-File_name, datasetname, Autor, Modell
     int read_hdf(char*,char*);
+#endif
     // hdf-File_name, datasetname
     void write_pnm(char*,int); // filename, (0,1) 0=bw 1=f
     void write_pnm_inv(char*,int); // filename, (0,1) 0=bw 1=f
@@ -255,7 +263,9 @@ class grid{
     double xcorner;         // header Infos from ASCII-Grid
     double ycorner;
     float csize;
+#ifndef NO_HDF5
     hdf5 *hd;
+#endif
     double *dfeld;
     bool variance_flag;
 };

@@ -71,6 +71,7 @@ namespace Tools
 
 		RectCoord operator+(const RectCoord& other) const
 		{
+			assert(coordinateSystem == other.coordinateSystem);
 			return RectCoord(coordinateSystem, r + other.r, h + other.h);
 		}
 
@@ -79,9 +80,19 @@ namespace Tools
 			return (*this) + (other*-1);
 		}
 
+		RectCoord operator+(double value) const
+		{
+			return RectCoord(coordinateSystem, r + value, h + value);
+		}
+
+		RectCoord operator-(double value) const
+		{
+			return (*this) + (-1*value);
+		}
+
 		RectCoord operator*(double value) const
 		{
-			return RectCoord(coordinateSystem, r*value, h * value);
+			return RectCoord(coordinateSystem, r*value, h*value);
 		}
 
 		RectCoord operator/(double value) const
@@ -91,8 +102,7 @@ namespace Tools
 
 		double distanceTo(const RectCoord & other) const
 		{
-			return std::sqrt(((r - other.r)*(r - other.r))
-											+((h - other.h)*(h - other.h)));
+			return std::sqrt(((r - other.r)*(r - other.r)) + ((h - other.h)*(h - other.h)));
 		}
 
 		std::string toString() const;
@@ -115,15 +125,17 @@ namespace Tools
 	{
 		LatLngCoord() : Coord2D(LatLng_EPSG4326), lat(0), lng(0) {}
 
-		LatLngCoord(CoordinateSystem cs) : Coord2D(LatLng_EPSG4326), lat(0), lng(0)
-		{ assert(cs == LatLng_EPSG4326); }
+		LatLngCoord(CoordinateSystem cs)
+			: Coord2D(LatLng_EPSG4326), lat(0), lng(0)
+		{}
 
 		LatLngCoord(double lat, double lng)
-			: Coord2D(LatLng_EPSG4326), lat(lat), lng(lng) {}
+			: Coord2D(LatLng_EPSG4326), lat(lat), lng(lng)
+		{}
 
 		LatLngCoord(CoordinateSystem cs, double lat, double lng)
-					: Coord2D(LatLng_EPSG4326), lat(lat), lng(lng)
-		{ assert(cs == LatLng_EPSG4326); }
+			: Coord2D(LatLng_EPSG4326), lat(lat), lng(lng)
+		{}
 
 		virtual double firstDimension() const { return lat; }
 		virtual double secondDimension() const { return lng; }
@@ -247,6 +259,8 @@ namespace Tools
 
 //	inline LatLngCoord UTM21S2latLng(UTM21SCoord utmc)
 //	{ return sourceProj2targetProj<UTM21S_EPSG32721_Params, LatLng_EPSG4326_Params>(utmc); }
+
+	bool contains(std::vector<LatLngCoord> tlTrBrBlRect, LatLngCoord point);
 }
 
 //template implementations
@@ -315,5 +329,8 @@ TCT Tools::singleSourceProj2targetProj(SCT sc, CoordinateSystem targetCS)
 	auto v = sourceProj2targetProj<SCT, TCT>(std::vector<SCT>(1, sc), targetCS);
 	return v.empty() ? TCT(targetCS) : v.front();
 }
+
+
+
 
 #endif

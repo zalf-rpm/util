@@ -601,7 +601,8 @@ Results Regionalization::regionalize(Env env)
 
               BOOST_FOREACH(const X& x, xs)
               {
-								double dist = x.rc.distanceTo(RectCoord(r + (cellSize * j),
+								double dist = x.rc.distanceTo(RectCoord(g->coordinateSystem(),
+																												r + (cellSize * j),
                                                         h - (cellSize * i)));
                 if(dist > 1.0)
                 {
@@ -633,7 +634,9 @@ Results Regionalization::regionalize(Env env)
                 {
                   const X& f = xs.at(0);
                   const X& s = xs.at(1);
-									RectCoord cellRC = RectCoord(r+(cellSize*j), h-(cellSize*i));
+									RectCoord cellRC = RectCoord(g->coordinateSystem(),
+																							 r + (cellSize*j),
+																							 h - (cellSize*i));
 									double df = f.rc.distanceTo(cellRC);
 									double ds = s.rc.distanceTo(cellRC);
                   double fv = df/(df+ds)*f.values[k];

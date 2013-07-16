@@ -243,7 +243,8 @@ vector<const GridP*> RealVirtualGrid::availableGrids()
               {
 								RectCoord bl = rcRect().toTlTrBrBlVector().at(3);
                 tg = new GridP(gp->datasetName, rows(), cols(), cellSize(),
-                               bl.r, bl.h, noDataValue());
+															 bl.r, bl.h, noDataValue(),
+															 gp->coordinateSystem);
                 dsn2g[gp->datasetName] = tg;
 								_availableGrids.push_back(tg);
               }
@@ -498,7 +499,9 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 				//this is just temporary as it won't work if a virtual grid
 				//consists of data from more than one region, but better than
 				//nothing until the whole virtual grid thing will be redone
-				if(gmd.regionName == "uecker" || gmd.regionName == "weisseritz")
+				if(gmd.regionName == "uecker" ||
+					 gmd.regionName == "weisseritz" ||
+					 gmd.regionName == "brazil")
 					vg->setCustomId(gmd.regionName);
 
 				pair<Row, Col> rc = rowColInGrid(gmd, c);
@@ -763,12 +766,16 @@ GridManager::addNewGridProxy(const Path& userSubPath,
 //		<< " pathToGrid: " << ptg
 //		<< " pathToGridFile: " << pathToGridFile << endl;
 	GridMetaData gmd = extractMetadataFromGrid(pathToGridFile, cs);
-	string dsn = extractDatasetName(gridFileName);
 	gmd.regionName = extractRegionName(gridFileName);
-//	cout << "gmd: " << gmd.toString() << endl;
-  if(gmd.isValid())
+	if(gmd.regionName == "brazil")
+		gmd.coordinateSystem = UTM21S_EPSG32721;
+	string dsn = extractDatasetName(gridFileName);
+
+	//	cout << "gmd: " << gmd.toString() << endl;
+	if(gmd.isValid())
   {
-		GridProxyPtr gp = GridProxyPtr(new GridProxy(dsn, gridFileName, ptg, modTime));
+		GridProxyPtr gp = GridProxyPtr(new GridProxy(gmd.coordinateSystem,
+																								 dsn, gridFileName, ptg, modTime));
 
 		//cout << "gp: " << gp->toString() << endl;
 		//if this is a completely new gmd, then there will be no hdf-name in the map
@@ -1100,7 +1107,9 @@ void GridManager::readRegionalizedData()
 			string datasetName = oss.str();
 
 //      cout << "datasetName: " << datasetName << endl;
-			GridProxyPtr gp = GridProxyPtr(new GridProxy(datasetName, "", path, hdfFileName, 0));
+			GridProxyPtr gp = GridProxyPtr(new GridProxy(GK5_EPSG31469,
+																									 datasetName, "", path,
+																									 hdfFileName, 0));
 
       _region2regData[region][data][sim][scen][year] = gp;
 		}
@@ -1194,9 +1203,10 @@ void GridManager::readGrid2HdfMappingFile(const Path& userSubPath)
 		if(p.second < 0)
 			continue;
 
-		GridProxyPtr gp = GridProxyPtr(new GridProxy(datasetName, gridFileName,
-																								pathToHdfs, hdfFileName,
-																								p.second));
+		GridProxyPtr gp = GridProxyPtr(new GridProxy(p.first.coordinateSystem,
+																								 datasetName, gridFileName,
+																								 pathToHdfs, hdfFileName,
+																								 p.second));
 
 		//cout << "created: gmd: " << p.first.toString() << " gp: " << gp->toString() << endl;
 

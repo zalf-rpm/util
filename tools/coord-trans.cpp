@@ -300,3 +300,15 @@ LatLngCoord Tools::RC2latLng(RECTCoord rcc)
 	return v.empty() ? LatLngCoord() : v.front();
 }
 */
+
+bool Tools::contains(vector<LatLngCoord> tlTrBrBlRect, LatLngCoord llc)
+{
+	LatLngCoord tl = tlTrBrBlRect.at(0);
+	//LatLngCoord tr = tlTrBrBlRect.at(1);
+	LatLngCoord br = tlTrBrBlRect.at(2);
+	//LatLngCoord bl = tlTrBrBlRect.at(3);
+
+	return
+			llc.lng >= tl.lng && llc.lat <= tl.lat &&
+			llc.lng <= br.lng && llc.lat >= br.lat;
+}

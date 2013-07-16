@@ -51,690 +51,754 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace Grids
 {
-grid* loadGrid(const std::string& gridName,
-							 const std::string& pathToHdf = std::string());
+#ifndef NO_HDF5
+	grid* loadGrid(const std::string& gridName,
+		const std::string& pathToHdf = std::string());
+#endif
 
-void printGridFields(const grid& g, bool onlyDataFields = true);
+	void printGridFields(const grid& g, bool onlyDataFields = true);
 
-void setAllGridFieldsTo(grid* g, double newValue, bool keepNodata = true);
+	void setAllGridFieldsTo(grid* g, double newValue, bool keepNodata = true);
 
-//----------------------------------------------------------------------------
+	//----------------------------------------------------------------------------
 
-struct RCRect
-{
-	RCRect() {}
-	RCRect(const Tools::RectCoord& tl, const Tools::RectCoord& br)
-		: tl(tl), br(br) {}
-
-	bool contains(const Tools::RectCoord& p,
-								bool exclusiveBottomRightBorder = false) const
+	struct RCRect
 	{
-		return exclusiveBottomRightBorder ?
-          (tl.r <= p.r && p.r < br.r) && (br.h < p.h && p.h <= tl.h) :
-          (tl.r <= p.r && p.r <= br.r) && (br.h <= p.h && p.h <= tl.h);
-	}
+		RCRect() {}
+		RCRect(const Tools::RectCoord& tl, const Tools::RectCoord& br)
+			: tl(tl), br(br) {}
 
-	bool contains(const RCRect& other) const;
+		bool contains(const Tools::RectCoord& p,
+			bool exclusiveBottomRightBorder = false) const
+		{
+			return exclusiveBottomRightBorder ?
+				(tl.r <= p.r && p.r < br.r) && (br.h < p.h && p.h <= tl.h) :
+			(tl.r <= p.r && p.r <= br.r) && (br.h <= p.h && p.h <= tl.h);
+		}
 
-	bool intersects(const RCRect& other) const;
+		bool contains(const RCRect& other) const;
 
-	RCRect intersected(const RCRect& other) const;
+		bool intersects(const RCRect& other) const;
 
-	bool isEmpty() const
+		RCRect intersected(const RCRect& other) const;
+
+		bool isEmpty() const
+		{
+			return ((br.r - tl.r) <= 0. || (tl.h - br.h) <= 0.);
+		}
+
+		bool isNull() const
+		{
+			return ((br.r - tl.r) <= 0. && (tl.h - br.h) <= 0.);
+		}
+
+		std::string toString() const;
+
+		std::vector<Tools::RectCoord> toTlTrBrBlVector() const;
+
+		Tools::RectCoord tl, br;
+	};
+
+	//----------------------------------------------------------------------------
+
+	class GridP;
+
+	//! metadata common to all grids
+	struct GridMetaData
 	{
-		return ((br.r - tl.r) <= 0. || (tl.h - br.h) <= 0.);
-	}
+		GridMetaData(Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
 
-	bool isNull() const
+		GridMetaData(const grid* g, Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
+
+		GridMetaData(const GridP* g);
+
+		bool isValid() const { return ncols > -1 && nrows > -1; }
+
+		bool operator==(const GridMetaData& other) const;
+
+		bool operator!=(const GridMetaData & other) const
+		{
+			return !(*this == other);
+		}
+
+		bool operator<(const GridMetaData& other) const
+		{
+			return toCanonicalString() < other.toCanonicalString();
+		}
+
+		Tools::RectCoord topLeftCorner() const
+		{
+			return Tools::RectCoord(coordinateSystem,
+				xllcorner,
+				yllcorner+(nrows*cellsize));
+		}
+
+		Tools::RectCoord topRightCorner() const
+		{
+			return Tools::RectCoord(coordinateSystem,
+				xllcorner+(ncols*cellsize),
+				yllcorner+(nrows*cellsize));
+		}
+
+		Tools::RectCoord bottomRightCorner() const
+		{
+			return Tools::RectCoord(coordinateSystem,
+				xllcorner+(ncols*cellsize),
+				yllcorner);
+		}
+
+		Tools::RectCoord bottomLeftCorner() const
+		{
+			return Tools::RectCoord(coordinateSystem, xllcorner, yllcorner);
+		}
+
+		RCRect rcRect() const
+		{
+			return RCRect(topLeftCorner(), bottomRightCorner());
+		}
+
+		std::string toString() const;
+		std::string toShortDescription() const;
+		std::string toCanonicalString(const std::string& separator = " ") const;
+
+		int ncols, nrows;
+		int nodata;
+		int xllcorner, yllcorner;
+		int cellsize;
+		std::string regionName;
+		Tools::CoordinateSystem coordinateSystem;
+	};
+
+	//----------------------------------------------------------------------------
+
+	typedef unsigned int Row;
+	typedef unsigned int Col;
+	typedef unsigned int Rows;
+	typedef unsigned int Cols;
+
+	//! holds data needed to know where and how large the subgrid is
+	struct SubData
 	{
-		return ((br.r - tl.r) <= 0. && (tl.h - br.h) <= 0.);
-	}
 
-	std::string toString() const;
+		SubData() : row(0), col(0), rows(0), cols(0) { }
+		SubData(Row r, Col c, Rows rs, Cols cs)
+			: row(r), col(c), rows(rs), cols(cs) { }
 
-	std::vector<Tools::RectCoord> toTlTrBrBlVector() const;
+		Row row;
+		Col col;
+		Rows rows;
+		Cols cols;
 
-	Tools::RectCoord tl, br;
-};
+		std::string toString() const;
 
-//----------------------------------------------------------------------------
+		bool isValid() const { return rows > 0 && cols > 0; }
+	};
 
-class GridP;
+	RCRect
+		extendedBoundingRect(const GridMetaData& gmd,
+		const Tools::Quadruple<Tools::RectCoord>& rcpoly,
+		double cellSize);
 
-//! metadata common to all grids
-struct GridMetaData
-{
-	GridMetaData(Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
+	std::pair<Row, Col> rowColInGrid(const GridMetaData& gmd,
+		const Tools::RectCoord& c);
 
-	GridMetaData(const grid* g, Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
+	//----------------------------------------------------------------------------
 
-	GridMetaData(const GridP* g, Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
+	typedef boost::shared_ptr<grid> GridPtr;
 
-	bool isValid() const { return ncols > -1 && nrows > -1; }
+	class GridP;
 
-	bool operator==(const GridMetaData& other) const;
+	typedef boost::shared_ptr<GridP> GridPPtr;
 
-	bool operator!=(const GridMetaData & other) const
+	//!grid+ class
+	class GridP
 	{
-		return !(*this == other);
-	}
+	public:
+		enum FileType { HDF, ASCII };
 
-	bool operator<(const GridMetaData& other) const
-	{
-		return toCanonicalString() < other.toCanonicalString();
-	}
+		GridP(Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
 
-	Tools::RectCoord topLeftCorner() const
-	{
-		return Tools::RectCoord(coordinateSystem,
-														xllcorner,
-														yllcorner+(nrows*cellsize));
-	}
+		//! new grid with given size and initialized to no data
+		GridP(const std::string& datasetName,
+			int nrows, int ncols, float cellSize,
+			double llx, double lly, float noDataValue,
+			Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
 
-	Tools::RectCoord topRightCorner() const
-	{
-		return Tools::RectCoord(coordinateSystem,
-														xllcorner+(ncols*cellsize),
-														yllcorner+(nrows*cellsize));
-	}
+		GridP(GridMetaData gmd, const std::string& datasetName = std::string());
 
-	Tools::RectCoord bottomRightCorner() const
-	{
-		return Tools::RectCoord(coordinateSystem,
-														xllcorner+(ncols*cellsize),
-														yllcorner);
-	}
+		GridP(const std::string& datasetName,
+			FileType ft, const std::string& pathToFile,
+			Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
 
-	Tools::RectCoord bottomLeftCorner() const
-	{
-		return Tools::RectCoord(coordinateSystem, xllcorner, yllcorner);
-	}
+		GridP(grid* wrapThisGrid, Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
 
-	RCRect rcRect() const
-	{
-		return RCRect(topLeftCorner(), bottomRightCorner());
-	}
+		//! copy constructor
+		GridP(const GridP& other);
 
-	std::string toString() const;
-	std::string toShortDescription() const;
-	std::string toCanonicalString(const std::string& separator = " ") const;
+		virtual ~GridP();
 
-	int ncols, nrows;
-	int nodata;
-	int xllcorner, yllcorner;
-	int cellsize;
-	std::string regionName;
-	Tools::CoordinateSystem coordinateSystem;
-};
+		/**
+		* assignment
+		*/
+		GridP& operator=(const GridP& other);
 
-//----------------------------------------------------------------------------
+		/**
+		* conversion copy constructor
+		*/
+		GridP(const grid& other, Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
 
-typedef unsigned int Row;
-typedef unsigned int Col;
-typedef unsigned int Rows;
-typedef unsigned int Cols;
+		GridP(grid const *const other, Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
 
-//! holds data needed to know where and how large the subgrid is
-struct SubData
-{
+		//! copies other
+		GridP& operator=(const grid& other);
 
-	SubData() : row(0), col(0), rows(0), cols(0) { }
-	SubData(Row r, Col c, Rows rs, Cols cs)
-		: row(r), col(c), rows(rs), cols(cs) { }
+		//! copies other
+		GridP & operator=(grid const *const other) { return (*this) = *other; }
 
-	Row row;
-	Col col;
-	Rows rows;
-	Cols cols;
+		bool operator==(const GridP& other) const;
 
-	std::string toString() const;
+		bool isValid() const
+		{
+			return _grid && _grid->feld && cols() > 0 && rows() > 0;
+		}
 
-	bool isValid() const { return rows > 0 && cols > 0; }
-};
+#ifndef NO_HDF5
+		bool writeHdf(const std::string& pathToHdfFile,
+			const std::string& datasetName,
+			const std::string& regionName, time_t t);
+#endif
 
-RCRect
-extendedBoundingRect(const GridMetaData& gmd,
-										 const Tools::Quadruple<Tools::RectCoord>& rcpoly,
-										 double cellSize);
+		template<typename ValueType>
+		void writeAscii(const std::string& pathToAsciiFile);
 
-std::pair<Row, Col> rowColInGrid(const GridMetaData& gmd,
-																 const Tools::RectCoord& c);
+		//! create clone of part of the grid
+		GridP* subGridClone(int top, int left, int rows, int cols) const;
 
-//----------------------------------------------------------------------------
+		//! create exact copy of the grid
+		GridP* clone() const { return new GridP(*this); }
 
-typedef boost::shared_ptr<grid> GridPtr;
+		//! create a structural copy, but set all fields to given emptyValue
+		GridP* emptyClone(bool keepNoData = true) const
+		{
+			return fillClone(noDataValue(), keepNoData);
+		}
 
-class GridP;
+		GridP* fillClone(double fillValue, bool keepNoData = true) const;
 
-typedef boost::shared_ptr<GridP> GridPPtr;
+		void setDescriptiveLabel(const std::string& label)
+		{
+			_descriptiveLabel = label;
+		}
 
-//!grid+ class
-class GridP
-{
-public:
-	enum FileType { HDF, ASCII };
+		std::string descriptiveLabel() const;
 
-	GridP();
+		//! number of rows
+		int rows() const { return _grid->nrows; }
 
-	//! new grid with given size and initialized to no data
-	GridP(const std::string& datasetName,
-				int nrows, int ncols, float cellSize,
-				double llx, double lly, float noDataValue);
+		//! number of columns
+		int cols() const { return _grid->ncols; }
 
-	GridP(GridMetaData gmd, const std::string& datasetName = std::string());
+		//! size of gridcells
+		double cellSize() const { return _grid->csize; }
 
-	GridP(const std::string& datasetName,
-				FileType ft, const std::string& pathToFile);
+		int noDataValue() const { return int(_grid->nodata); }
 
-	GridP(grid* wrapThisGrid);
+		std::vector<double> allDataAsLinearVector() const;
 
-	//! copy constructor
-	GridP(const GridP& other);
+		//! create histogram data
+		Tools::HistogramData histogram(int noOfClasses);
 
-	virtual ~GridP();
+		//! value frequency = map of percent of pixels -> pixel value
+		std::multimap<double, double, std::greater<double> > frequency();
 
-	/**
-	 * assignment
-	 */
-	GridP& operator=(const GridP& other);
+		GridP* setAllFieldsTo(double newValue, bool keepNoData = true);
 
-	/**
-	 * conversion copy constructor
-	 */
-	GridP(const grid& other);
+		template<typename Collection>
+		GridP* setAllFieldsWithinTo(Collection matchValues, float toNewValue, bool includeNoData = false)
+		{
+			for(auto cit = matchValues.begin(); cit != matchValues.end(); cit++)
+				for(int r = 0, rs = rows(); r < rs; r++)
+					for(int c = 0, cs = cols(); c < cs; c++)
+						if((includeNoData || isDataField(r, c)) && Tools::fuzzyCompare(dataAt(r, c), *cit))
+							setDataAt(r, c, toNewValue);
+			return this;
+		}
 
-	GridP(grid const *const other);
+		GridP* setAllFieldsWithTo(float withValue, float toNewValue, bool includeNoData = false)
+		{
+			return setAllFieldsWithinTo(std::vector<float>(1, withValue), toNewValue, includeNoData);
+		}
 
-	//! copies other
-	GridP& operator=(const grid& other);
+		GridP* setAllFieldsWithoutTo(float withoutValue, float toNewValue, bool includeNoData = false);
 
-	//! copies other
-	GridP & operator=(grid const *const other) { return (*this) = *other; }
+		GridP* setFieldsTo(const GridP* other, bool keepNoData = true);
 
-	bool operator==(const GridP& other) const;
+		float dataAt(int row, int col) const { return _grid->feld[row][col]; }
 
-	bool isValid() const
-	{
-		return _grid && _grid->feld && cols() > 0 && rows() > 0;
-	}
+		float dataAt(Tools::RectCoord rcc) const;
 
-	bool writeHdf(const std::string& pathToHdfFile,
-								const std::string& datasetName,
-								const std::string& regionName, time_t t);
+		GridP* setDataAt(int row, int col, float value)
+		{
+			_grid->feld[row][col] = value;
+			return this;
+		}
 
-	void writeAscii(const std::string& pathToAsciiFile);
+		float* operator[](int row){ return _grid->feld[row]; }
 
-	//! create clone of part of the grid
-	GridP* subGridClone(int top, int left, int rows, int cols) const;
+		GridP* setDataAt(Tools::RectCoord rcc, float value);
 
-	//! create exact copy of the grid
-	GridP* clone() const { return new GridP(*this); }
+		GridP* setNoDataValueAt(int row, int col)
+		{
+			return setDataAt(row, col, float(noDataValue()));
+		}
 
-	//! create a structural copy, but set all fields to given emptyValue
-	GridP* emptyClone(bool keepNoData = true) const
-	{
-		return fillClone(noDataValue(), keepNoData);
-	}
+		GridP* setNoDataValueAt(Tools::RectCoord rcc)
+		{
+			return setDataAt(rcc, float(noDataValue()));
+		}
 
-	GridP* fillClone(double fillValue, bool keepNoData = true) const;
+		bool isNoDataField(int row, int col) const
+		{
+			return int(dataAt(row, col)) == noDataValue();
+		}
 
-	void setDescriptiveLabel(const std::string& label)
-	{
-		_descriptiveLabel = label;
-	}
+		bool isNoDataField(Tools::RectCoord rcc) const
+		{
+			return int(dataAt(rcc)) == noDataValue();
+		}
 
-	std::string descriptiveLabel() const;
+		bool isDataField(int row, int col) const
+		{
+			return !isNoDataField(row, col);
+		}
 
-	//! number of rows
-	int rows() const { return _grid->nrows; }
+		bool isDataField(Tools::RectCoord rcc) const
+		{
+			return !isNoDataField(rcc);
+		}
 
-	//! number of columns
-	int cols() const { return _grid->ncols; }
+		std::string toString() const;
 
-	//! size of gridcells
-	double cellSize() const { return _grid->csize; }
+		grid& gridRef() const { return *gridPtr(); }
 
-	int noDataValue() const { return int(_grid->nodata); }
+		grid* gridPtr() const { return _grid.get(); }
 
-	std::vector<double> allDataAsLinearVector() const;
+		std::string datasetName() const { return _datasetName; }
 
-	//! create histogram data
-	Tools::HistogramData histogram(int noOfClasses);
+		GridP* setDatasetName(const std::string& newName)
+		{
+			_datasetName = newName;
+			return this;
+		}
 
-	//! value frequency = map of percent of pixels -> pixel value
-	std::multimap<double, double, std::greater<double> > frequency();
+		std::string unit() const { return _unit; }
 
-	GridP* setAllFieldsTo(double newValue, bool keepNoData = true);
+		GridP* setUnit(const std::string& newUnit)
+		{
+			_unit = newUnit;
+			return this;
+		}
 
-	template<typename Collection>
-	GridP* setAllFieldsWithinTo(Collection matchValues, float toNewValue, bool includeNoData = false)
-	{
-		for(auto cit = matchValues.begin(); cit != matchValues.end(); cit++)
+		Tools::CoordinateSystem coordinateSystem() const { return _coordinateSystem; }
+
+		GridP* setCoordinateSystem(Tools::CoordinateSystem newCoordinateSystem)
+		{
+			_coordinateSystem = newCoordinateSystem;
+			return this;
+		}
+
+		RCRect rcRect() const;
+
+		RCRect cellRCRectAt(int row, int col) const;
+
+		Tools::RectCoord rcCoordAt(int row, int col) const;
+
+		Tools::RectCoord rcCoordAtCenter(int row, int col) const;
+
+		Tools::RectCoord rcCoordAtCenter() const
+		{
+			return rcCoordAt(int(double(rows()) / 2.0), int(double(cols()) / 2.0));
+		}
+
+		Tools::RectCoord lowerLeftCorner() const;
+
+		Tools::RectCoord lowerLeftCenter() const;
+
+		bool isCompatible(const GridP* other) const;
+
+		std::pair<double, double> minMax() const;
+
+		double average() const;
+
+		GridP* transformInPlace(boost::function<float(float)> transformFunction);
+
+		GridP* replace(float searchValue, float replaceValue)
+		{
+			//		return transformInPlace(boost::lambda::if_then_else_return
+			//														(boost::lambda::_1 == searchValue,
+			//														 replaceValue, boost::lambda::_1));
+			return transformInPlace([=](float v){ return v == searchValue
+				? replaceValue : v; });
+		}
+
+		GridPPtr transform(boost::function<float(float)> transformFunction) const
+		{
+			return GridPPtr(transformP(transformFunction));
+		}
+
+		GridP* transformP(boost::function<float(float)> transformFunction) const;
+
+		std::pair<int, int> rc2rowCol(Tools::RectCoord rcc) const;
+
+		GridP* invert(float value);
+
+		GridP* maskOut(const GridP* maskGrid, float byValueInMaskGrid,
+			bool keepDataAtMatchPoint = true);
+
+		GridP* maskTo(const GridP* maskGrid, float matchMaskValueTo, float newValue,
+			bool keepNoData = true);
+
+		//! adjust this grid to match the model model, by croping or adding noData
+		GridP* adjustToP(GridMetaData gmd) const;
+
+		GridPPtr adjustTo(GridMetaData gmd) const
+		{
+			return GridPPtr(adjustToP(gmd));
+		}
+
+		template<typename T>
+		std::set<T> uniqueValues(boost::function<T(float)> transform =
+			boost::function<T(float)>(boost::lambda::_1),
+			bool ignoreNoDataValues = true) const
+		{
+			return mapF<std::set<T> >(transform, ignoreNoDataValues);
+		}
+
+		template<class Container, typename T>
+		Container mapF(boost::function<T(float)> transformFunc,
+			bool ignoreNoDataValues = true) const
+		{
+			Container cont;
+			for(int r = 0, rs = rows(); r < rs; r++)
+			{
+				for(int c = 0, cs = cols(); c < cs; c++)
+				{
+					if(isNoDataField(r, c) && ignoreNoDataValues)
+						continue;
+					cont.insert(cont.end(), transformFunc(dataAt(r, c)));
+				}
+			}
+			return cont;
+		}
+
+		template<typename T>
+		T foldF(T init, boost::function<T(T, float)> foldFunc) const
+		{
+			T res = init;
 			for(int r = 0, rs = rows(); r < rs; r++)
 				for(int c = 0, cs = cols(); c < cs; c++)
-					if((includeNoData || isDataField(r, c)) && Tools::fuzzyCompare(dataAt(r, c), *cit))
-						setDataAt(r, c, toNewValue);
-		return this;
-	}
-
-	GridP* setAllFieldsWithTo(float withValue, float toNewValue, bool includeNoData = false)
-	{
-		return setAllFieldsWithinTo(std::vector<float>(1, withValue), toNewValue, includeNoData);
-	}
-
-	GridP* setAllFieldsWithoutTo(float withoutValue, float toNewValue, bool includeNoData = false);
-
-	GridP* setFieldsTo(const GridP* other, bool keepNoData = true);
-
-	float dataAt(int row, int col) const { return _grid->feld[row][col]; }
-
-	float dataAt(Tools::RectCoord rcc) const;
-
-	GridP* setDataAt(int row, int col, float value)
-	{
-		_grid->feld[row][col] = value;
-		return this;
-	}
-
-	float* operator[](int row){ return _grid->feld[row]; }
-
-	GridP* setDataAt(Tools::RectCoord rcc, float value);
-
-	GridP* setNoDataValueAt(int row, int col)
-	{
-		return setDataAt(row, col, float(noDataValue()));
-	}
-
-	GridP* setNoDataValueAt(Tools::RectCoord rcc)
-	{
-		return setDataAt(rcc, float(noDataValue()));
-	}
-
-	bool isNoDataField(int row, int col) const
-	{
-		return int(dataAt(row, col)) == noDataValue();
-	}
-
-	bool isNoDataField(Tools::RectCoord rcc) const
-	{
-		return int(dataAt(rcc)) == noDataValue();
-	}
-
-	bool isDataField(int row, int col) const
-	{
-		return !isNoDataField(row, col);
-	}
-
-	bool isDataField(Tools::RectCoord rcc) const
-	{
-		return !isNoDataField(rcc);
-	}
-
-	std::string toString() const;
-
-	grid& gridRef() const { return *gridPtr(); }
-
-	grid* gridPtr() const { return _grid.get(); }
-
-	std::string datasetName() const { return _datasetName; }
-
-	GridP* setDatasetName(const std::string& newName)
-	{
-		_datasetName = newName;
-		return this;
-	}
-
-	std::string unit() const { return _unit; }
-
-	GridP* setUnit(const std::string& newUnit)
-	{
-		_unit = newUnit;
-		return this;
-	}
-
-	RCRect rcRect() const;
-
-	Tools::RectCoord rcCoordAt(int row, int col) const;
-
-	Tools::RectCoord rcCoordAtCenter() const
-	{
-		return rcCoordAt(int(double(rows()) / 2.0), int(double(cols()) / 2.0));
-	}
-
-	bool isCompatible(const GridP* other) const;
-
-	std::pair<double, double> minMax() const;
-
-	double average() const;
-
-	GridP* transformInPlace(boost::function<float(float)> transformFunction);
-
-	GridP* replace(float searchValue, float replaceValue)
-	{
-//		return transformInPlace(boost::lambda::if_then_else_return
-//														(boost::lambda::_1 == searchValue,
-//														 replaceValue, boost::lambda::_1));
-		return transformInPlace([=](float v){ return v == searchValue
-															? replaceValue : v; });
-	}
-
-	GridPPtr transform(boost::function<float(float)> transformFunction) const
-	{
-		return GridPPtr(transformP(transformFunction));
-	}
-
-	GridP* transformP(boost::function<float(float)> transformFunction) const;
-
-	std::pair<int, int> rc2rowCol(Tools::RectCoord rcc) const;
-
-	GridP* invert(float value);
-
-	GridP* maskOut(const GridP* maskGrid, float byValueInMaskGrid,
-								 bool keepDataAtMatchPoint = true);
-
-	GridP* maskTo(const GridP* maskGrid, float matchMaskValueTo, float newValue,
-								bool keepNoData = true);
-
-	//! adjust this grid to match the model model, by croping or adding noData
-	GridP* adjustToP(GridMetaData gmd) const;
-
-	GridPPtr adjustTo(GridMetaData gmd) const
-	{
-		return GridPPtr(adjustToP(gmd));
-	}
-
-	template<typename T>
-	std::set<T> uniqueValues(boost::function<T(float)> transform =
-													 boost::function<T(float)>(boost::lambda::_1),
-													 bool ignoreNoDataValues = true) const
-	{
-		return mapF<std::set<T> >(transform, ignoreNoDataValues);
-	}
-
-	template<class Container, typename T>
-	Container mapF(boost::function<T(float)> transformFunc,
-								 bool ignoreNoDataValues = true) const
-	{
-		Container cont;
-		for(int r = 0, rs = rows(); r < rs; r++)
-		{
-			for(int c = 0, cs = cols(); c < cs; c++)
-			{
-				if(isNoDataField(r, c) && ignoreNoDataValues)
-					continue;
-				cont.insert(cont.end(), transformFunc(dataAt(r, c)));
-			}
+					res = foldFunc(res, dataAt(r, c));
+			return res;
 		}
-		return cont;
-	}
 
-	template<typename T>
-	T foldF(T init, boost::function<T(T, float)> foldFunc) const
-	{
-		T res = init;
-		for(int r = 0, rs = rows(); r < rs; r++)
-			for(int c = 0, cs = cols(); c < cs; c++)
-				res = foldFunc(res, dataAt(r, c));
-		return res;
-	}
-
-	void setDisplayValueTransformFunction(boost::function<std::string(double)> f)
-	{
-		_displayValueTransformFunction = f;
-	}
-
-	boost::function<std::string(double)> displayValueTransformFunction() const
-	{
-		return _displayValueTransformFunction;
-	}
-
-private:
-	GridPtr _grid;
-	std::string _datasetName;
-	std::string _descriptiveLabel;
-	std::string _unit;
-	boost::function<std::string(double)> _displayValueTransformFunction;
-};
-
-template<class CollectionOfGrids>
-GridP* averageP(const CollectionOfGrids& gridps)
-{
-	if (gridps.empty())
-		return new GridP();
-
-	double size = gridps.size();
-	GridP* res = (*(gridps.begin()))->fillClone(0.0);
-	for(int r = 0, rs = res->rows(); r < rs; r++)
-	{
-		for(int c = 0, cs = res->cols(); c < cs; c++)
+		void setDisplayValueTransformFunction(boost::function<std::string(double)> f)
 		{
-			if(res->isDataField(r, c))
+			_displayValueTransformFunction = f;
+		}
+
+		boost::function<std::string(double)> displayValueTransformFunction() const
+		{
+			return _displayValueTransformFunction;
+		}
+
+	private:
+		GridPtr _grid;
+		std::string _datasetName;
+		std::string _descriptiveLabel;
+		std::string _unit;
+		boost::function<std::string(double)> _displayValueTransformFunction;
+		Tools::CoordinateSystem _coordinateSystem;
+	};
+
+	template<class CollectionOfGrids>
+	GridP* averageP(const CollectionOfGrids& gridps)
+	{
+		if (gridps.empty())
+			return new GridP();
+
+		double size = gridps.size();
+		GridP* res = (*(gridps.begin()))->fillClone(0.0);
+		for(int r = 0, rs = res->rows(); r < rs; r++)
+		{
+			for(int c = 0, cs = res->cols(); c < cs; c++)
 			{
-				BOOST_FOREACH(typename CollectionOfGrids::value_type g, gridps)
+				if(res->isDataField(r, c))
 				{
-					if(g->isNoDataField(r, c))
+					BOOST_FOREACH(typename CollectionOfGrids::value_type g, gridps)
 					{
-						res->setNoDataValueAt(r, c);
-						break;
+						if(g->isNoDataField(r, c))
+						{
+							res->setNoDataValueAt(r, c);
+							break;
+						}
+						res->setDataAt(r, c, float(res->dataAt(r, c) + (g->dataAt(r, c) / size)));
 					}
-					res->setDataAt(r, c, float(res->dataAt(r, c) + (g->dataAt(r, c) / size)));
 				}
 			}
 		}
+
+		return res;
 	}
 
-	return res;
-}
-
-template<class CollectionOfGrids>
-GridPPtr average(const CollectionOfGrids& gridps)
-{
-	return GridPPtr(averageP(gridps));
-}
-
-template<class OP>
-GridP& inPlaceScalarMatrixOp(GridP& left, float value, OP op)
-{
-	for (int r = 0, rs = left.rows(); r < rs; r++)
-		for (int c = 0, cs = left.cols(); c < cs; c++)
-			if (left.isDataField(r, c))
-				left.setDataAt(r, c, op(left.dataAt(r, c), value));
-	return left;
-};
-
-inline GridP& operator*=(GridP& left, float value)
-{
-	return inPlaceScalarMatrixOp(left, value, std::multiplies<float>());
-}
-
-template<class OP>
-GridP& inPlaceScalarMatrixOp(GridP& left, const GridP& right, OP op)
-{
-	assert(left.isCompatible(&right));
-	for (int r = 0, rs = left.rows(); r < rs; r++)
+	template<class CollectionOfGrids>
+	GridPPtr average(const CollectionOfGrids& gridps)
 	{
-		for (int c = 0, cs = left.cols(); c < cs; c++)
-		{
-			if (left.isDataField(r, c) && right.isDataField(r, c))
-				left.setDataAt(r, c, op(left.dataAt(r, c), right.dataAt(r, c)));
-			else
-				left.setNoDataValueAt(r,c);
-		}
+		return GridPPtr(averageP(gridps));
 	}
-	return left;
-};
 
-inline GridP& operator*=(GridP& left, const GridP& right)
-{
-	return inPlaceScalarMatrixOp(left, right, std::multiplies<float>());
-}
-
-inline GridP& operator+=(GridP& left, const GridP& right)
-{
-	return inPlaceScalarMatrixOp(left, right, std::plus<float>());
-}
-
-template<class OP>
-GridP& merge(const GridP& left, const GridP& right, OP op)
-{
-	assert(left.isCompatible(&right));
-	GridP* res = left.clone();
-	for (int r = 0, rs = res->rows(); r < rs; r++)
+	template<class OP>
+	GridP& inPlaceScalarMatrixOp(GridP& left, float value, OP op)
 	{
-		for (int c = 0, cs = res->cols(); c < cs; c++)
+		for (int r = 0, rs = left.rows(); r < rs; r++)
+			for (int c = 0, cs = left.cols(); c < cs; c++)
+				if (left.isDataField(r, c))
+					left.setDataAt(r, c, op(left.dataAt(r, c), value));
+		return left;
+	};
+
+	inline GridP& operator*=(GridP& left, float value)
+	{
+		return inPlaceScalarMatrixOp(left, value, std::multiplies<float>());
+	}
+
+	template<class OP>
+	GridP& inPlaceScalarMatrixOp(GridP& left, const GridP& right, OP op)
+	{
+		assert(left.isCompatible(&right));
+		for (int r = 0, rs = left.rows(); r < rs; r++)
 		{
-			if(left.isNoDataField(r, c))
+			for (int c = 0, cs = left.cols(); c < cs; c++)
 			{
-				if(right.isDataField(r, c))
-					res->setDataAt(r, c, right.dataAt(r, c));
+				if (left.isDataField(r, c) && right.isDataField(r, c))
+					left.setDataAt(r, c, op(left.dataAt(r, c), right.dataAt(r, c)));
+				else
+					left.setNoDataValueAt(r,c);
+			}
+		}
+		return left;
+	};
+
+	inline GridP& operator*=(GridP& left, const GridP& right)
+	{
+		return inPlaceScalarMatrixOp(left, right, std::multiplies<float>());
+	}
+
+	inline GridP& operator+=(GridP& left, const GridP& right)
+	{
+		return inPlaceScalarMatrixOp(left, right, std::plus<float>());
+	}
+
+	template<class OP>
+	GridP& merge(const GridP& left, const GridP& right, OP op)
+	{
+		assert(left.isCompatible(&right));
+		GridP* res = left.clone();
+		for (int r = 0, rs = res->rows(); r < rs; r++)
+		{
+			for (int c = 0, cs = res->cols(); c < cs; c++)
+			{
+				if(left.isNoDataField(r, c))
+				{
+					if(right.isDataField(r, c))
+						res->setDataAt(r, c, right.dataAt(r, c));
+					else
+						res->setNoDataValueAt(r, c);
+				}
+				else
+				{
+					if(right.isNoDataField(r, c))
+						res->setDataAt(r, c, left.dataAt(r, c));
+					else
+						res->setDataAt(r, c, op(left.dataAt(r, c), right.dataAt(r, c)));
+				}
+			}
+		}
+		return *res;
+	};
+
+	template<class OP>
+	GridP& scalarMatrixOp(const GridP& left, const GridP& right, OP op)
+	{
+		assert(left.isCompatible(&right));
+		GridP* res = left.clone();
+		for (int r = 0, rs = res->rows(); r < rs; r++)
+		{
+			for (int c = 0, cs = res->cols(); c < cs; c++)
+			{
+				if (left.isDataField(r, c) && right.isDataField(r, c))
+					res->setDataAt(r, c, op(left.dataAt(r, c), right.dataAt(r, c)));
 				else
 					res->setNoDataValueAt(r, c);
 			}
-			else
-			{
-				if(right.isNoDataField(r, c))
-					res->setDataAt(r, c, left.dataAt(r, c));
-				else
-					res->setDataAt(r, c, op(left.dataAt(r, c), right.dataAt(r, c)));
-			}
 		}
-	}
-	return *res;
-};
+		return *res;
+	};
 
-template<class OP>
-GridP& scalarMatrixOp(const GridP& left, const GridP& right, OP op)
-{
-	assert(left.isCompatible(&right));
-	GridP* res = left.clone();
-	for (int r = 0, rs = res->rows(); r < rs; r++)
+	inline GridP& operator*(const GridP& left, const GridP& right)
 	{
-		for (int c = 0, cs = res->cols(); c < cs; c++)
+		return scalarMatrixOp(left, right, std::multiplies<float>());
+	}
+
+	inline GridP& operator-(const GridP& left, const GridP& right)
+	{
+		return scalarMatrixOp(left, right, std::minus<float>());
+	}
+
+	inline GridP& operator+(const GridP& left, const GridP& right)
+	{
+		return scalarMatrixOp(left, right, std::plus<float>());
+	}
+
+	inline GridP& operator/(const GridP& left, const GridP& right)
+	{
+		return scalarMatrixOp(left, right, std::divides<float>());
+	}
+
+	inline vector<double> allDataAsLinearVector(const GridP* g)
+	{
+		return g->allDataAsLinearVector();
+	}
+
+	std::vector<double> allDataAsLinearVector(const grid* g);
+
+	//----------------------------------------------------------------------------
+
+	//! just thin wrapper for easier access with subgrids, can be used as valueobject
+	class SubGridWrapper
+	{
+	public:
+		SubGridWrapper(const GridP* grid, SubData subData)
+			: _grid(grid), _subData(subData) {}
+
+		float dataAt(int row, int col) const
 		{
-			if (left.isDataField(r, c) && right.isDataField(r, c))
-				res->setDataAt(r, c, op(left.dataAt(r, c), right.dataAt(r, c)));
-			else
-				res->setNoDataValueAt(r, c);
+			return _grid->dataAt(_subData.row + row, _subData.col + col);
 		}
-	}
-	return *res;
-};
 
-inline GridP& operator*(const GridP& left, const GridP& right)
-{
-	return scalarMatrixOp(left, right, std::multiplies<float>());
-}
+		bool isNoDataField(int row, int col) const
+		{
+			return dataAt(row, col) == noDataValue();
+		}
 
-inline GridP& operator-(const GridP& left, const GridP& right)
-{
-	return scalarMatrixOp(left, right, std::minus<float>());
-}
+		bool isDataField(int row, int col) const
+		{
+			return !isNoDataField(row, col);
+		}
 
-inline GridP& operator+(const GridP& left, const GridP& right)
-{
-	return scalarMatrixOp(left, right, std::plus<float>());
-}
+		int noDataValue() const { return _grid->noDataValue(); }
 
-inline GridP& operator/(const GridP& left, const GridP& right)
-{
-	return scalarMatrixOp(left, right, std::divides<float>());
-}
+	private:
+		const GridP* _grid;
+		SubData _subData;
+	};
 
-inline vector<double> allDataAsLinearVector(const GridP* g)
-{
-	return g->allDataAsLinearVector();
-}
+	//----------------------------------------------------------------------------
 
-std::vector<double> allDataAsLinearVector(const grid* g);
-
-//----------------------------------------------------------------------------
-
-//! just thin wrapper for easier access with subgrids, can be used as valueobject
-class SubGridWrapper
-{
-public:
-	SubGridWrapper(const GridP* grid, SubData subData)
-		: _grid(grid), _subData(subData) {}
-
-	float dataAt(int row, int col) const
+	//! hold just some information about the grid, without having to load it
+	struct GridProxy : public Loki::ObjectLevelLockable<GridProxy>
 	{
-		return _grid->dataAt(_subData.row + row, _subData.col + col);
-	}
+		enum State { eNew, eChanged, eNormal };
 
-	bool isNoDataField(int row, int col) const
+		GridProxy(Tools::CoordinateSystem cs = Tools::GK5_EPSG31469)
+			: modificationTime(0), state(eNormal), coordinateSystem(cs) { }
+		GridProxy(Tools::CoordinateSystem cs,
+			const std::string& dsn, const std::string& fn,
+			const std::string& ptgrid, time_t modTime = 0)
+			: datasetName(dsn), fileName(fn), pathToGrid(ptgrid),
+			modificationTime(modTime), state(eNew),
+			coordinateSystem(cs)
+		{ }
+
+		GridProxy(Tools::CoordinateSystem cs,
+			const std::string& dsn, const std::string& fn,
+			const std::string& pthdf, const std::string& hfn,
+			time_t modTime, State s = eNormal)
+			: datasetName(dsn), fileName(fn), pathToHdf(pthdf),
+			hdfFileName(hfn), modificationTime(modTime), state(s),
+			coordinateSystem(cs)
+		{}
+
+		~GridProxy(){}
+
+		void updateModificationTime(time_t modTime)
+		{
+			modificationTime = modTime;
+			state = eChanged;
+		}
+
+		GridP* gridPtr();
+
+		GridPPtr gridPPtr();
+
+		//! resets gridproxy which in the end (without references to it) deletes possibly loaded grid
+		void reset(){ g.reset(); }
+
+		GridP* copyOfFullGrid() { return gridPtr()->clone(); }
+
+		void resetToLoadFromAscii(const std::string& pathToGrid);
+
+		std::string toString() const;
+
+		std::string datasetName;
+		std::string fileName;
+		std::string pathToGrid;
+		std::string pathToHdf;
+		std::string hdfFileName;
+		time_t modificationTime;
+		State state;
+		Tools::CoordinateSystem coordinateSystem;
+	protected:
+		GridPPtr g;
+	};
+
+	typedef boost::shared_ptr<GridProxy> GridProxyPtr;
+
+	//----------------------------------------------------------------------------
+
+#ifndef NO_HDF5
+	std::pair<GridMetaData, time_t>
+		readGridMetadataFromHdf(const char* hdfFileName, const char* datasetName);
+#endif
+
+	//------------------------------------------------------------------------------
+	//template implementations
+	//------------------------------------------------------------------------------
+
+	template<typename VT>
+	void GridP::writeAscii(const std::string& pathToAsciiFile)
 	{
-		return dataAt(row, col) == noDataValue();
+		std::ofstream fout(pathToAsciiFile);
+
+		Tools::RectCoord rc = lowerLeftCorner();
+		fout << std::fixed <<
+			"ncols         " << cols() << endl <<
+			"nrows         " << rows() << endl <<
+			"xllcorner     " << rc.r << endl <<
+			"yllcorner     " << rc.h << endl <<
+			"cellsize      " << static_cast<VT>(cellSize()) << endl <<
+			"NODATA_value  " << static_cast<VT>(noDataValue()) << endl;
+
+		for(int r = 0, rs = rows(); r < rs; r++)
+		{
+			for(int c = 0, cs = cols(); c < cs; c++)
+				fout << static_cast<VT>(dataAt(r, c)) << " ";
+			fout << endl;
+		}
+
+		fout.close();
 	}
 
-	bool isDataField(int row, int col) const
-	{
-		return !isNoDataField(row, col);
-	}
 
-	int noDataValue() const { return _grid->noDataValue(); }
-
-private:
-	const GridP* _grid;
-	SubData _subData;
-};
-
-//----------------------------------------------------------------------------
-
-//! hold just some information about the grid, without having to load it
-struct GridProxy : public Loki::ObjectLevelLockable<GridProxy>
-{
-	enum State { eNew, eChanged, eNormal };
-
-	GridProxy() : modificationTime(0), state(eNormal) { }
-	GridProxy(const std::string& dsn, const std::string& fn,
-						const std::string& ptgrid, time_t modTime = 0)
-		: datasetName(dsn), fileName(fn), pathToGrid(ptgrid),
-			modificationTime(modTime), state(eNew) { }
-
-	GridProxy(const std::string& dsn, const std::string& fn,
-						const std::string& pthdf, const std::string& hfn,
-						time_t modTime, State s = eNormal)
-		: datasetName(dsn), fileName(fn), pathToHdf(pthdf),
-			hdfFileName(hfn), modificationTime(modTime), state(s) {}
-
-	~GridProxy(){}
-
-	void updateModificationTime(time_t modTime)
-	{
-		modificationTime = modTime;
-		state = eChanged;
-	}
-
-	GridP* gridPtr();
-
-	GridPPtr gridPPtr();
-
-	//! resets gridproxy which in the end (without references to it) deletes possibly loaded grid
-	void reset(){ g.reset(); }
-
-	GridP* copyOfFullGrid() { return gridPtr()->clone(); }
-
-	void resetToLoadFromAscii(const std::string& pathToGrid);
-
-	std::string toString() const;
-
-	std::string datasetName;
-	std::string fileName;
-	std::string pathToGrid;
-	std::string pathToHdf;
-	std::string hdfFileName;
-	time_t modificationTime;
-	State state;
-protected:
-	GridPPtr g;
-};
-
-typedef boost::shared_ptr<GridProxy> GridProxyPtr;
-
-//----------------------------------------------------------------------------
-
-std::pair<GridMetaData, time_t>
-readGridMetadataFromHdf(const char* hdfFileName, const char* datasetName);
 }
 
 #endif
