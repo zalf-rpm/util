@@ -407,7 +407,7 @@ Date Tools::fromMysqlString(const char* mysqlDateString)
 	int month = atoi(d.substr(5, 2).c_str());
 	int day = atoi(d.substr(8,2).c_str());
 	//cout << day << "." << month << "." << year << endl;
-	return Date(day, month, year);
+	return Date(day, month, year, true);
 }
 
 //------------------------------------------------------------------------------
