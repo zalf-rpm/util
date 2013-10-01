@@ -322,9 +322,8 @@ createVirtualGrid(const Quadruple<LatLngCoord>& llrect, double cellSize,
 {
 	const vector<RectCoord>& rcs =
 			latLng2RC(asTlTrBrBl<vector<LatLngCoord> >(llrect), tcs);
-	//cout << "llrect after conversion to rcs" << endl;
-	//for_each(rcs.begin(), rcs.end(),
-	//         cout << boost::lambda::bind(&RECTCoord::toString, _1) << '\n');
+//	cout << "llrect after conversion to rcs" << endl;
+//	for_each(rcs.begin(), rcs.end(), [](RectCoord rc){ cout << rc.toString() << endl; });
 	return createVirtualGrid(Quadruple<RectCoord>(rcs), cellSize, userSubPath);
 }
 
@@ -501,7 +500,8 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 				//nothing until the whole virtual grid thing will be redone
 				if(gmd.regionName == "uecker" ||
 					 gmd.regionName == "weisseritz" ||
-					 gmd.regionName == "brazil")
+					 gmd.regionName == "brazil-sinop" ||
+					 gmd.regionName == "brazil-campo-verde")
 					vg->setCustomId(gmd.regionName);
 
 				pair<Row, Col> rc = rowColInGrid(gmd, c);
@@ -767,7 +767,7 @@ GridManager::addNewGridProxy(const Path& userSubPath,
 //		<< " pathToGridFile: " << pathToGridFile << endl;
 	GridMetaData gmd = extractMetadataFromGrid(pathToGridFile, cs);
 	gmd.regionName = extractRegionName(gridFileName);
-	if(gmd.regionName == "brazil")
+	if(gmd.regionName.substr(0, 6) == "brazil")
 		gmd.coordinateSystem = UTM21S_EPSG32721;
 	string dsn = extractDatasetName(gridFileName);
 

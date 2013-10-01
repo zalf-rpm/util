@@ -64,16 +64,18 @@ namespace Grids
 
 	struct RCRect
 	{
-		RCRect() {}
+		RCRect(Tools::CoordinateSystem cs = Tools::UndefinedCoordinateSystem)
+			: tl(cs), br(cs) {}
+
 		RCRect(const Tools::RectCoord& tl, const Tools::RectCoord& br)
 			: tl(tl), br(br) {}
 
 		bool contains(const Tools::RectCoord& p,
-			bool exclusiveBottomRightBorder = false) const
+									bool exclusiveBottomRightBorder = false) const
 		{
 			return exclusiveBottomRightBorder ?
-				(tl.r <= p.r && p.r < br.r) && (br.h < p.h && p.h <= tl.h) :
-			(tl.r <= p.r && p.r <= br.r) && (br.h <= p.h && p.h <= tl.h);
+						(tl.r <= p.r && p.r < br.r) && (br.h < p.h && p.h <= tl.h) :
+						(tl.r <= p.r && p.r <= br.r) && (br.h <= p.h && p.h <= tl.h);
 		}
 
 		bool contains(const RCRect& other) const;
@@ -129,8 +131,8 @@ namespace Grids
 		Tools::RectCoord topLeftCorner() const
 		{
 			return Tools::RectCoord(coordinateSystem,
-				xllcorner,
-				yllcorner+(nrows*cellsize));
+															xllcorner,
+															yllcorner+(nrows*cellsize));
 		}
 
 		Tools::RectCoord topRightCorner() const
@@ -269,7 +271,7 @@ namespace Grids
 #endif
 
 		template<typename ValueType>
-		void writeAscii(const std::string& pathToAsciiFile);
+		void writeAscii(const std::string& pathToAsciiFile) const;
 
 		//! create clone of part of the grid
 		GridP* subGridClone(int top, int left, int rows, int cols) const;
@@ -309,7 +311,15 @@ namespace Grids
 		Tools::HistogramData histogram(int noOfClasses);
 
 		//! value frequency = map of percent of pixels -> pixel value
-		std::multimap<double, double, std::greater<double> > frequency();
+		template<typename ValueType>
+		std::multimap<ValueType, double, std::greater<double> > 
+			frequencyRev(bool includeNoDataValues = false,
+			int roundValueToDigits = 1, int roundResultToDigits = 1);
+
+		template<typename GridValueType, typename PercentageType>
+		std::map<GridValueType, PercentageType> 
+			frequency(bool includeNoDataValues, std::function<GridValueType(double)> roundGridValueF, 
+			std::function<PercentageType(double)> roundPercentageValueF) const;
 
 		GridP* setAllFieldsTo(double newValue, bool keepNoData = true);
 
@@ -332,6 +342,12 @@ namespace Grids
 		GridP* setAllFieldsWithoutTo(float withoutValue, float toNewValue, bool includeNoData = false);
 
 		GridP* setFieldsTo(const GridP* other, bool keepNoData = true);
+
+		template<typename ReturnType>
+		ReturnType dataAtRT(int row, int col) const
+		{
+			return ReturnType(_grid->feld[row][col]);
+		}
 
 		float dataAt(int row, int col) const { return _grid->feld[row][col]; }
 
@@ -664,7 +680,7 @@ namespace Grids
 		return scalarMatrixOp(left, right, std::divides<float>());
 	}
 
-	inline vector<double> allDataAsLinearVector(const GridP* g)
+	inline std::vector<double> allDataAsLinearVector(const GridP* g)
 	{
 		return g->allDataAsLinearVector();
 	}
@@ -775,7 +791,7 @@ namespace Grids
 	//------------------------------------------------------------------------------
 
 	template<typename VT>
-	void GridP::writeAscii(const std::string& pathToAsciiFile)
+	void GridP::writeAscii(const std::string& pathToAsciiFile) const
 	{
 		std::ofstream fout(pathToAsciiFile);
 
@@ -796,6 +812,94 @@ namespace Grids
 		}
 
 		fout.close();
+	}
+
+	template<typename ValueType>
+	std::multimap<ValueType, double, std::greater<double> > 
+		GridP::frequencyRev(bool includeNoDataValues, int roundValueToDigits, int roundResultToDigits)
+	{
+		typedef std::map<int, int> Map;
+		Map m;
+		int nops = 0; //number of pixels
+		for(int i = 0; i < rows(); i++)
+		{
+			for(int j = 0; j < cols(); j++)
+			{
+				if(isDataField(i, j))
+				{
+					int v = int(dataAt(i, j)*std::pow(10.0, roundValueToDigits));
+					if(m.find(v) == m.end())
+						m[v] = 1;
+					else
+						m[v]++;
+					nops++;
+				}
+			}
+		}
+
+		multimap<ValueType, double, greater<double> > res;
+
+		int allPixels = includeNoDataValues ? rows()*cols() : nops;
+		if(includeNoDataValues)
+		{
+			double percentNoData = 
+				Tools::round(double(allPixels - nops)/double(allPixels)*100.0, roundResultToDigits);
+
+			if(int(percentNoData) != 0)
+				res.insert(make_pair(percentNoData, double(noDataValue()))); 
+		}
+
+		BOOST_FOREACH(Map::value_type p, m)
+		{
+			double percent = double(p.second)/double(allPixels)*100.0;
+			double rp = Tools::round(percent, roundResultToDigits);
+			if(int(percent != 0))
+				res.insert(make_pair(rp, ValueType(double(p.first)/pow(10.0, roundValueToDigits))));
+		}
+
+		return res;
+	}
+
+	template<typename GridValueType, typename PercentageType>
+	std::map<GridValueType, PercentageType> 
+		GridP::frequency(bool includeNoDataValues, 
+		std::function<GridValueType(double)> roundGridValueF, 
+		std::function<PercentageType(double)> roundPercentageValueF) const
+	{
+		typedef std::map<GridValueType, PercentageType> Map;
+		Map m;
+		int nops = 0; //number of pixels
+		for(int i = 0; i < rows(); i++) 
+		{
+			for(int j = 0; j < cols(); j++) 
+			{
+				if(isDataField(i, j))	
+				{
+					m[roundGridValueF(dataAt(i, j))]++;
+					nops++;
+				}
+			}
+		}
+				
+		Map result;
+
+		int allPixels = includeNoDataValues ? rows()*cols() : nops;
+		if(includeNoDataValues)
+		{
+			PercentageType percentNoData = roundPercentageValueF(double(allPixels - nops)/double(allPixels)*100.0);
+
+			if(percentNoData > PercentageType(0))
+				result[GridValueType(noDataValue())] = percentNoData; 
+		}
+				
+		for_each(m.begin(), m.end(), [&](Map::value_type p)
+		{
+			PercentageType percent = roundPercentageValueF(double(p.second)/double(allPixels)*100.0);
+			if(percent > PercentageType(0))
+				result[p.first] = percent;
+		});
+
+		return result;
 	}
 
 

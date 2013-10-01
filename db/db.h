@@ -59,12 +59,26 @@ namespace Db
 	{
 	public:
 		virtual ~DB() {}
+		
 		virtual bool exec(const char* sqlStatement) = 0;
+		virtual bool exec(const std::string& sqlStatement) { return exec(sqlStatement.c_str()); }
+
 		virtual bool select(const char* selectStatement){ return exec(selectStatement); }
+		virtual bool select(const std::string& selectStatement){ return exec(selectStatement.c_str()); }
+
 		virtual bool query(const char* sqlStatement){ return exec(sqlStatement); }
+		virtual bool query(const std::string& sqlStatement){ return exec(sqlStatement.c_str()); }
+
 		virtual bool insert(const char* insertStatement){ return exec(insertStatement); }
+		virtual bool insert(const std::string& insertStatement){ return insert(insertStatement.c_str()); }
+
 		virtual bool update(const char* updateStatement){ return exec(updateStatement); }
+		virtual bool update(const std::string& updateStatement){ return update(updateStatement.c_str()); }
+
 		virtual bool del(const char* deleteStatement){ return exec(deleteStatement); }
+		virtual bool del(const std::string& deleteStatement){ return del(deleteStatement.c_str()); }
+
+
 		virtual unsigned int getNumberOfFields() = 0;
 		//MYSQL_FIELD* getFields();
 		//MYSQL_FIELD* getNextField();
@@ -83,6 +97,7 @@ namespace Db
 		virtual std::string toDBDate(Tools::Date date) const = 0;
 
 		virtual void setCharacterSet(const char* charsetName) = 0;
+		virtual void setCharacterSet(const std::string charsetName) { setCharacterSet(charsetName.c_str()); }
 
 		virtual DB* clone() const = 0; // { return new DB(_host, _user, _pwd, _schema, _port); }
 

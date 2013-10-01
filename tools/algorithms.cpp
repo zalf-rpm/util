@@ -561,16 +561,31 @@ std::pair<double, int> Tools::decomposeIntoSci(double value)
   return make_pair(man, exp);
 }
 
-/*
-double Tools::round(double value, int digits, bool trailingDigits){
-if(trailingDigits){
-double t = value * (std::pow(double(10), digits));
-return int(t + 0.5) / std::pow(double(10), digits);
+int Tools::integerRound1stDigit(int value)
+{
+	auto v = div(value, 10);
+	switch(v.rem)
+	{
+	case 0: case 1: case 2: case 3: case 4: return v.quot*10;
+	case 5: case 6: case 7: case 8: case 9: return v.quot*10 + 10;
+	}
 }
-double t = value / (std::pow(double(10), digits));
-return int(t + 0.5) * std::pow(double(10), digits);
+
+int Tools::roundShiftedInt(double value, int roundToDigits)
+{
+	int shiftDigits = roundToDigits + 1;
+
+	//round to full integers or digits after the decimal point
+	if(roundToDigits >= 0) 
+		return integerRound1stDigit(shiftDecimalPointRight<int>(value, shiftDigits)) / 10;
+
+	//round to full 100s
+	if(roundToDigits < -1) 
+		return integerRound1stDigit(shiftDecimalPointLeft<int>(value, -shiftDigits)) / 10;
+
+	//round to full 10s
+	return integerRound1stDigit(value);
 }
-*/
 
 double Tools::floor(double value, int digits, bool trailingDigits)
 {
@@ -596,17 +611,17 @@ void Tools::testRoundFloorCeil()
   assert(round(1.54, 1) == 1.5);
   assert(round(1.5, 1) == 1.5);
 
-  assert(round(1.5555, 3) == 1.556);
-  assert(round(1.5551, 3) == 1.555);
-  assert(round(1.5559, 3) == 1.556);
+  assert(roundShiftedInt(1.5555, 3) == 1556);
+  assert(roundShiftedInt(1.5551, 3) == 1555);
+  assert(roundShiftedInt(1.5559, 3) == 1556);
 
-  assert(round(123., 1, false) == 120);
-  assert(round(125., 1, false) == 130);
-  assert(round(130., 1, false) == 130);
+  assert(roundRT<int>(123., -1) == 120);
+  assert(roundRT<int>(125., -1) == 130);
+  assert(roundRT<int>(130., -1) == 130);
 
-  assert(round(123456., 4, false) == 120000);
-  assert(round(125456., 4, false) == 130000);
-  assert(round(120456., 4, false) == 120000);
+  assert(roundRT<int>(123456., -4) == 120000);
+  assert(roundRT<int>(125456., -4) == 130000);
+  assert(roundRT<int>(120456., -4) == 120000);
 
   assert(floor(1.5) == 1);
   assert(floor(1.4) == 1);

@@ -60,7 +60,7 @@ namespace Climate
 		int uniqueFunctionId(const std::string& functionIdentifier);
 
 		void preloadClimateData(ClimateRealization* realization,
-														Grids::GridMetaData gmd, vector<ACD> acds,
+														Grids::GridMetaData gmd, std::vector<ACD> acds,
 														int fromYear, int toYear,
 														boost::function<void(int, int) > stateCallback =
 														boost::function<void(int, int)>(),
@@ -70,8 +70,8 @@ namespace Climate
     {
       CacheInfo() : cacheData(false) {}
       bool cacheData;
-      string pathToHdfCache;
-      string functionIdString;
+			std::string pathToHdfCache;
+			std::string functionIdString;
       std::vector<ResultId> resultIds;
     };
 

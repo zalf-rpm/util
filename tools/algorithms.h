@@ -94,7 +94,7 @@ namespace Tools
   * @return a trimmed version of s
   */
   std::string trim(const std::string& s,
-    const std::string& whitespaces = " \t\f\v\n\r");
+		const std::string& whitespaces = " \t\f\v\n\r");
 
   /*!
   * keep a value in the given border [lower, upper]
@@ -110,11 +110,11 @@ namespace Tools
   double sunshine2globalRadiation(int dayInYear, double sunshineHours,
     double latitude, bool asMJpm2pd = true);
 
-  double cloudAmount2globalRadiation(int dayOfYear,
-    double cloudAmount, //[1/8]
-    double latitude, //[deg°]
-    double heightNN, //[m]
-    bool asMJpm2pd = true);
+	double cloudAmount2globalRadiation(int dayOfYear,
+		double cloudAmount, //[1/8]
+		double latitude, //[deg°]
+		double heightNN, //[m]
+		bool asMJpm2pd = true);
 
   /*!
   * capitalize a copy of the input
@@ -152,7 +152,8 @@ namespace Tools
   /*!
   * structure holding information necessary to build a histogram
   */
-  struct  HistogramData {
+  struct HistogramData 
+	{
     //! borders separating histogram slots
     std::vector<double> borders;
 
@@ -227,7 +228,7 @@ namespace Tools
   /*!
   * a structure holding all necessary information to create a BoxPlot
   */
-  struct  BoxPlotInfo {
+  struct BoxPlotInfo {
     //! empty boxplot, usually for use of BoxPlotInfo as value object
     BoxPlotInfo();
 
@@ -335,16 +336,50 @@ namespace Tools
 
   std::pair<double, int> decomposeIntoSci(double value);
 
-  template<typename T>
-  double round(T value, int digits, bool trailingDigits);
-  // double round(double value, int digits, bool trailingDigits);
+	int integerRound1stDigit(int value);
 
-  template<typename T>
-  inline T round(T value, int digits){ return round(value, digits, true); }
+	template<typename ReturnType>
+	inline ReturnType shiftDecimalPointRight(double value, int digits)
+	{
+		for(int d = 0; d < digits; d++)
+			value *= 10;
+		return ReturnType(value);
+	}
+	
+	template<typename ReturnType>
+	inline ReturnType shiftDecimalPointLeft(double value, int digits)
+	{
+		for(int d = 0; d < digits; d++)
+			value /= 10.0;
+		return ReturnType(value);
+	}
+	
+	//round to int but keep shifted to roundToDigits
+	int roundShiftedInt(double value, int roundToDigits);
 
-  template<typename T>
-  inline T round(T value){ return round(value, 0, true); }
+	//round to given amount of digits (-digits = round to integer digits = left side of decimal point)
+	//return casted to given ReturnType
+  template<typename ReturnType>
+  ReturnType roundRT(double value, int roundToDigits)
+	{
+		int rsi = roundShiftedInt(value, roundToDigits);
+		
+		//round to full integers or digits after the decimal point
+		if(roundToDigits >= 0) 
+			return shiftDecimalPointLeft<ReturnType>(rsi, roundToDigits);
+		
+		//round to full 100s
+		if(roundToDigits < -1) 
+			return shiftDecimalPointRight<ReturnType>(rsi, -roundToDigits);
+		
+		//round to full 10s
+		return ReturnType(rsi);
+	}
+  
+	inline double round(double value, int roundToDigits) { return roundRT<double>(value, roundToDigits); }
 
+	inline double round(double value){ return roundRT<double>(value, 0); }
+	
   double floor(double value, int digits = 0, bool trailingDigits = true);
   double ceil(double value, int digits = 0, bool trailingDigits = true);
 
@@ -724,19 +759,6 @@ Vector& Tools::inScalVecOp(Vector& left, T right, OP op){
   for(int i = 0, size = left.size(); i < size; i++)
     left[i] = op(left.at(i), right);
   return left;
-}
-
-template<typename T>
-double Tools::round(T value, int digits, bool trailingDigits)
-{
-  if(trailingDigits){
-    T t = value * (std::pow(T(10), digits));
-    //return int(t + 0.5) / std::pow(T(10), digits);
-    return std::floor(t + 0.5) / std::pow(T(10), digits);
-  }
-  T t = value / (std::pow(T(10), digits));
-  //return int(t + 0.5) * std::pow(T(10), digits);
-  return std::floor(t + 0.5) * std::pow(T(10), digits);
 }
 
 //------------------------------------------------------------------------------

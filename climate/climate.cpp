@@ -1261,8 +1261,10 @@ CarbiocialRealization::executeQuery(const ACDV& acds,
 					 "order by year, month, day "
 					 "and raster_point_id = " << cs.id();
 
-	//cout << "query: " << query.str() << endl;
+	cout << "query: " << query.str() << endl;
 	connection().select(query.str().c_str());
+
+	cout << "after query" << endl;
 
 	int rowCount = connection().getNumberOfRows();
 	map<ACD, vector<double>*> acd2ds;
@@ -1271,20 +1273,30 @@ CarbiocialRealization::executeQuery(const ACDV& acds,
 		acd2ds[acd] = new vector<double>(rowCount);
 	}
 
+	cout << "after acd2ds[acd] = new vector<double>(rowCount);" << endl;
+
 	Db::DBRow row;
 	int count = 0;
-	while(!(row = connection().getRow()).empty()) {
+	while(!(row = connection().getRow()).empty())
+	{
 		int c = 0;
 		BOOST_FOREACH(ACD acd, acds)
 		{
 			auto scaleFactor = availableClimateData2CarbiocialDBColNameAndScaleFactor(acd).second;
 			(*(acd2ds[acd]))[count] = (*(fs.at(c++)))(row) / double(scaleFactor);
 		}
+
+//		cout << "stored row: " << count << endl;
+
 		count++;
 	}
 
+//	cout << "after storing acds" << endl;
+
 	for(unsigned int i = 0; i < fs.size(); i++)
 		delete fs.at(i);
+
+	cout << "leaving CarbiocialRealization::executeQuery" << endl;
 
 	return acd2ds;
 }
@@ -1759,7 +1771,7 @@ void ClimateDataManager::loadAvailableSimulations(set<string> ass)
 	}
 	if(ass.find("cru") != ass.end())
 		_simulations.push_back(newDDCru());
-	if(ass.find("carbiocial") != ass.end())
+	if(ass.find("carbiocial-climate") != ass.end())
 		_simulations.push_back(new CarbiocialSimulation(newConnection("carbiocial-climate")));
 }
 

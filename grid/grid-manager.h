@@ -66,9 +66,14 @@ namespace Grids
 	public:
 		VirtualGrid(Tools::CoordinateSystem cs,
 								const Grids::RCRect& rect, double cellSize,
-		            unsigned int rows, unsigned int cols, int noDataValue = -9999)
-		            : _noDataValue(noDataValue), _rect(rect), _cellSize(cellSize),
-		            _rows(rows), _cols(cols) {}
+								unsigned int rows, unsigned int cols, int noDataValue = -9999)
+			: _noDataValue(noDataValue),
+				_rect(rect),
+				_cellSize(cellSize),
+				_rows(rows),
+				_cols(cols),
+				_coordinateSystem(cs)
+		{}
 
 		virtual ~VirtualGrid();
 
@@ -144,7 +149,8 @@ namespace Grids
 		GridP* emptyGrid() const
 		{
 			return new GridP("template", rows(), cols(), cellSize(),
-											 rcRect().tl.r, rcRect().br.h, noDataValue());
+											 rcRect().tl.r, rcRect().br.h, noDataValue(),
+											 coordinateSystem());
 		}
 
 		std::string name() const
@@ -209,7 +215,8 @@ namespace Grids
 	//----------------------------------------------------------------------------
 
 	//! a real virtual grid, possibly consisting of many
-	class RealVirtualGrid : public VirtualGrid {
+	class RealVirtualGrid : public VirtualGrid
+	{
 	public:
 		typedef Tools::StdMatrix<std::vector<Data> > DataMatrix;
 		typedef std::vector<std::vector<GridProxyPtr>*> VVGP;
@@ -225,11 +232,12 @@ namespace Grids
 		virtual std::vector<Data> dataAt(unsigned int row, unsigned int col) const;
 
 		virtual std::vector<Data>
-		dataAt(const Tools::RectCoord& /*rcc*/) const
-		{ return std::vector<Data>(); }
+		dataAt(const Tools::RectCoord& /*rcc*/) const { return std::vector<Data>(); }
 
 		void addDataAt(unsigned int row, unsigned int col, const Data& data)
-		{ _data[row][col].push_back(data); }
+		{
+			_data[row][col].push_back(data);
+		}
 
 		virtual std::vector<const GridP*> availableGrids();
 
@@ -244,7 +252,8 @@ namespace Grids
 	typedef std::string Path;
 
 	//! manages all available grids in a system/the given paths
-	class GridManager {
+	class GridManager
+	{
 		typedef std::string FileName;
 
 		typedef std::string PathToFile;
@@ -294,19 +303,19 @@ namespace Grids
 																					const Path& userSubPath = "general");
 
 		GridMetaData gridMetaDataForRegionName(const std::string& regionName,
-																					const Path& userSubPath = "general");
+																					 const Path& userSubPath = "general");
 
 		GridPPtr gridFor(const std::string& regionName,
-										const std::string& datasetName,
-										const Path& userSubPath = "general",
-										int cellSize = 100,
-										GridMetaData subgridMetaData = GridMetaData());
+										 const std::string& datasetName,
+										 const Path& userSubPath = "general",
+										 int cellSize = 100,
+										 GridMetaData subgridMetaData = GridMetaData());
 
 		std::vector<GridPPtr> gridsFor(const std::string& regionName,
-																	const std::set<std::string>& datasetNames,
-																	const Path& userSubPath = "general",
-																	int cellSize = 100,
-																	GridMetaData subgridMetaData = GridMetaData());
+																	 const std::set<std::string>& datasetNames,
+																	 const Path& userSubPath = "general",
+																	 int cellSize = 100,
+																	 GridMetaData subgridMetaData = GridMetaData());
 
 		std::vector<std::vector<Tools::LatLngCoord> >
 		regions(const Path& userSubPath = "general") const;
@@ -314,10 +323,10 @@ namespace Grids
 		std::vector<GridMetaData> regionGmds(const Path& userSubPath = "general") const;
 
 
-		RegData regionalizedData(const string& region, const string& dataId) const;
+		RegData regionalizedData(const std::string& region, const std::string& dataId) const;
 
-		RegGroupOfData regionalizedGroupOfData(const string& region,
-		                                       const string& groupId) const;
+		RegGroupOfData regionalizedGroupOfData(const std::string& region,
+																					 const std::string& groupId) const;
 
 		/*!
 		* add new proxy to manager which loads the given gridfile
@@ -364,11 +373,16 @@ namespace Grids
 		//! get the modification time of the given file
 		std::time_t modificationTime(const char* fileName);
 
+		std::time_t modificationTime(const std::string& fileName)
+		{
+			return modificationTime(fileName.c_str());
+		}
+
 		//! filter out the dataset name from a grid file name
 		std::string extractDatasetName(const std::string& gridFileName) const;
 
 		//! filter the possible region name out of a grid file name
-		std::string extractRegionName(const string& gfn) const;
+		std::string extractRegionName(const std::string& gfn) const;
 
 		//! extract metadata from a grid file
 		GridMetaData extractMetadataFromGrid(const std::string& gridFileName,
@@ -392,7 +406,7 @@ namespace Grids
 		int& hdfIdCount(const Path& userSubPath);
 
 		GridPPtr createSubgrid(GridPPtr g, GridMetaData subgridMetaData,
-													bool alwaysClone = false);
+													 bool alwaysClone = false);
 
 	private: //state
 		Env _env;
@@ -409,12 +423,9 @@ namespace Grids
 	};
 
 	//----------------------------------------------------------------------------
-	//----------------------------------------------------------------------------
-	//----------------------------------------------------------------------------
 
 	//! get gridmanager for initial env
 	GridManager& gridManager(GridManager::Env initialEnv = GridManager::Env());
-
 }
 
 #endif

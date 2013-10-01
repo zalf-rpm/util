@@ -125,7 +125,7 @@ namespace Tools
 	{
 		LatLngCoord() : Coord2D(LatLng_EPSG4326), lat(0), lng(0) {}
 
-		LatLngCoord(CoordinateSystem cs)
+		LatLngCoord(CoordinateSystem)
 			: Coord2D(LatLng_EPSG4326), lat(0), lng(0)
 		{}
 
@@ -133,7 +133,7 @@ namespace Tools
 			: Coord2D(LatLng_EPSG4326), lat(lat), lng(lng)
 		{}
 
-		LatLngCoord(CoordinateSystem cs, double lat, double lng)
+		LatLngCoord(CoordinateSystem, double lat, double lng)
 			: Coord2D(LatLng_EPSG4326), lat(lat), lng(lng)
 		{}
 
@@ -271,7 +271,7 @@ std::vector<TCT>
 Tools::sourceProj2targetProj(const std::vector<SCT>& scs, CoordinateSystem targetCS)
 {
 	if(scs.empty())
-		return vector<TCT>();
+		return std::vector<TCT>();
 
 	CoordConversionParams sccp = coordConversionParams(scs.front().coordinateSystem);
 	CoordConversionParams tccp = coordConversionParams(targetCS);
@@ -299,12 +299,12 @@ Tools::sourceProj2targetProj(const std::vector<SCT>& scs, CoordinateSystem targe
 		int error = pj_transform(sourcePJ, targetPJ, nocs, 0, xs, ys, zs);
 		if(error)
 		{
-			cerr << "error: " << error << endl;
-			return vector<TCT>();
+			std::cerr << "error: " << error << std::endl;
+			return std::vector<TCT>();
 		}
 	}
 
-	vector<TCT> tcs(nocs);
+	std::vector<TCT> tcs(nocs);
 	double tcv = tccp.targetConversionFactor;
 	bool ts2Dc = tccp.switch2DCoordinates;
 	for(unsigned int i = 0; i < nocs; i++)

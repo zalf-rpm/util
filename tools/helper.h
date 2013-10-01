@@ -278,9 +278,15 @@ namespace Tools
 
 	//-------------------------------------------------------------------------
 
-	inline int satoi(const std::string& s){ return std::atoi(s.c_str()); }
+	inline int satoi(const std::string& s, int def = 0)
+	{
+		return s.empty() ? def : std::atoi(s.c_str());
+	}
 
-	inline double satof(const std::string& s){ return std::atof(s.c_str()); }
+	inline double satof(const std::string& s, double def = 0.0)
+	{
+		return s.empty() ? def : std::atof(s.c_str());
+	}
 
 }
 

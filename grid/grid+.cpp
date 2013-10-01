@@ -163,13 +163,13 @@ RCRect RCRect::intersected(const RCRect& other) const
 	//cout << "intersecting: this: " << toString()
 	//<< " other: " << other.toString() << endl;
 	if (isNull() || other.isNull())
-		return RCRect();
-	RCRect temp;
+		return RCRect(tl.coordinateSystem);
+	RCRect temp(tl.coordinateSystem);
 	temp.tl.r = max(tl.r, other.tl.r);
 	temp.tl.h = min(tl.h, other.tl.h);
 	temp.br.r = min(br.r, other.br.r);
 	temp.br.h = max(br.h, other.br.h);
-	return temp.isEmpty() ? RCRect() : temp;
+	return temp.isEmpty() ? RCRect(tl.coordinateSystem) : temp;
 }
 
 string RCRect::toString() const
@@ -288,7 +288,7 @@ Grids::readGridMetadataFromHdf(const char* hdfFileName,
 
 	char* rn = hd.get_s_attribute((char*)"Modell");
 	gmd.regionName = rn;
-	if(gmd.regionName == "brazil")
+	if(gmd.regionName.substr(0, 6) == "brazil")
 		gmd.coordinateSystem = UTM21S_EPSG32721;
 	free(rn);
 
@@ -596,9 +596,11 @@ HistogramData GridP::histogram(int noOfClasses)
 	return res;
 }
 
-multimap<double, double, greater<double> > GridP::frequency()
+/*
+multimap<double, double, greater<double> > 
+	GridP::frequency(bool includeNoDataValues, int roundValueToDigits, int roundResultToDigits)
 {
-	typedef map<double, int> Map;
+	typedef map<int, int> Map;
 	Map m;
 	int nops = 0; //number of pixels
   for(int i = 0; i < rows(); i++)
@@ -607,7 +609,7 @@ multimap<double, double, greater<double> > GridP::frequency()
     {
       if(isDataField(i, j))
       {
-				double v = dataAt(i, j);
+				int v = int(dataAt(i, j)*pow(10, roundValueToDigits));
 				if(m.find(v) == m.end())
 					m[v] = 1;
 				else
@@ -619,15 +621,27 @@ multimap<double, double, greater<double> > GridP::frequency()
 
 	multimap<double, double, greater<double> > res;
 
+	int allPixels = includeNoDataValues ? rows()*cols() : nops;
+	if(includeNoDataValues)
+	{
+		double percentNoData = 
+			Tools::round<double>(double(allPixels - nops)/double(allPixels)*100.0, roundResultToDigits);
+		
+		if(int(percentNoData) != 0)
+			res.insert(make_pair(percentNoData, double(noDataValue()))); 
+	}
+	
   BOOST_FOREACH(Map::value_type p, m)
   {
-		double percent = double(p.second) / double(nops) * 100.0;
-		double rp = round(percent, 1);
-		res.insert(make_pair(rp, p.first));
+		double percent = double(p.second)/double(allPixels)*100.0;
+		double rp = round<double>(percent, roundResultToDigits);
+		if(int(percent != 0))
+			res.insert(make_pair(rp, double(p.first)/pow(10, roundValueToDigits)));
 	}
 
 	return res;
 }
+*/
 
 GridP* GridP::setAllFieldsTo(double newValue, bool keepNoData)
 {

@@ -36,6 +36,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "grid.h"
 
 using namespace std;
+using namespace Grids;
 
 #define MAX_X_KOHON 512
 #define MAX_Y_KOHON 1024
@@ -100,8 +101,6 @@ using namespace std;
 
 #define HIST 20           // fractal
 
-using namespace std;
-
 typedef map<int,int> mapType;
 typedef mapType::value_type ValuePair;
 typedef map<int,double> doubleMap;
@@ -163,7 +162,7 @@ grid::~grid()       // Freigabe inneres Feld
 	}
 }
 
-grid* read_xyz(const char* name,grid* g1)
+grid* Grids::read_xyz(const char* name,grid* g1)
 {
 	double x,y,z;
 	double xmin,ymin,zmin, xmax,ymax,zmax,zmean;
@@ -1097,7 +1096,7 @@ grid* grid::n2()
 	return(gx);
 }
 
-
+/*
 grid* grid::tree_grid(float val)
 {
 	tree* treep=new tree(this);
@@ -1107,6 +1106,7 @@ grid* grid::tree_grid(float val)
 	delete treep;
 	return gx;
 }
+*/
 
 /*
 grid* grid::filter(double f1, double f2)
@@ -1309,12 +1309,12 @@ grid* grid::filter(double f1, double f2)
 */
 
 // determine the optimal tresh for denoising
-// int compare (const void * a, const void * b)
-// {
-//     if( *(double*)a < *(double*)b ) return -1;
-//     if( *(double*)a == *(double*)b ) return 0;
-//     if( *(double*)a > *(double*)b ) return 1;
-// }
+//int compare (const void * a, const void * b)
+//{
+//	if( *(double*)a < *(double*)b ) return -1;
+//	if( *(double*)a == *(double*)b ) return 0;
+//	if( *(double*)a > *(double*)b ) return 1;
+//}
 
 /*
 grid* grid::wavelet_d(int smin, int smax, int koeff)
@@ -3006,7 +3006,7 @@ static herr_t file_info(hid_t /*loc_id*/, const char *name, void* /*opdata*/)
 }
 
 
-void grid_save_to_R(char* name, int bins)
+void Grids::grid_save_to_R(char* name, int bins)
 {
 	cerr << name << " " << bins << endl;
 	hid_t    file;
@@ -6103,7 +6103,7 @@ void region::calc_mean(grid* g1,grid* ng)
 	}
 }
 
-int compare(const void* e1, const void* e2)
+int Grids::compare(const void* e1, const void* e2)
 {
 	float* v1=(float*)e1;
 	float* v2=(float*)e2;
@@ -6552,6 +6552,7 @@ void grid::grid_kadane(float diff)
 			else feld[i][j]+=diff;
 }
 
+/*
 // new tree algorithm
 tree::tree(grid* gx)
 {
@@ -6729,6 +6730,7 @@ grid* tree::map_tree()
 	}
 	return(out);
 }
+*/
 
 // water::water(grid* g)
 // {
