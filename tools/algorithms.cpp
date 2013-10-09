@@ -566,8 +566,10 @@ int Tools::integerRound1stDigit(int value)
 	auto v = div(value, 10);
 	switch(v.rem)
 	{
-	case 0: case 1: case 2: case 3: case 4: return v.quot*10;
+	case 0: case 1: case 2: case 3: case 4:
+	case -1: case -2: case -3: case -4: return v.quot*10;
 	case 5: case 6: case 7: case 8: case 9: return v.quot*10 + 10;
+	case -5: case -6: case -7: case -8: case -9: return v.quot*10 - 10;
 	}
 }
 

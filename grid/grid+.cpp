@@ -864,7 +864,7 @@ double GridP::average() const
 	return sum / double(count);
 }
 
-GridP* GridP::transformInPlace(boost::function<float(float)> transformFunction)
+GridP* GridP::transformInPlace(std::function<float(float)> transformFunction)
 {
   for(int r = 0, rs = rows(); r < rs; r++)
     for(int c = 0, cs = cols(); c < cs; c++)
@@ -873,7 +873,7 @@ GridP* GridP::transformInPlace(boost::function<float(float)> transformFunction)
 	return this;
 }
 
-GridP* GridP::transformP(boost::function<float(float)> transformFunction) const
+GridP* GridP::transformP(std::function<float(float)> transformFunction) const
 {
 	GridP* res = clone();
   res->transformInPlace(transformFunction);

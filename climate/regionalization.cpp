@@ -215,10 +215,10 @@ int Regionalization::borderSizeIncrementKM(int newGlobalValue)
 	return globalValue;
 }
 
-boost::function<FuncResult(DataAccessor) >
+std::function<FuncResult(DataAccessor) >
 Regionalization::defaultFunctionWith(AvailableClimateData acd)
 {
-	return boost::lambda::bind(defaultFunction, acd, _1);
+	return std::bind(defaultFunction, acd, std::placeholders::_1);
 }
 
 FuncResult Regionalization::defaultFunction(AvailableClimateData acd,
@@ -254,7 +254,7 @@ int Regionalization::uniqueFunctionId(const string& fid)
 void Regionalization::preloadClimateData(ClimateRealization* r,
 																				 GridMetaData gmd,  vector<ACD> acds,
 																				 int fromYear, int toYear,
-																				 boost::function<void(int, int)> callback,
+																				 std::function<void(int, int)> callback,
                                          int borderSize)
 {
 	vector<const ClimateStation*> climateStations =

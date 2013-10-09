@@ -274,8 +274,10 @@ namespace Db
 		template<class T>
     void operator()(T& list)
     {
-			list.sort(boost::lambda::bind(&Identifiable::name, boost::lambda::_1)
-								< boost::lambda::bind(&Identifiable::name, boost::lambda::_2));
+			list.sort([](Identifiable* left, const Identifiable* right){
+				return left->name < right->name; });
+//				boost::lambda::bind(&Identifiable::name, boost::lambda::_1)
+//								< boost::lambda::bind(&Identifiable::name, boost::lambda::_2));
 		}
 	};
 

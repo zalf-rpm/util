@@ -55,15 +55,15 @@ namespace Climate
 
 		FuncResult defaultFunction(AvailableClimateData acd, DataAccessor da);
 
-		boost::function<FuncResult(DataAccessor)> defaultFunctionWith(AvailableClimateData acd);
+		std::function<FuncResult(DataAccessor)> defaultFunctionWith(AvailableClimateData acd);
 
 		int uniqueFunctionId(const std::string& functionIdentifier);
 
 		void preloadClimateData(ClimateRealization* realization,
 														Grids::GridMetaData gmd, std::vector<ACD> acds,
 														int fromYear, int toYear,
-														boost::function<void(int, int) > stateCallback =
-														boost::function<void(int, int)>(),
+														std::function<void(int, int) > stateCallback =
+														std::function<void(int, int)>(),
 														int borderSize = -1);
 
     struct CacheInfo
@@ -98,7 +98,7 @@ namespace Climate
       CacheInfo cacheInfo;
 
 			//! function being applied to a complete year
-			boost::function < FuncResult(DataAccessor) > f;
+			std::function < FuncResult(DataAccessor) > f;
 		};
 
     typedef std::map<int, std::vector<Grids::GridPPtr> > Result;

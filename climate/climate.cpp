@@ -507,9 +507,7 @@ YearRange DDClimateDataServerSimulation::availableYearRange()
 
 CLMSimulation::CLMSimulation(Db::DB* con)
 	: ClimateSimulation("clm20-9", "CLM20-9", con),
-  _avgClimateStationsSet
-	(boost::function<bool(const ClimateStation*, const ClimateStation*)>
-	 (boost::lambda::bind(&ClimateStation::id, _1) < boost::lambda::bind(&ClimateStation::id, _2)))
+		_avgClimateStationsSet([](const ClimateStation* left, const ClimateStation* right){	return left->id() < right->id(); })
 {
 	setClimateStations();
 	setScenariosAndRealizations();
@@ -1724,7 +1722,7 @@ ClimateDataManager& Climate::climateDataManager()
           Db::dbConnectionParameters().values("active-climate-db-schemas");
 			set<string> s;
       transform(n2vs.begin(), n2vs.end(), inserter(s, s.begin()),
-								boost::lambda::bind(&Names2Values::value_type::first, _1));
+								std::bind(&Names2Values::value_type::first, std::placeholders::_1));
 			cdm.loadAvailableSimulations(s);
       initialized = true;
     }

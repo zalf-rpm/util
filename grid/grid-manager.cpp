@@ -61,14 +61,14 @@ namespace
 VirtualGrid::~VirtualGrid()
 {
 	for_each(_availableGrids.begin(), _availableGrids.end(),
-					 boost::lambda::bind(delete_ptr(), _1));
+					 [](GridP* g){ delete g; });//boost::lambda::bind(delete_ptr(), _1));
 }
 
 vector<const GridP*> VirtualGrid::availableGrids()
 {
 	vector<const GridP*> ags(_availableGrids.size());
 	std::transform(_availableGrids.begin(), _availableGrids.end(),
-	               ags.begin(), _1);
+								 ags.begin(), boost::lambda::_1);
 	return ags;
 }
 
@@ -82,12 +82,13 @@ string VirtualGrid::toShortDescription() const
 bool VirtualGrid::areGridDatasetsAvailable(const list<string>& gdsns) //const
 {
 	set<string> given;
-	std::transform(gdsns.begin(), gdsns.end(), inserter(given, given.end()), _1);
+	std::transform(gdsns.begin(), gdsns.end(), inserter(given, given.end()),
+								 boost::lambda::_1);
 
 	set<string> all;
   const vector<const GridP*>& ags = availableGrids();
   std::transform(ags.begin(), ags.end(), inserter(all, all.end()),
-								 boost::lambda::bind(&GridP::datasetName, _1));
+								 std::bind(&GridP::datasetName, std::placeholders::_1));
 
 	return std::includes(all.begin(), all.end(), given.begin(), given.end());
 }
@@ -96,7 +97,8 @@ map<string, const GridP*>
     VirtualGrid::gridsForDatasetNames(const list<string>& gdsns) //const
 {
 	set<string> given;
-	std::transform(gdsns.begin(), gdsns.end(), inserter(given, given.end()), _1);
+	std::transform(gdsns.begin(), gdsns.end(), inserter(given, given.end()),
+								 boost::lambda::_1);
 
 	map<string, const GridP*> m;
   const vector<const GridP*>& ags = availableGrids();
@@ -209,7 +211,8 @@ RealVirtualGrid::RealVirtualGrid(CoordinateSystem cs, const RCRect& rect,
 RealVirtualGrid::~RealVirtualGrid()
 {
 	for_each(_usedGridProxies.begin(), _usedGridProxies.end(),
-					 boost::lambda::bind(delete_ptr(), _1));
+					 [](vector<GridProxyPtr>* gs){ delete gs; });
+					 //boost::lambda::bind(delete_ptr(), _1));
 	//for_each(_data.begin(), _data.end(), boost::lambda::bind(delete_ptr(), _1));
 }
 
@@ -335,19 +338,6 @@ VirtualGrid* GridManager::createVirtualGrid(const Quadruple<RectCoord>& rcpoly,
 	if(ci != _gmdMap.end())
 		return createVirtualGrid(ci->second, rcpoly, cellSize);
 	return NULL;
-}
-
-namespace
-{
-  struct Contains
-  {
-    RectCoord _c;
-    Contains(RectCoord c) : _c(c) {}
-    bool operator()(const GridMetaData& gmd) const
-    {
-			return gmd.rcRect().contains(_c, true);
-    }
-  };
 }
 
 VirtualGrid*
@@ -478,6 +468,7 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 	RealVirtualGrid* vg = new RealVirtualGrid(usedCS, extendedBoundingRect,
 																						cellSize,
 	                                          nocsH, nocsR, gpss);
+
 	//now we have to iterate through the virtual grid and fill its cells
 	//either with no data values or with references to the potential grids
 	//and the correct indices into it
@@ -487,11 +478,11 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
     {
 			vector<GridMetaData>::iterator it = gmds.begin();// - 1;
 			const RectCoord& c = vg->rcCoordAt(i, k);
-      while((it = find_if(it, gmds.end(), Contains(c))) != gmds.end())
-				//boost::lambda::bind(&RCRect::contains,
-				//   boost::lambda::bind(&GridMetaData::rcRect,
-        //     _1), c, true))) != gmds.end())
-      {
+
+			auto f = [&](const GridMetaData& gmd){ return gmd.rcRect().contains(c, true); };
+
+			while((it = find_if(it, gmds.end(), f)) != gmds.end())
+			{
 				//else it vg is preinitialized with no data values
 				const GridMetaData& gmd = *it;
 
@@ -499,7 +490,7 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 				//consists of data from more than one region, but better than
 				//nothing until the whole virtual grid thing will be redone
 				if(gmd.regionName == "uecker" ||
-					 gmd.regionName == "weisseritz" ||
+					 gmd.regionName == "sachsen" ||
 					 gmd.regionName == "brazil-sinop" ||
 					 gmd.regionName == "brazil-campo-verde")
 					vg->setCustomId(gmd.regionName);
@@ -692,7 +683,8 @@ void GridManager::checkAndUpdateHdfStore(const Path& userSubPath)
 	//but not anymore in the system
 	GridProxies leftOverGrids;
 	transform(gridFn2grid.begin(), gridFn2grid.end(), back_inserter(leftOverGrids),
-						boost::lambda::bind<GridProxyPtr>(&GFN2GP::value_type::second, _1));
+						[](const GFN2GP::value_type& p){ return p.second; });
+//						std::bind<GridProxyPtr>(&GFN2GP::value_type::second, std::placeholders::_1));
 
 //	cout << "left over grids before: (" << endl;
 //	for_each(leftOverGrids.begin(), leftOverGrids.end(),

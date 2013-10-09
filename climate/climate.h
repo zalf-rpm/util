@@ -503,7 +503,7 @@ namespace Climate
 
   private: //state
     typedef std::map<const ClimateStation*, std::set<const ClimateStation*>,
-    boost::function<bool(const ClimateStation*, const ClimateStation*)> > M;
+		std::function<bool(const ClimateStation*, const ClimateStation*)> > M;
     M _avgClimateStationsSet;
 	};
 

@@ -446,7 +446,7 @@ namespace Grids
 
 		double average() const;
 
-		GridP* transformInPlace(boost::function<float(float)> transformFunction);
+		GridP* transformInPlace(std::function<float(float)> transformFunction);
 
 		GridP* replace(float searchValue, float replaceValue)
 		{
@@ -457,12 +457,12 @@ namespace Grids
 				? replaceValue : v; });
 		}
 
-		GridPPtr transform(boost::function<float(float)> transformFunction) const
+		GridPPtr transform(std::function<float(float)> transformFunction) const
 		{
 			return GridPPtr(transformP(transformFunction));
 		}
 
-		GridP* transformP(boost::function<float(float)> transformFunction) const;
+		GridP* transformP(std::function<float(float)> transformFunction) const;
 
 		std::pair<int, int> rc2rowCol(Tools::RectCoord rcc) const;
 
@@ -483,16 +483,16 @@ namespace Grids
 		}
 
 		template<typename T>
-		std::set<T> uniqueValues(boost::function<T(float)> transform =
-			boost::function<T(float)>(boost::lambda::_1),
-			bool ignoreNoDataValues = true) const
+		std::set<T> uniqueValues(std::function<T(float)> transform =
+				std::function<T(float)>(), bool ignoreNoDataValues = true) const
 		{
-			return mapF<std::set<T> >(transform, ignoreNoDataValues);
+			return mapF<std::set<T>>(transform ? transform : [](float v){ return T(v); },
+															 ignoreNoDataValues);
 		}
 
 		template<class Container, typename T>
-		Container mapF(boost::function<T(float)> transformFunc,
-			bool ignoreNoDataValues = true) const
+		Container mapF(std::function<T(float)> transformFunc,
+									 bool ignoreNoDataValues = true) const
 		{
 			Container cont;
 			for(int r = 0, rs = rows(); r < rs; r++)
@@ -508,7 +508,7 @@ namespace Grids
 		}
 
 		template<typename T>
-		T foldF(T init, boost::function<T(T, float)> foldFunc) const
+		T foldF(T init, std::function<T(T, float)> foldFunc) const
 		{
 			T res = init;
 			for(int r = 0, rs = rows(); r < rs; r++)
@@ -517,12 +517,12 @@ namespace Grids
 			return res;
 		}
 
-		void setDisplayValueTransformFunction(boost::function<std::string(double)> f)
+		void setDisplayValueTransformFunction(std::function<std::string(double)> f)
 		{
 			_displayValueTransformFunction = f;
 		}
 
-		boost::function<std::string(double)> displayValueTransformFunction() const
+		std::function<std::string(double)> displayValueTransformFunction() const
 		{
 			return _displayValueTransformFunction;
 		}
@@ -532,7 +532,7 @@ namespace Grids
 		std::string _datasetName;
 		std::string _descriptiveLabel;
 		std::string _unit;
-		boost::function<std::string(double)> _displayValueTransformFunction;
+		std::function<std::string(double)> _displayValueTransformFunction;
 		Tools::CoordinateSystem _coordinateSystem;
 	};
 
@@ -580,7 +580,7 @@ namespace Grids
 				if (left.isDataField(r, c))
 					left.setDataAt(r, c, op(left.dataAt(r, c), value));
 		return left;
-	};
+	}
 
 	inline GridP& operator*=(GridP& left, float value)
 	{
@@ -602,7 +602,7 @@ namespace Grids
 			}
 		}
 		return left;
-	};
+	}
 
 	inline GridP& operator*=(GridP& left, const GridP& right)
 	{
@@ -640,7 +640,7 @@ namespace Grids
 			}
 		}
 		return *res;
-	};
+	}
 
 	template<class OP>
 	GridP& scalarMatrixOp(const GridP& left, const GridP& right, OP op)
@@ -658,7 +658,7 @@ namespace Grids
 			}
 		}
 		return *res;
-	};
+	}
 
 	inline GridP& operator*(const GridP& left, const GridP& right)
 	{
