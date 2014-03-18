@@ -544,8 +544,8 @@ void CLMSimulation::setClimateStations()
 	connection().select
 	("SELECT h.stat_id, h.stat_name, h.rwert5, h.hwert5, h.breite_dez, "
 	 "h.laenge_dez, h.nn, sl.dat_id "
-	 "FROM project_landcare.header_clm20 h "
-	 "inner join project_landcare.clm20_stolist sl on h.stat_id = sl.stat_id");
+	 "FROM clm20.header_clm20 h "
+	 "inner join clm20.clm20_stolist sl on h.stat_id = sl.stat_id");
 
   set<int> lats, lngs;
 
@@ -771,16 +771,34 @@ dataAccessorFor(const ACDV& acds, const LatLngCoord& gc,
     int numberOfValues = startDate.numberOfDaysTo(endDate+1);
     DataAccessor bda(startDate, endDate);
 
+		bool cacheError = false;
+		ostringstream errorData;
+		errorData << "Climate-Cache-Error" << endl;
+
     for(ACDV::const_iterator acdi = acds.begin(); acdi != acds.end(); acdi++)
     {
       Cache& c = cs[*acdi];
-      unsigned int o = c.offsetFor(startDate);
-      bda.addClimateData(*acdi, vector<double>(c._cache.begin()+o,
-                                               c._cache.begin()+o+numberOfValues));
-      //bda._data->push_back(vector<double>(c._cache.begin()+o,
-      //		c._cache.begin()+o+numberOfValues));
-      //bda._acd2dataIndex[int(*acdi)] = bda._data->size() - 1;
-    }
+			if(c.isInitialized())
+			{
+				unsigned int o = c.offsetFor(startDate);
+				bda.addClimateData(*acdi, vector<double>(c._cache.begin()+o,
+																								 c._cache.begin()+o+numberOfValues));
+			}
+			else
+			{
+				cacheError = true;
+				errorData << "ACD: " << *acdi
+									<< " startDate: " << startDate.toString()
+									<< " endDate: " << endDate.toString()
+									<< endl;
+			}
+		}
+
+		if(cacheError)
+		{
+			cout << errorData.str() << endl;
+			return DataAccessor();
+		}
 
     return bda;
   }
@@ -1734,30 +1752,35 @@ ClimateDataManager& Climate::climateDataManager()
 void ClimateDataManager::loadAvailableSimulations(set<string> ass)
 {
 	using namespace Db;
-	if(ass.find("clm20-9") != ass.end())
-		_simulations.push_back(new CLMSimulation(newConnection("clm20-9")));
-	if(ass.find("clm20") != ass.end())
-		_simulations.push_back(newDDClm20());
-  if(ass.find("star") != ass.end())
-		_simulations.push_back(new StarSimulation(newConnection("star")));
-  if(ass.find("star2") != ass.end())
-  {
-		_simulations.push_back(new Star2Simulation(newConnection("star2")));
-		_simulations.push_back(new Star2MeasuredDataSimulation(newConnection("star2")));
-  }
-	if(ass.find("wettreg2006") != ass.end())
+	bool isMexicoMode = false; //true;
+	if(!isMexicoMode)
 	{
-		//put in front to designate the default
-		_simulations.insert(_simulations.begin(), newDDWettReg2006());
+		if(ass.find("clm20-9") != ass.end())
+			_simulations.push_back(new CLMSimulation(newConnection("clm20-9")));
+		if(ass.find("clm20") != ass.end())
+			_simulations.push_back(newDDClm20());
+		if(ass.find("star") != ass.end())
+			_simulations.push_back(new StarSimulation(newConnection("star")));
+		if(ass.find("star2") != ass.end())
+		{
+			_simulations.push_back(new Star2Simulation(newConnection("star2")));
+			_simulations.push_back(new Star2MeasuredDataSimulation(newConnection("star2")));
+		}
+		if(ass.find("wettreg2006") != ass.end())
+		{
+			//put in front to designate the default
+			_simulations.insert(_simulations.begin(), newDDWettReg2006());
+		}
+		if(ass.find("wettreg2010") != ass.end())
+		{
+			_simulations.push_back(newDDWettReg2010());
+		}
+		if(ass.find("remo") != ass.end())
+			_simulations.push_back(newDDRemo());
+		if(ass.find("werex4") != ass.end())
+			_simulations.push_back(newDDWerex4());
 	}
-	if(ass.find("wettreg2010") != ass.end())
-	{
-		_simulations.push_back(newDDWettReg2010());
-	}
-	if(ass.find("remo") != ass.end())
-		_simulations.push_back(newDDRemo());
-	if(ass.find("werex4") != ass.end())
-		_simulations.push_back(newDDWerex4());
+
 	if(ass.find("echam5") != ass.end())
 		_simulations.push_back(newDDEcham5());
 	if(ass.find("echam6") != ass.end())
@@ -1769,8 +1792,10 @@ void ClimateDataManager::loadAvailableSimulations(set<string> ass)
 	}
 	if(ass.find("cru") != ass.end())
 		_simulations.push_back(newDDCru());
-	if(ass.find("carbiocial-climate") != ass.end())
-		_simulations.push_back(new CarbiocialSimulation(newConnection("carbiocial-climate")));
+
+	if(!isMexicoMode)
+		if(ass.find("carbiocial-climate") != ass.end())
+			_simulations.push_back(new CarbiocialSimulation(newConnection("carbiocial-climate")));
 }
 
 ClimateDataManager::~ClimateDataManager()
