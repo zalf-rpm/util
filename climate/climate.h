@@ -869,6 +869,15 @@ namespace Climate
 	DDClimateDataServerSimulation* newDDWettReg2010(std::string userRs = std::string());
 	DDClimateDataServerSimulation* newDDRemo();
 	DDClimateDataServerSimulation* newDDWerex4(std::string userRs = std::string());
+	DDClimateDataServerSimulation* newDDWerex5_eh5_l1(std::string userRs = std::string());
+	DDClimateDataServerSimulation* newDDWerex5_eh5_l1_clm(std::string userRs = std::string());
+	DDClimateDataServerSimulation* newDDWerex5_eh5_l2(std::string userRs = std::string());
+	DDClimateDataServerSimulation* newDDWerex5_eh5_l2_clm(std::string userRs = std::string());
+	DDClimateDataServerSimulation* newDDWerex5_eh5_l3(std::string userRs = std::string());
+	DDClimateDataServerSimulation* newDDWerex5_eh5_l3_racmo(std::string userRs = std::string());
+	DDClimateDataServerSimulation* newDDWerex5_eh5_l3_remo(std::string userRs = std::string());
+	DDClimateDataServerSimulation* newDDWerex5_hc3c_l1_a1b(std::string userRs = std::string());
+	DDClimateDataServerSimulation* newDDWerex5_hc3c_l1_e1(std::string userRs = std::string());
 	DDClimateDataServerSimulation* newDDClm20(std::string userRs = std::string());
 	DDClimateDataServerSimulation* newDDEcham5(std::string userRs = std::string());
 	DDClimateDataServerSimulation* newDDEcham6(std::string userRs = std::string());

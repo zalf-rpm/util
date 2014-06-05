@@ -1779,6 +1779,24 @@ void ClimateDataManager::loadAvailableSimulations(set<string> ass)
 			_simulations.push_back(newDDRemo());
 		if(ass.find("werex4") != ass.end())
 			_simulations.push_back(newDDWerex4());
+		if(ass.find("werex5_eh5_l1") != ass.end())
+			_simulations.push_back(newDDWerex5_eh5_l1());
+		if(ass.find("werex5_eh5_l1_clm") != ass.end())
+			_simulations.push_back(newDDWerex5_eh5_l1_clm());
+		if(ass.find("werex5_eh5_l2") != ass.end())
+			_simulations.push_back(newDDWerex5_eh5_l2());
+		if(ass.find("werex5_eh5_l2_clm") != ass.end())
+			_simulations.push_back(newDDWerex5_eh5_l2_clm());
+		if(ass.find("werex5_eh5_l3") != ass.end())
+			_simulations.push_back(newDDWerex5_eh5_l3());
+		if(ass.find("werex5_eh5_l3_racmo") != ass.end())
+			_simulations.push_back(newDDWerex5_eh5_l3_racmo());
+		if(ass.find("werex5_eh5_l3_remo") != ass.end())
+			_simulations.push_back(newDDWerex5_eh5_l3_remo());
+		if(ass.find("werex5_hc3c_l1_a1b") != ass.end())
+			_simulations.push_back(newDDWerex5_hc3c_l1_a1b());
+		if(ass.find("werex5_hc3c_l1_e1") != ass.end())
+			_simulations.push_back(newDDWerex5_hc3c_l1_e1());
 	}
 
 	if(ass.find("echam5") != ass.end())
@@ -1872,6 +1890,125 @@ DDClimateDataServerSimulation* Climate::newDDWerex4(string userRs)
 	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
 
 	return new DDClimateDataServerSimulation(setup, Db::newConnection("werex4"));
+}
+
+DDClimateDataServerSimulation* Climate::newDDWerex5_eh5_l1(string userRs)
+{
+	DDServerSetup setup("werex5_eh5_l1", "WEREX5-EH5-L1", "header", "werex5_stolist",
+											"werex5", "werex5_eh5_l1");
+	setup._scenarioIds.push_back("A1B");
+	setup._scenarioIds.push_back("E1");
+
+	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "werex5_eh5_l1", "77") : userRs;
+	vector<string> vsr = Tools::splitString(rs, ", ");
+	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
+
+	return new DDClimateDataServerSimulation(setup, Db::newConnection("werex5"));
+}
+
+DDClimateDataServerSimulation* Climate::newDDWerex5_eh5_l1_clm(string userRs)
+{
+	DDServerSetup setup("werex5_eh5_l1_clm", "WEREX5-EH5-L1-CLM", "header", "werex5_stolist",
+											"werex5", "werex5_eh5_l1_clm");
+	setup._scenarioIds.push_back("A1B");
+
+	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "werex5_eh5_l1_clm", "55") : userRs;
+	vector<string> vsr = Tools::splitString(rs, ", ");
+	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
+
+	return new DDClimateDataServerSimulation(setup, Db::newConnection("werex5"));
+}
+
+DDClimateDataServerSimulation* Climate::newDDWerex5_eh5_l2(string userRs)
+{
+	DDServerSetup setup("werex5_eh5_l2", "WEREX5-EH5-L2", "header", "werex5_stolist",
+											"werex5", "werex5_eh5_l2");
+	setup._scenarioIds.push_back("A1B");
+
+	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "werex5_eh5_l2", "44") : userRs;
+	vector<string> vsr = Tools::splitString(rs, ", ");
+	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
+
+	return new DDClimateDataServerSimulation(setup, Db::newConnection("werex5"));
+}
+
+DDClimateDataServerSimulation* Climate::newDDWerex5_eh5_l2_clm(string userRs)
+{
+	DDServerSetup setup("werex5_eh5_l2_clm", "WEREX5-EH5-L2-CLM", "header", "werex5_stolist",
+											"werex5", "werex5_eh5_l2_clm");
+	setup._scenarioIds.push_back("A1B");
+	setup._scenarioIds.push_back("E1");
+
+	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "werex5_eh5_l2_clm", "33") : userRs;
+	vector<string> vsr = Tools::splitString(rs, ", ");
+	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
+
+	return new DDClimateDataServerSimulation(setup, Db::newConnection("werex5"));
+}
+
+DDClimateDataServerSimulation* Climate::newDDWerex5_eh5_l3(string userRs)
+{
+	DDServerSetup setup("werex5_eh5_l3", "WEREX5-EH5-L3", "header", "werex5_stolist",
+											"werex5", "werex5_eh5_l3");
+	setup._scenarioIds.push_back("A1B");
+
+	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "werex5_eh5_l3", "33") : userRs;
+	vector<string> vsr = Tools::splitString(rs, ", ");
+	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
+
+	return new DDClimateDataServerSimulation(setup, Db::newConnection("werex5"));
+}
+
+DDClimateDataServerSimulation* Climate::newDDWerex5_eh5_l3_racmo(string userRs)
+{
+	DDServerSetup setup("werex5_eh5_l3_racmo", "WEREX5-EH5-L3-RACMO", "header", "werex5_stolist",
+											"werex5", "werex5_eh5_l3_racmo");
+	setup._scenarioIds.push_back("A1B");
+
+	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "werex5_eh5_l3_racmo", "00") : userRs;
+	vector<string> vsr = Tools::splitString(rs, ", ");
+	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
+
+	return new DDClimateDataServerSimulation(setup, Db::newConnection("werex5"));
+}
+
+DDClimateDataServerSimulation* Climate::newDDWerex5_eh5_l3_remo(string userRs)
+{
+	DDServerSetup setup("werex5_eh5_l3_remo", "WEREX5-EH5-L3-REMO", "header", "werex5_stolist",
+											"werex5", "werex5_eh5_l3_remo");
+	setup._scenarioIds.push_back("A1B");
+
+	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "werex5_eh5_l3_remo", "88") : userRs;
+	vector<string> vsr = Tools::splitString(rs, ", ");
+	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
+
+	return new DDClimateDataServerSimulation(setup, Db::newConnection("werex5"));
+}
+
+DDClimateDataServerSimulation* Climate::newDDWerex5_hc3c_l1_a1b(string userRs)
+{
+	DDServerSetup setup("werex5_hc3c_l1_a1b", "WEREX5-HC3C-L1-A1B", "header", "werex5_stolist",
+											"werex5", "werex5_hc3c_l1");
+	setup._scenarioIds.push_back("A1B");
+
+	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "werex5_eh5_l1_a1b", "00") : userRs;
+	vector<string> vsr = Tools::splitString(rs, ", ");
+	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
+
+	return new DDClimateDataServerSimulation(setup, Db::newConnection("werex5"));
+}
+
+DDClimateDataServerSimulation* Climate::newDDWerex5_hc3c_l1_e1(string userRs)
+{
+	DDServerSetup setup("werex5_hc3c_l1_e1", "WEREX5-HC3C-L1-E1", "header", "werex5_stolist",
+											"werex5", "werex5_hc3c_l1");
+	setup._scenarioIds.push_back("E1");
+
+	string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "werex5_eh5_l1_e1", "44") : userRs;
+	vector<string> vsr = Tools::splitString(rs, ", ");
+	BOOST_FOREACH(string s, vsr) { setup._realizationIds.push_back(s); }
+
+	return new DDClimateDataServerSimulation(setup, Db::newConnection("werex5"));
 }
 
 DDClimateDataServerSimulation* Climate::newDDClm20(string userRs)
