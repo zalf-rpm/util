@@ -1,0 +1,6 @@
+#/bin/bash
+
+export LD_LIBRARY_PATH=../../sys-libs/lib:../../user-libs/lib:$LD_LIBRARY_PATH
+
+./regionalization $1 $2 $3 $4 $5
+
