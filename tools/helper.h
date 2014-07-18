@@ -31,7 +31,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <cstring>
 
+#ifndef Q_MOC_RUN
 #include "boost/algorithm/string/case_conv.hpp"
+#endif //Q_MOC_RUN
 #include "loki/TypeTraits.h"
 
 namespace Tools

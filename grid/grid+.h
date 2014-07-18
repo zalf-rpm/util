@@ -34,10 +34,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <functional>
 #include <iostream>
 
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
 #include <boost/lambda/if.hpp>
+#endif //Q_MOC_RUN
 
 #include "tools/stl-algo-boost-lambda.h"
 

@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <algorithm>
 #include <functional>
+#ifndef Q_MOC_RUN
 #include <boost/lambda/lambda.hpp>
 //#include <boost/lambda/control_structures.hpp>
 //#include <boost/lambda/if.hpp>
@@ -35,5 +36,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //#include <boost/lambda/construct.hpp>
 //#include <boost/ref.hpp>
 //#include <boost/lambda/casts.hpp>
+#endif
 
 #endif

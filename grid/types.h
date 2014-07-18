@@ -26,7 +26,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef GRID_TYPES_H_
 #define GRID_TYPES_H_
 
+#ifndef Q_MOC_RUN
 #include "boost/shared_ptr.hpp"
+#endif //Q_MOC_RUN
 
 #include <map>
 #include <string>

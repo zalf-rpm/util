@@ -8,7 +8,9 @@
 #include <QtCore/QQueue>
 #include <string>
 
+#ifndef Q_MOC_RUN
 #include <boost/function.hpp>
+#endif //Q_MOC_RUN
 
 #include "tools/helper.h"
 #include "code-runner.h"

@@ -6,7 +6,10 @@
 #include <vector>
 #include <set>
 #include <list>
+
+#ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
+#endif //Q_MOC_RUN
 
 //#include "tools/date.h"
 #include "tools/auto-deleter.h"
