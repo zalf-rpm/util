@@ -288,6 +288,7 @@ Grids::readGridMetadataFromHdf(const char* hdfFileName,
 
 	char* rn = hd.get_s_attribute((char*)"Modell");
 	gmd.regionName = rn;
+  gmd.coordinateSystem =
 	if(gmd.regionName.substr(0, 6) == "brazil")
 		gmd.coordinateSystem = UTM21S_EPSG32721;
 	free(rn);
@@ -497,16 +498,57 @@ bool GridP::operator==(const GridP& other) const
 }
 
 #ifndef NO_HDF5
+int GridP::readHdf(const string& pathToHdfFile, const string& datasetName)
+{
+  hdf5* hd = new(hdf5);
+  if(hd->open_f(pathToHdfFile.c_str())!=0){
+    cerr << "error (read_hdf): can not open hdf_file: " << fname << endl;
+    return -1;
+  }
+  if(hd->open_d(datasetName.c_str())!=0){
+    cerr << "error (read_hdf): can not open dataset: " << datasetn << endl;
+    return -2;
+  }
+  if(feld!=(float**)NULL){
+    for(int i=0; i<nrows; i++){
+      delete [] feld[i];
+    }
+  }
+  _grid->ncols=hd->get_i_attribute("ncols");
+  _grid->nrows=hd->get_i_attribute("nrows");
+  _grid->nodata=hd->get_i_attribute("nodata");
+  _grid->xcorner=hd->get_d_attribute("xllcorner");
+  _grid->ycorner=hd->get_d_attribute("yllcorner");
+  _grid->csize=hd->get_f_attribute("cell-size");
+  char* cs = hd->get_s_attribute("coordinate-system");
+  _coordinateSystem = Tools::shortStringToCoordinateSystem(cs);
+  free(cs);
+  //cerr << ncols << " " << nrows << " " << csize << endl;
+  hd->read_f_feld(datasetName.c_str()); // writes to f1 in grid
+  float** feld = _grid->feld;
+  feld=new float*[nrows];
+  for(int i=0; i<nrows; i++){
+    if((_grid->feld[i]=new float[ncols])==NULL){
+      cerr << "error (read_hdf): no sufficient memory" << endl;
+    }
+  }
+  // read_in
+  for(int i=0; i<nrows; i++){
+    for(int j=0; j<ncols; j++){
+      feld[i][j]=hd->f1[i*ncols+j];
+    }
+  }
+  delete hd;
+  return 0;
+}
+
 bool GridP::writeHdf(const string& pathToHdfFile, const string& datasetName,
-                     const string& regionName, time_t t)
+                     const string& regionName, const string& coordinateSystemShort, time_t t)
 {
   //cout << "pathToHdfFile: " << pathToHdfFile << endl;
   if(!ensureDirExists(pathToHdfFile.substr(0, pathToHdfFile.find_last_of('/'))))
     return false;
 
-	char* fname = (char*)pathToHdfFile.c_str();
-	char* datasetn = (char*)datasetName.c_str();
-	char* modell = (char*)regionName.c_str();
 	int ncols = _grid->ncols;
 	int nrows = _grid->nrows;
 	float** feld = _grid->feld;
@@ -522,21 +564,21 @@ bool GridP::writeHdf(const string& pathToHdfFile, const string& datasetName,
 		for(int j = 0; j < ncols; j++)
 			f1[i * ncols + j] = feld[i][j];
 	hdf5* hd = new hdf5;
-	if(hd->open_f(fname) != 0)
-		hd->create_f(fname);
+  if(hd->open_f(pathToHdfFile.c_str()) != 0)
+    hd->create_f(pathToHdfFile.c_str());
 	bool success = false;
-  if(hd->open_d(datasetn) != 0)
+  if(hd->open_d(datasetName.c_str()) != 0)
   {
-		hd->write_f_feld(datasetn, f1, nrows, ncols);
-		hd->write_s_attribute((char*)"Autor", (char*)"LandcareDSS-GridManager");
-		hd->write_s_attribute((char*)"Modell", modell);
-		hd->write_l_attribute((char*)"time", t);
-		hd->write_d_attribute((char*)"xcorner", _grid->xcorner);
-		hd->write_d_attribute((char*)"ycorner", _grid->ycorner);
-		hd->write_f_attribute((char*)"csize", _grid->csize);
-		hd->write_i_attribute((char*)"nodata", _grid->nodata);
-		hd->write_i_attribute((char*)"ncols", ncols);
-		hd->write_i_attribute((char*)"nrows", nrows);
+    hd->write_f_feld(datasetName.c_str(), f1, nrows, ncols);
+    hd->write_s_attribute("coordinate-system", coordinateSystemShort.c_str());
+    hd->write_s_attribute("region-name", regionName.c_str());
+    hd->write_l_attribute("time", t);
+    hd->write_d_attribute("xllcorner", _grid->xcorner);
+    hd->write_d_attribute("yllcorner", _grid->ycorner);
+    hd->write_f_attribute("cell-size", _grid->csize);
+    hd->write_i_attribute("nodata", _grid->nodata);
+    hd->write_i_attribute("ncols", ncols);
+    hd->write_i_attribute("nrows", nrows);
 		success = true;
 	}
 	delete[] f1;

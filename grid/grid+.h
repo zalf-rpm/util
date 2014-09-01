@@ -267,9 +267,13 @@ namespace Grids
 		}
 
 #ifndef NO_HDF5
-		bool writeHdf(const std::string& pathToHdfFile,
-			const std::string& datasetName,
-			const std::string& regionName, time_t t);
+    int readHdf(const std::string& pathToHdfFile, const std::string& datasetName);
+
+    bool writeHdf(const std::string& pathToHdfFile,
+                  const std::string& datasetName,
+                  const std::string& regionName,
+                  const std::string& coordinateSystemShort,
+                  time_t t);
 #endif
 
 		template<typename ValueType>

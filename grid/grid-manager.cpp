@@ -759,8 +759,9 @@ GridManager::addNewGridProxy(const Path& userSubPath,
 //		<< " pathToGridFile: " << pathToGridFile << endl;
 	GridMetaData gmd = extractMetadataFromGrid(pathToGridFile, cs);
 	gmd.regionName = extractRegionName(gridFileName);
-	if(gmd.regionName.substr(0, 6) == "brazil")
-		gmd.coordinateSystem = UTM21S_EPSG32721;
+  gmd.coordinateSystem = extractCoordinateSystem(gridFileName);
+//  if(gmd.regionName.substr(0, 6) == "brazil")
+//		gmd.coordinateSystem = UTM21S_EPSG32721;
 	string dsn = extractDatasetName(gridFileName);
 
 	//	cout << "gmd: " << gmd.toString() << endl;
@@ -1234,6 +1235,14 @@ string GridManager::extractRegionName(const string& gfn) const
 	int start = gfn.find_first_of("_")+1;
 	return gfn.substr(start, gfn.find_first_of("_", start) - start);
 }
+
+string GridManager::extractCoordinateSystem(const string& gfn) const
+{
+  int start1 = gfn.find_first_of("_")+1;
+  int start2 = gfn.find_first_of("_", start1)+1;
+  return gfn.substr(start2);
+}
+
 
 void GridManager::writeGrid2HdfMappingFile(const Path& userSubPath)
 {

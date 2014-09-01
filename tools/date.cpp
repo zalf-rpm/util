@@ -402,12 +402,16 @@ Date Date::toAbsoluteDate(unsigned int absYear, bool ignoreDeltaYears) const
  */
 Date Tools::fromMysqlString(const char* mysqlDateString)
 {
-	string d(mysqlDateString ? mysqlDateString : "1951-01-01");
-	int year = atoi(d.substr(0, 4).c_str());
-	int month = atoi(d.substr(5, 2).c_str());
-	int day = atoi(d.substr(8,2).c_str());
-	//cout << day << "." << month << "." << year << endl;
-	return Date(day, month, year, true);
+	if (mysqlDateString)
+	{
+		string d(mysqlDateString);
+		int year = atoi(d.substr(0, 4).c_str());
+		int month = atoi(d.substr(5, 2).c_str());
+		int day = atoi(d.substr(8, 2).c_str());
+		//cout << day << "." << month << "." << year << endl;
+		return Date(day, month, year, true);
+	}
+	return Date();
 }
 
 //------------------------------------------------------------------------------

@@ -38,7 +38,8 @@ namespace Tools
 	{
 		LatLng_EPSG4326 = 0,
 		UTM21S_EPSG32721,
-		GK5_EPSG31469,
+    GK5_EPSG31469,
+    UTM32N_EPSG25832,
 		UndefinedCoordinateSystem
 	};
 

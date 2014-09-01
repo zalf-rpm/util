@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "proj_api.h"
 
 #include "coord-trans.h"
+#include "tools/helper.h"
 
 using namespace std;
 using namespace Tools;
@@ -52,11 +53,26 @@ string Tools::coordinateSystemToShortString(CoordinateSystem cs)
 	{
 	case GK5_EPSG31469: return "GK5";
 	case UTM21S_EPSG32721: return "UTM21S";
+  case UTM32N_EPSG25832: return "UTM32N";
 	case LatLng_EPSG4326: return "LatLng";
 	case UndefinedCoordinateSystem: return "undefined";
 	default: ;
 	}
 	return "unknown";
+}
+
+CoordinateSystem Tools::shortStringToCoordinateSystem(string cs)
+{
+  if(Tools::toLower(cs) == "gk5")
+    return GK5_EPSG31469;
+  else if(Tools::toLower(cs) == "utm21s")
+    return UTM21S_EPSG32721;
+  else if(Tools::toLower(cs) == "utm32n")
+    return UTM32N_EPSG25832;
+  else if(Tools::toLower(cs) == "latlng")
+    return LatLng_EPSG4326;
+
+  return UndefinedCoordinateSystem;
 }
 
 CoordConversionParams Tools::coordConversionParams(CoordinateSystem cs)
@@ -79,6 +95,13 @@ CoordConversionParams Tools::coordConversionParams(CoordinateSystem cs)
 		ccp.projectionParams = "+proj=utm +zone=21 +south +ellps=WGS84 "
 													 "+datum=WGS84 +units=m +no_defs";
 		break;
+  case UTM32N_EPSG25832:
+    ccp.sourceConversionFactor = 1.0;
+    ccp.targetConversionFactor = 1.0;
+    ccp.switch2DCoordinates = false;
+    ccp.projectionParams = "+proj=utm +zone=32 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs ";
+    break;
+
 	case LatLng_EPSG4326:
 		ccp.sourceConversionFactor = .0174532925199432958; //DEG to RAD
 		ccp.targetConversionFactor = 57.29577951308232; //RAD to DEG

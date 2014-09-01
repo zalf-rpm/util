@@ -384,6 +384,9 @@ namespace Grids
 		//! filter the possible region name out of a grid file name
 		std::string extractRegionName(const std::string& gfn) const;
 
+    //! filter the possible coordinate system out of a grid file name
+    std::string extractCoordinateSystem(const std::string& gfn) const;
+
 		//! extract metadata from a grid file
 		GridMetaData extractMetadataFromGrid(const std::string& gridFileName,
 																				 Tools::CoordinateSystem cs
