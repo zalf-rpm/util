@@ -45,6 +45,7 @@ namespace Tools
 
 	std::string coordinateSystemToString(CoordinateSystem cs);
 	std::string coordinateSystemToShortString(CoordinateSystem cs);
+  CoordinateSystem shortStringToCoordinateSystem(std::string cs, CoordinateSystem def = UndefinedCoordinateSystem);
 
 	template<typename T>
 	struct Coord2D

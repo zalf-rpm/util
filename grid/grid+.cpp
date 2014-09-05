@@ -260,42 +260,41 @@ string GridMetaData::toCanonicalString(const std::string& sep) const
 
 #ifndef NO_HDF5
 pair<GridMetaData, time_t>
-Grids::readGridMetadataFromHdf(const char* hdfFileName,
-                               const char* datasetName)
+Grids::readGridMetadataFromHdf(const string& hdfFileName,
+                               const string& datasetName)
 {
 	GridMetaData gmd;
 
 	hdf5 hd;
-  if(hd.open_f((char*)hdfFileName)!=0)
+  if(hd.open_f(hdfFileName.c_str())!=0)
   {
-		cerr << "error (readGridMetadataFromHdf): can not open hdf_file: "
-		<< hdfFileName << endl;
-		return make_pair(gmd, -1);
-	}
-  if (hd.open_d((char*)datasetName)!=0)
+    cerr << "error (readGridMetadataFromHdf): can not open hdf_file: "
+         << hdfFileName << endl;
+    return make_pair(gmd, -1);
+  }
+  if(hd.open_d(datasetName.c_str())!=0)
   {
-		cerr << "error (readGridMetadataFromHdf): can not open dataset: "
-		<< hdfFileName << endl;
-		return make_pair(gmd, -1);
-	}
+    cerr << "error (readGridMetadataFromHdf): can not open dataset: "
+         << hdfFileName << endl;
+    return make_pair(gmd, -1);
+  }
 
-	gmd.ncols = hd.get_i_attribute((char*)"ncols");
-	gmd.nrows = hd.get_i_attribute((char*)"nrows");
-	gmd.nodata = hd.get_i_attribute((char*)"nodata");
-	gmd.xllcorner = hd.get_d_attribute((char*)"xcorner");
-	gmd.yllcorner = hd.get_d_attribute((char*)"ycorner");
-	gmd.cellsize = hd.get_f_attribute((char*)"csize");
-
-	char* rn = hd.get_s_attribute((char*)"Modell");
-	gmd.regionName = rn;
-  gmd.coordinateSystem =
-	if(gmd.regionName.substr(0, 6) == "brazil")
-		gmd.coordinateSystem = UTM21S_EPSG32721;
-	free(rn);
-
-	time_t time = hd.get_l_attribute((char*)"time");
-
-	return make_pair(gmd, time);
+  gmd.ncols = hd.get_i_attribute("ncols");
+  gmd.nrows = hd.get_i_attribute("nrows");
+  gmd.nodata = hd.get_i_attribute("nodata");
+  gmd.xllcorner = hd.get_d_attribute("xllcorner");
+  gmd.yllcorner = hd.get_d_attribute("yllcorner");
+  gmd.cellsize = hd.get_f_attribute("cell-size");
+  char* regionName = hd.get_s_attribute("region-name");
+  gmd.regionName = regionName;
+  free(regionName);
+  char* cs = hd.get_s_attribute("coordinate-system");
+  gmd.coordinateSystem = shortStringToCoordinateSystem(cs);
+  free(cs);
+//	if(gmd.regionName.substr(0, 6) == "brazil")
+//		gmd.coordinateSystem = UTM21S_EPSG32721;
+  time_t time = hd.get_l_attribute("time");
+  return make_pair(gmd, time);
 }
 #endif
 
@@ -425,7 +424,7 @@ GridP::GridP(const string& datasetName, FileType ft, const string& pathToFile,
 #ifndef NO_HDF5
   case HDF:
     _grid = GridPtr(new grid(100));
-    _grid->read_hdf((char*)pathToFile.c_str(), (char*)datasetName.c_str());
+    readHdf(pathToFile.c_str(), datasetName.c_str());
     break;
 #endif
   case ASCII:
@@ -500,18 +499,18 @@ bool GridP::operator==(const GridP& other) const
 #ifndef NO_HDF5
 int GridP::readHdf(const string& pathToHdfFile, const string& datasetName)
 {
-  hdf5* hd = new(hdf5);
+  hdf5* hd = new hdf5;
   if(hd->open_f(pathToHdfFile.c_str())!=0){
-    cerr << "error (read_hdf): can not open hdf_file: " << fname << endl;
+    cerr << "error (read_hdf): can not open hdf_file: " << pathToHdfFile << endl;
     return -1;
   }
   if(hd->open_d(datasetName.c_str())!=0){
-    cerr << "error (read_hdf): can not open dataset: " << datasetn << endl;
+    cerr << "error (read_hdf): can not open dataset: " << datasetName << endl;
     return -2;
   }
-  if(feld!=(float**)NULL){
-    for(int i=0; i<nrows; i++){
-      delete [] feld[i];
+  if(_grid->feld!=(float**)NULL){
+    for(int i=0; i<_grid->nrows; i++){
+      delete[] _grid->feld[i];
     }
   }
   _grid->ncols=hd->get_i_attribute("ncols");
@@ -525,8 +524,9 @@ int GridP::readHdf(const string& pathToHdfFile, const string& datasetName)
   free(cs);
   //cerr << ncols << " " << nrows << " " << csize << endl;
   hd->read_f_feld(datasetName.c_str()); // writes to f1 in grid
-  float** feld = _grid->feld;
-  feld=new float*[nrows];
+  int nrows = _grid->nrows;
+  int ncols = _grid->ncols;
+  _grid->feld = new float*[nrows];
   for(int i=0; i<nrows; i++){
     if((_grid->feld[i]=new float[ncols])==NULL){
       cerr << "error (read_hdf): no sufficient memory" << endl;
@@ -535,7 +535,7 @@ int GridP::readHdf(const string& pathToHdfFile, const string& datasetName)
   // read_in
   for(int i=0; i<nrows; i++){
     for(int j=0; j<ncols; j++){
-      feld[i][j]=hd->f1[i*ncols+j];
+      _grid->feld[i][j]=hd->f1[i*ncols+j];
     }
   }
   delete hd;

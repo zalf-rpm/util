@@ -3091,9 +3091,9 @@ int grid::read_hdf(char* fname, char* datasetn)
 	ncols=hd->get_i_attribute("ncols");
 	nrows=hd->get_i_attribute("nrows");
 	nodata=hd->get_i_attribute("nodata");
-	xcorner=hd->get_d_attribute("xcorner");
-	ycorner=hd->get_d_attribute("ycorner");
-	csize=hd->get_f_attribute("csize");
+  xcorner=hd->get_d_attribute("xllcorner");
+  ycorner=hd->get_d_attribute("yllcorner");
+  csize=hd->get_f_attribute("cell-size");
   //cerr << ncols << " " << nrows << " " << csize << endl;
 	hd->read_f_feld(datasetn); // writes to f1 in grid
 	feld=new float*[nrows];
