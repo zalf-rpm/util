@@ -59,7 +59,7 @@ string Tools::sttFromCode(int sttCode)
 	switch(sttc.at(0))
 	{
 	case 1: stt << "D"; break;
-	case 2: stt << "M"; break;
+  case 2: stt << "Mo"; break;
 	case 3: stt << "Al"; break;
 	case 4: stt << "Lö"; break;
 	case 5: stt << "V"; break;
@@ -91,7 +91,7 @@ vector<string> Tools::sttsFromCode(int sttCode)
 	switch(sttc.at(0))
 	{
 		case 1: stt << "D"; break;
-		case 2: stt << "M"; break;
+    case 2: stt << "Mo"; break;
 		case 3: stt << "Al"; break;
 		case 4: stt << "Lö"; break;
 		case 5: stt << "V"; break;
@@ -123,7 +123,11 @@ int Tools::sttCodeFromStt(string stt)
 	if(c == 'd')
 		sttCode += 100;
 	else if(c == 'm')
+  {
+    if(stt.at(i+1) == 'o')
+      i++;
 		sttCode += 200;
+  }
 	else if(c == 'a')
 	{
 		i++;

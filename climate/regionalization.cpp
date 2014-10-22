@@ -716,7 +716,7 @@ Results Regionalization::regionalize(Env env)
             //is anyway only used during this runtime-session
             L::Lock lock(diskCacheLockable);
 //            cout << "writing into hdf: year: " << year << " path: " << pathToHdf.str() << endl;
-						g->writeHdf(pathToHdf.str(), dsn.str(), "", -1);
+            g->writeHdf(pathToHdf.str(), dsn.str(), "", coordinateSystemToShortString(gmd.coordinateSystem), -1);
 //						cout << "writeAscii path: " << pathToHdf.str() << endl;
 //						g->writeAscii(pathToHdf.str());
           }

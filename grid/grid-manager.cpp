@@ -513,6 +513,201 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 }
 
 VirtualGrid*
+GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
+                               const Quadruple<Tools::LatLngCoord>& llrect)
+{
+  CoordinateSystem usedCS = rcpoly.tl.coordinateSystem;
+
+  //get bounding rect of rc polygon
+  RectCoord tl(usedCS, min(rcpoly.tl.r, rcpoly.bl.r), max(rcpoly.tl.h, rcpoly.tr.h));
+  RectCoord br(usedCS, max(rcpoly.tr.r, rcpoly.br.r), min(rcpoly.bl.h, rcpoly.br.h));
+  RCRect boundingRect(tl, br);
+
+  map<CoordinateSystem, RCRect> cs2boundingRect;
+
+  map<CoordinateSystem, vector<GridMetaData>> cs2gmds;
+  int minCellsize = 100000000;
+  map<CoordinateSystem, int> cs2noOfGPS;
+  //filter all GridMetaData with correct cellsize and intersecting rect
+  BOOST_FOREACH(GMD2GPS::value_type p, gmd2gridProxies)
+  {
+    auto cs = p.first.coordinateSystem;
+    auto ci = cs2boundingRect.find(cs);
+    RCRect boundingRect;
+    if(ci == cs2boundingRect.end())
+    {
+      //first convert latlng to rect coordinates of gmd
+      const vector<RectCoord>& rcs = latLng2RC(asTlTrBrBl<vector<LatLngCoord> >(llrect), cs);
+      auto rcpoly = Quadruple<RectCoord>(rcs);
+
+      //create and store a bounding rect in this rect coordinate system
+      RectCoord tl(cs, min(rcpoly.tl.r, rcpoly.bl.r), max(rcpoly.tl.h, rcpoly.tr.h));
+      RectCoord br(cs, max(rcpoly.tr.r, rcpoly.br.r), min(rcpoly.bl.h, rcpoly.br.h));
+      boundingRect = RCRect(tl, br);
+      cs2boundingRect[cs] = boundingRect;
+    }
+    else
+      boundingRect = ci->second.first;
+
+    //cout << "checking gmd: " << it->first.toString() << endl;
+    if(p.first.rcRect().intersects(boundingRect))
+    {
+      cs2noOfGPS[cs] += p.second.size();
+      minCellsize = min(p.first.cellsize, minCellsize);
+      cs2gmds[cs].push_back(p.first);
+    }
+  }
+
+  //cout << "the filtered gmds" << endl;
+  //for_each(gmds.begin(), gmds.end(),
+  //         cout << boost::lambda::bind(&GridMetaData::toString, _1) << '\n');
+
+  if(cs2gmds.empty())
+    return NULL;
+
+  //take the first region of the filtered ones and use this one as
+  //base for expanding the bounding rect to full cell-size bounds
+  const GridMetaData& firstGmd = cs2gmds.front();
+  //cout << "choosen gmd: " << firstGmd.toString() << endl;
+
+  //first find position in choosen grid metadata
+  //might in a grid if top left corner of bounding rect is inside
+  //the gmd or 0,0 (aka the top left of gmd) if the top left corner of
+  //the bounding rect is outside the gmd
+  const RCRect& intersectedRect = firstGmd.rcRect().intersected(boundingRect);
+  //cout << "intersectedRect: " << intersectedRect.toString() << endl;
+  const RectCoord& delta1 = intersectedRect.tl - firstGmd.topLeftCorner();
+  int indexR = int(std::floor(delta1.r / cellSize));
+  int indexH = int(std::floor(abs(delta1.h / cellSize)));
+  //cout << "delta1: " << delta1.toString() << " indexR: " << indexR
+  //<< " indexH: " << indexH << endl;
+  //rc position into choosen grid-class
+  RectCoord firstGmdTl(usedCS,
+                       firstGmd.topLeftCorner().r + (indexR * cellSize),
+                       firstGmd.topLeftCorner().h - (indexH * cellSize));
+  //cout << "grid-class top left: " << firstGmdTl.toString() << endl;
+
+  //now expand the top left corner of the bounding rect to the full
+  //outer (hypethetical) grid-cell bound
+  //this might be either the same as the previous calculated corner
+  //of a grid cell in the gmd (or gmd's 0,0 is case of an exact match)
+  //or the bounds have to be extended if the top left corner of bounding rect
+  //(of the users selection) was originally outside of the gmd
+  RectCoord delta2 = boundingRect.tl - firstGmdTl;
+  int nocsToTlr = delta1.r > 0 ? 0 : int(std::ceil(abs(delta2.r / cellSize))); //no of cells
+  int nocsToTlh = delta1.h < 0 ? 0 : int(std::ceil(abs(delta2.h / cellSize)));
+  //cout << "delta2: " << delta2.toString() << " nocsToTlr: " << nocsToTlr
+  //<< " nocsToTlh: " << nocsToTlh << endl;
+  //extended tl
+  RectCoord etl(usedCS,
+                firstGmdTl.r - (nocsToTlr * cellSize),
+                firstGmdTl.h + (nocsToTlh * cellSize));
+  //cout << "extended top left: " << etl.toString() << endl;
+
+  //adjust br to multiple of cellSize
+  RectCoord delta3 = br - etl;
+  int nocsR = int(std::ceil(abs(delta3.r / cellSize))); //no of cells
+  if(nocsR == 0)
+    nocsR++; //the selection is choosing at least one cell
+  int nocsH = int(std::ceil(abs(delta3.h / cellSize)));
+  if(nocsH == 0)
+    nocsH++;
+  //cout << "delta3: " << delta3.toString() << " nocsR: " << nocsR
+  //<< " nocsH: " << nocsH << endl;
+  //the extended final bounding rect
+  RectCoord ebr(usedCS,
+                etl.r + (nocsR * cellSize),
+                etl.h - (nocsH * cellSize));
+  RCRect extendedBoundingRect(etl, ebr);
+  //cout << "extended bounding rect: " << extendedBoundingRect.toString() << endl;
+
+  //for efficiency reasons every data element just references a vector
+  //of gridproxies with available grids from a given region (same gridmetadata)
+  //but these have to be unique, thus a number of vectors is created below
+  //which will be stored in the according virtual grid which can
+  //be referenced directly in the data elements
+  map<GridMetaData, GridProxies*> gmd2gps;
+  //get the unique set of all dataset names to be used below
+  set<string> uniqueDatasetNames;
+  BOOST_FOREACH(const GridMetaData& gmd, cs2gmds)
+  {
+    GridProxies* gps = new GridProxies;
+    GMD2GPS::const_iterator ci = gmd2gridProxies.find(gmd);
+    if(ci == gmd2gridProxies.end())
+      continue;
+    const GridProxies& agps = ci->second;
+    BOOST_FOREACH(GridProxyPtr agp, agps)
+    {
+      string s = agp->datasetName;
+      if(uniqueDatasetNames.find(s) == uniqueDatasetNames.end())
+      {
+        uniqueDatasetNames.insert(s);
+        gps->push_back(agp);
+      }
+    }
+
+    gmd2gps.insert(make_pair(gmd, gps));
+
+    //cout << "copied these proxies: " << endl;
+    //for_each(gps->begin(), gps->end(),
+    //         cout << boost::lambda::bind(&GridProxy::toString, _1) << "\n");
+  }
+  //for_each(uniqueDatasetNames.begin(), uniqueDatasetNames.end(),
+  //         cout << _1 << '\n');
+  vector<GridProxies*> gpss;
+  transform(gmd2gps.begin(), gmd2gps.end(), back_inserter(gpss),
+            [](pair<const GridMetaData, GridProxies*> v){ return v.second; });
+
+  RealVirtualGrid* vg = new RealVirtualGrid(usedCS, extendedBoundingRect,
+                                            cellSize,
+                                            nocsH, nocsR, gpss);
+
+  //now we have to iterate through the virtual grid and fill its cells
+  //either with no data values or with references to the potential grids
+  //and the correct indices into it
+  for(unsigned int i = 0; i < vg->rows(); i++)
+  {
+    for(unsigned int k = 0; k < vg->cols(); k++)
+    {
+      vector<GridMetaData>::iterator it = cs2gmds.begin();// - 1;
+      const RectCoord& c = vg->rcCoordAt(i, k);
+
+      auto f = [&](const GridMetaData& gmd){ return gmd.rcRect().contains(c, true); };
+
+      while((it = find_if(it, cs2gmds.end(), f)) != cs2gmds.end())
+      {
+        //else it vg is preinitialized with no data values
+        const GridMetaData& gmd = *it;
+
+        //this is just temporary as it won't work if a virtual grid
+        //consists of data from more than one region, but better than
+        //nothing until the whole virtual grid thing will be redone
+        if(gmd.regionName == "uecker" ||
+           gmd.regionName == "sachsen" ||
+           gmd.regionName == "brazil-sinop" ||
+           gmd.regionName == "brazil-campo-verde")
+          vg->setCustomId(gmd.regionName);
+
+        pair<Row, Col> rc = rowColInGrid(gmd, c);
+        //cout << "using gmd: " << gmd.toString() << endl;
+        //cout << "( " << i << "," << k << ") indexR (col): " << rc.col
+        //<< " indexH (row): " << rc.row << endl;
+
+        //cout << "adding data at: " << i << "/" << k << endl;
+        vg->addDataAt(i, k, VirtualGrid::Data(gmd2gps[gmd],
+                                              rc.first, rc.second));
+
+        it++;
+      }
+    }
+  }
+
+  return vg;
+}
+
+
+
+VirtualGrid*
 GridManager::virtualGridForGridMetaData(const GridMetaData& gmd,
                                         const Path& userSubPath)
 {
@@ -743,8 +938,9 @@ void GridManager::checkAndUpdateHdfStore(const Path& userSubPath)
 
 pair<string, GridMetaData>
 GridManager::addNewGridProxy(const Path& userSubPath,
-														 const string& gridFileName, time_t modTime,
-														 const std::string& pathToGrid,
+                             const string& gridFileName,
+                             time_t modTime,
+                             const std::string& pathToGrid,
 														 CoordinateSystem cs)
 {
 //	cout << "entering GridManager::addNewGridProxy(" << userSubPath
@@ -757,9 +953,18 @@ GridManager::addNewGridProxy(const Path& userSubPath,
 //	cout << "userSubPath: " << userSubPath
 //		<< " pathToGrid: " << ptg
 //		<< " pathToGridFile: " << pathToGridFile << endl;
-	GridMetaData gmd = extractMetadataFromGrid(pathToGridFile, cs);
+  CoordinateSystem fileNameCS = extractCoordinateSystem(gridFileName);
+  CoordinateSystem cs2 = cs;
+  if(cs2 == UndefinedCoordinateSystem)
+  {
+    if(fileNameCS != UndefinedCoordinateSystem)
+      cs2 = fileNameCS;
+    else
+      cs2 = GK5_EPSG31469;
+  }
+
+  GridMetaData gmd = extractMetadataFromGrid(pathToGridFile, cs2);
 	gmd.regionName = extractRegionName(gridFileName);
-  gmd.coordinateSystem = extractCoordinateSystem(gridFileName);
 //  if(gmd.regionName.substr(0, 6) == "brazil")
 //		gmd.coordinateSystem = UTM21S_EPSG32721;
 	string dsn = extractDatasetName(gridFileName);
@@ -991,10 +1196,13 @@ GridManager::appendToHdf(const Path& userSubPath,
 		//gp->g = new GridP(datasetName, GridP::ASCII,
 		//                  _gridsPath + "/" + gp->fileName);
 
-		bool success = gp->gridPtr()->writeHdf
-									 (_env.hdfsStorePath + (userSubPath.empty() ? "" : "/" + userSubPath) +
-										"/" + newHdfFileName,
-										gp->datasetName, extractRegionName(gp->fileName), gp->modificationTime);
+    bool success = gp->gridPtr()->writeHdf
+        (_env.hdfsStorePath + (userSubPath.empty() ? "" : "/" + userSubPath) +
+         "/" + newHdfFileName,
+         gp->datasetName,
+         extractRegionName(gp->fileName),
+         coordinateSystemToShortString(gp->coordinateSystem),
+         gp->modificationTime);
 
 		if(!newHdfFileName.empty())
 		{
@@ -1187,9 +1395,7 @@ void GridManager::readGrid2HdfMappingFile(const Path& userSubPath)
 		//cout << "current max hdfIdCount(" << userSubPath << "): " << hdfIdCount(userSubPath) << endl;
 
 		string datasetName = extractDatasetName(gridFileName);
-		pair<GridMetaData, time_t> p =
-			readGridMetadataFromHdf((pathToHdfs + "/" + hdfFileName).c_str(),
-			                        datasetName.c_str());
+    pair<GridMetaData, time_t> p = readGridMetadataFromHdf(pathToHdfs + "/" + hdfFileName, datasetName);
 		//couldn't read hdf, so just ignore it
 		//if there are grids for the supposed to be there hdf, it gonna
 		//get created anew from the ascii grids
@@ -1236,13 +1442,15 @@ string GridManager::extractRegionName(const string& gfn) const
 	return gfn.substr(start, gfn.find_first_of("_", start) - start);
 }
 
-string GridManager::extractCoordinateSystem(const string& gfn) const
+Tools::CoordinateSystem GridManager::extractCoordinateSystem(const string& gfn) const
 {
   int start1 = gfn.find_first_of("_")+1;
   int start2 = gfn.find_first_of("_", start1)+1;
-  return gfn.substr(start2);
+  int dotPos = gfn.find_first_of(".", start2);
+  string csShortString = gfn.substr(start2, dotPos - start2);
+  //cout << "csShortString: " << csShortString << endl;
+  return shortStringToCoordinateSystem(csShortString, Tools::UndefinedCoordinateSystem);
 }
-
 
 void GridManager::writeGrid2HdfMappingFile(const Path& userSubPath)
 {
@@ -1303,9 +1511,6 @@ vector<GridMetaData> GridManager::regionGmds(const Path& userSubPath) const
 	return v;
 }
 
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
 GridManager& Grids::gridManager(GridManager::Env env)

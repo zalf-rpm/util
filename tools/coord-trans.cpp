@@ -61,7 +61,7 @@ string Tools::coordinateSystemToShortString(CoordinateSystem cs)
 	return "unknown";
 }
 
-CoordinateSystem Tools::shortStringToCoordinateSystem(string cs)
+CoordinateSystem Tools::shortStringToCoordinateSystem(string cs, CoordinateSystem def)
 {
   if(Tools::toLower(cs) == "gk5")
     return GK5_EPSG31469;
@@ -72,7 +72,7 @@ CoordinateSystem Tools::shortStringToCoordinateSystem(string cs)
   else if(Tools::toLower(cs) == "latlng")
     return LatLng_EPSG4326;
 
-  return UndefinedCoordinateSystem;
+  return def;
 }
 
 CoordConversionParams Tools::coordConversionParams(CoordinateSystem cs)
@@ -84,22 +84,27 @@ CoordConversionParams Tools::coordConversionParams(CoordinateSystem cs)
 		ccp.sourceConversionFactor = 1.0;
 		ccp.targetConversionFactor = 1.0;
 		ccp.switch2DCoordinates = false;
-		ccp.projectionParams = "+proj=tmerc +units=m +datum=potsdam "
-													 "+k=1 +lat_0=0 +lon_0=15d +x_0=5500000 "
-													 "+y_0=0 +ellps=bessel +towgs84=606.0,23.0,413.0";
+    ccp.projectionParams =
+        "+proj=tmerc +units=m +datum=potsdam "
+        "+k=1 +lat_0=0 +lon_0=15d +x_0=5500000 "
+        "+y_0=0 +ellps=bessel +towgs84=606.0,23.0,413.0";
 		break;
 	case UTM21S_EPSG32721:
 		ccp.sourceConversionFactor = 1.0;
 		ccp.targetConversionFactor = 1.0;
 		ccp.switch2DCoordinates = false;
-		ccp.projectionParams = "+proj=utm +zone=21 +south +ellps=WGS84 "
-													 "+datum=WGS84 +units=m +no_defs";
-		break;
+    ccp.projectionParams =
+        "+proj=utm +zone=21 +south +ellps=WGS84 "
+        "+datum=WGS84 +units=m +no_defs";
+    break;
   case UTM32N_EPSG25832:
     ccp.sourceConversionFactor = 1.0;
     ccp.targetConversionFactor = 1.0;
     ccp.switch2DCoordinates = false;
-    ccp.projectionParams = "+proj=utm +zone=32 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs ";
+    ccp.projectionParams =
+        "+proj=utm +zone=32 +ellps=GRS80 "
+        "+towgs84=0,0,0,0,0,0,0 +units=m +no_defs";
+        //"+x_0=32000000 "
     break;
 
 	case LatLng_EPSG4326:

@@ -361,6 +361,9 @@ namespace Grids
 																	 const Tools::Quadruple<Tools::RectCoord>& rcrect,
 																	 double cellSize);
 
+    VirtualGrid* createVirtualGrid(const GMD2GPS& gmd2gridProxies,
+																	 const Tools::Quadruple<Tools::LatLngCoord>& llrect);
+    
 		//! read all the regionalized data and create GridProxies for the maps
 		void readRegionalizedData();
 

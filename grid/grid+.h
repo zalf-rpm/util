@@ -789,7 +789,7 @@ namespace Grids
 
 #ifndef NO_HDF5
 	std::pair<GridMetaData, time_t>
-		readGridMetadataFromHdf(const char* hdfFileName, const char* datasetName);
+  readGridMetadataFromHdf(const std::string& hdfFileName, const std::string& datasetName);
 #endif
 
 	//------------------------------------------------------------------------------
