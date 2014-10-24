@@ -183,6 +183,130 @@ namespace Grids
 		Tools::CoordinateSystem _coordinateSystem;
 	};
 
+  class VirtualGrid2
+  {
+  public:
+    VirtualGrid2(Tools::CoordinateSystem cs,
+                 const Grids::RCRect& rect, double cellSize,
+                 unsigned int rows, unsigned int cols,
+                 std::map<std::string, GridPPtr> dsn2grid,
+                 int noDataValue = -9999)
+      : _noDataValue(noDataValue),
+        _rect(rect),
+        _cellSize(cellSize),
+        _rows(rows),
+        _cols(cols),
+        _dsn2grid(dsn2grid),
+        _coordinateSystem(cs)
+    {}
+
+    virtual ~VirtualGrid2() {}
+
+    //! get RC coord at the given cell position (corner)
+    Tools::RectCoord rcCoordAt(unsigned int row, unsigned int col) const
+    {
+      return Tools::RectCoord(_coordinateSystem,
+                              _rect.tl.r+(col*_cellSize),
+                             _rect.tl.h-(row*_cellSize));
+    }
+
+    //! get data at given grid cell
+    /*!
+     * - could potentially be data from overlapping grids
+     * -> that's why it's a vector, even though currently not used
+     * @param row
+     * @param col
+     * @return
+     */
+    virtual double dataAt(unsigned int row, unsigned int col) const = 0;
+
+    virtual double dataAt(const Tools::RectCoord& rcc) const = 0;
+
+    //! number of rows of virtual grid
+    unsigned int rows() const { return _rows; }
+
+    //! number of columns of the virtual grid
+    unsigned int cols() const { return _cols; }
+
+    //! used value for representing "no data" for the virtual grid
+    int noDataValue() const { return _noDataValue; }
+
+    //! cell size
+    double cellSize() const { return _cellSize; }
+
+    //! rc rectangle represented by the virtual grid
+    RCRect rcRect() const { return _rect; }
+
+    //! bounding rect polygon for the whole virtual grid
+    LatLngPolygon latLngBoundingPolygon() const
+    {
+      return Tools::RC2latLng(_rect.toTlTrBrBlVector());
+    }
+
+    //! get a polygon matrix for all the cells
+    const LatLngPolygonsMatrix& latLngCellPolygons();
+
+    //! should the cell resolution be used
+    bool useCellResolution() const { return (_rows * _cols) < (15 * 15); }
+
+    //! virtual grid keeps ownership of GridP's
+    virtual std::vector<const GridP*> availableGrids();
+
+    //! a short description for the virtual grid
+    virtual std::string toShortDescription() const;
+
+    //! are the datasets in the given list available for this virtual grid
+    bool areGridDatasetsAvailable(const std::list<std::string>& gdsns);// const;
+
+    //! return grids for the given datasetname list
+    /*!
+     * keeps ownership of the returned grids
+     * @param datasetNames
+     * @return map from dataset names to the according grid
+     */
+    virtual std::map<std::string, const GridP*>
+    gridsForDatasetNames(const std::list<std::string>& datasetNames);// const;
+
+    GridPPtr emptyGridPtr() const { return GridPPtr(emptyGrid()); }
+
+    GridP* emptyGrid() const
+    {
+      return new GridP("template", rows(), cols(), cellSize(),
+                       rcRect().tl.r, rcRect().br.h, noDataValue(),
+                       coordinateSystem());
+    }
+
+    std::string name() const
+    {
+      return _name.empty() ? toShortDescription() : _name;
+    }
+
+    void setName(std::string name){ _name = name; }
+
+    std::string customId() const { return _customId; }
+
+    void setCustomId(std::string cid) { _customId = cid; }
+
+    virtual bool isNoVirtualGrid() const { return false; }
+
+    Tools::CoordinateSystem coordinateSystem() const { return _coordinateSystem; }
+
+  protected:
+    int _noDataValue;
+    RCRect _rect;
+    double _cellSize;
+    unsigned int _rows;
+    unsigned int _cols;
+    std::map<std::string, GridPPtr> _dsn2grid;
+
+    LatLngPolygonsMatrix _cellPolygons;
+
+    std::string _name;
+    std::string _customId;
+    Tools::CoordinateSystem _coordinateSystem;
+  };
+
+
 	//----------------------------------------------------------------------------
 
 	//! actually just a normal grid, but with a VirtualGrid face
@@ -360,6 +484,9 @@ namespace Grids
 		VirtualGrid* createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 																	 const Tools::Quadruple<Tools::RectCoord>& rcrect,
 																	 double cellSize);
+
+    VirtualGrid2* createVirtualGrid(const GMD2GPS& gmd2gridProxies,
+                                   const Tools::Quadruple<Tools::LatLngCoord>& llrect);
 
 		//! read all the regionalized data and create GridProxies for the maps
 		void readRegionalizedData();

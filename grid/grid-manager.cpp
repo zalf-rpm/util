@@ -151,6 +151,95 @@ const LatLngPolygonsMatrix& VirtualGrid::latLngCellPolygons()
 	return _cellPolygons;
 }
 
+
+vector<const GridP*> VirtualGrid2::availableGrids()
+{
+  vector<const GridP*> ags(_dsn2grid.size());
+  std::transform(_dsn2grid.begin(), _dsn2grid.end(),
+                 ags.begin(), [](pair<string, GridPPtr> p) { return p.second.get(); });
+  return ags;
+}
+
+string VirtualGrid2::toShortDescription() const
+{
+  ostringstream s;
+  s << "Nutzer-Region [" << cols() << "x" << rows() << "], ZG:" << cellSize();
+  return s.str();
+}
+
+bool VirtualGrid2::areGridDatasetsAvailable(const list<string>& gdsns) //const
+{
+  set<string> given;
+  std::transform(gdsns.begin(), gdsns.end(), inserter(given, given.end()),
+                 [](string s){return s;});
+
+  set<string> all;
+  const vector<const GridP*>& ags = availableGrids();
+  std::transform(ags.begin(), ags.end(), inserter(all, all.end()),
+                 [](const GridP* g){return g->datasetName();});
+
+  return std::includes(all.begin(), all.end(), given.begin(), given.end());
+}
+
+map<string, const GridP*>
+VirtualGrid2::gridsForDatasetNames(const list<string>& gdsns) //const
+{
+  set<string> given;
+  std::transform(gdsns.begin(), gdsns.end(), inserter(given, given.end()),
+                 [](string s){return s;});
+
+  map<string, const GridP*> m;
+  const vector<const GridP*>& ags = availableGrids();
+  BOOST_FOREACH(const GridP* ag, ags)
+  {
+    const string& s = ag->datasetName();
+    if(given.find(s) != given.end())
+      m.insert(make_pair(s, ag));
+  }
+
+  return m;
+}
+
+const LatLngPolygonsMatrix& VirtualGrid2::latLngCellPolygons()
+{
+  if(_cellPolygons.isEmpty() && _cols > 0 && _rows > 0)
+  {
+    //_cellPolygons.resize((_cols-1)*(_rows-1));
+
+    vector<RectCoord> rccs((_cols+1) * (_rows+1));
+    //paint the grid cells
+    for(unsigned int j = 0; j < _rows+1; j++)
+    {
+      for(unsigned int i = 0; i < _cols+1; i++)
+      {
+        double left = _rect.tl.r + (double(i) * _cellSize);
+        double top = _rect.tl.h - (double(j) * _cellSize);
+        rccs[(j*(_cols+1))+i] = RectCoord(left, top);
+        //cout << "(" << left << "," << top << ") ";
+      }
+    }
+    //cout << endl;
+    const vector<LatLngCoord>& llcs = RC2latLng(rccs);
+
+    _cellPolygons.resize(_rows, _cols);
+    for(unsigned int j = 0; j < _rows; j++)
+    {
+      for(unsigned int i = 0; i < _cols; i++)
+      {
+        _cellPolygons[j][i] =
+        (LatLngPolygon(llcs.at((j*(_cols+1))+i),
+                       llcs.at((j*(_cols+1))+i+1),
+                       llcs.at(((j+1)*(_cols+1))+i+1),
+                       llcs.at(((j+1)*(_cols+1))+i)));
+      }
+    }
+
+  }
+
+  return _cellPolygons;
+}
+
+
 //------------------------------------------------------------------------------
 
 NoVirtualGrid::NoVirtualGrid(CoordinateSystem cs,
@@ -512,22 +601,16 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 	return vg;
 }
 
-VirtualGrid*
+VirtualGrid2*
 GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
                                const Quadruple<Tools::LatLngCoord>& llrect)
 {
-  CoordinateSystem usedCS = rcpoly.tl.coordinateSystem;
-
-  //get bounding rect of rc polygon
-  RectCoord tl(usedCS, min(rcpoly.tl.r, rcpoly.bl.r), max(rcpoly.tl.h, rcpoly.tr.h));
-  RectCoord br(usedCS, max(rcpoly.tr.r, rcpoly.br.r), min(rcpoly.bl.h, rcpoly.br.h));
-  RCRect boundingRect(tl, br);
-
   map<CoordinateSystem, RCRect> cs2boundingRect;
-
-  map<CoordinateSystem, vector<GridMetaData>> cs2gmds;
-  int minCellsize = 100000000;
-  map<CoordinateSystem, int> cs2noOfGPS;
+  typedef map<CoordinateSystem, vector<GridMetaData>> CS2GMDS;
+  CS2GMDS cs2gmds;
+  int minCellSize = 100000000;
+  typedef map<CoordinateSystem, int> CS2NO;
+  CS2NO cs2noOfGPS;
   //filter all GridMetaData with correct cellsize and intersecting rect
   BOOST_FOREACH(GMD2GPS::value_type p, gmd2gridProxies)
   {
@@ -547,165 +630,137 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
       cs2boundingRect[cs] = boundingRect;
     }
     else
-      boundingRect = ci->second.first;
+      boundingRect = ci->second;
 
     //cout << "checking gmd: " << it->first.toString() << endl;
     if(p.first.rcRect().intersects(boundingRect))
     {
       cs2noOfGPS[cs] += p.second.size();
-      minCellsize = min(p.first.cellsize, minCellsize);
+      minCellSize = min(p.first.cellsize, minCellSize);
       cs2gmds[cs].push_back(p.first);
     }
   }
 
-  //cout << "the filtered gmds" << endl;
-  //for_each(gmds.begin(), gmds.end(),
-  //         cout << boost::lambda::bind(&GridMetaData::toString, _1) << '\n');
+  //find most often used coordinate system in the selected region
+  //we assume that this coordinate system can safely be used in this region,
+  //else there wouldn't be that many grids there
+  CoordinateSystem usedCS = UndefinedCoordinateSystem;
+  int noOfGPS = 0;
+  BOOST_FOREACH(CS2NO::value_type p, cs2noOfGPS)
+  {
+    if(p.second > noOfGPS)
+    {
+      noOfGPS = p.second;
+      usedCS = p.first;
+    }
+  }
 
-  if(cs2gmds.empty())
+  //if we didn't find any coordinate system we leave
+  if(usedCS == UndefinedCoordinateSystem)
     return NULL;
 
-  //take the first region of the filtered ones and use this one as
-  //base for expanding the bounding rect to full cell-size bounds
-  const GridMetaData& firstGmd = cs2gmds.front();
-  //cout << "choosen gmd: " << firstGmd.toString() << endl;
+  //determine the dimensions of the bounding rect if the top left corner is exactly
+  //the user choosen one and the bottom right corner is the one determined to include the user choosen one
+  //given the determined cellsize
+  const vector<RectCoord>& rcs = latLng2RC(asTlTrBrBl<vector<LatLngCoord> >(llrect), usedCS);
+  auto rcpoly = Quadruple<RectCoord>(rcs);
+  int noOfRows = int(std::ceil((rcpoly.tl.h - rcpoly.br.h)/minCellSize));
+  int noOfCols = int(std::ceil((rcpoly.br.r - rcpoly.tl.r)/minCellSize));
+  RectCoord tl(usedCS, min(rcpoly.tl.r, rcpoly.bl.r), max(rcpoly.tl.h, rcpoly.tr.h));
+  RectCoord br(usedCS, tl.r + noOfCols, tl.h - noOfRows);
 
-  //first find position in choosen grid metadata
-  //might in a grid if top left corner of bounding rect is inside
-  //the gmd or 0,0 (aka the top left of gmd) if the top left corner of
-  //the bounding rect is outside the gmd
-  const RCRect& intersectedRect = firstGmd.rcRect().intersected(boundingRect);
-  //cout << "intersectedRect: " << intersectedRect.toString() << endl;
-  const RectCoord& delta1 = intersectedRect.tl - firstGmd.topLeftCorner();
-  int indexR = int(std::floor(delta1.r / cellSize));
-  int indexH = int(std::floor(abs(delta1.h / cellSize)));
-  //cout << "delta1: " << delta1.toString() << " indexR: " << indexR
-  //<< " indexH: " << indexH << endl;
-  //rc position into choosen grid-class
-  RectCoord firstGmdTl(usedCS,
-                       firstGmd.topLeftCorner().r + (indexR * cellSize),
-                       firstGmd.topLeftCorner().h - (indexH * cellSize));
-  //cout << "grid-class top left: " << firstGmdTl.toString() << endl;
-
-  //now expand the top left corner of the bounding rect to the full
-  //outer (hypethetical) grid-cell bound
-  //this might be either the same as the previous calculated corner
-  //of a grid cell in the gmd (or gmd's 0,0 is case of an exact match)
-  //or the bounds have to be extended if the top left corner of bounding rect
-  //(of the users selection) was originally outside of the gmd
-  RectCoord delta2 = boundingRect.tl - firstGmdTl;
-  int nocsToTlr = delta1.r > 0 ? 0 : int(std::ceil(abs(delta2.r / cellSize))); //no of cells
-  int nocsToTlh = delta1.h < 0 ? 0 : int(std::ceil(abs(delta2.h / cellSize)));
-  //cout << "delta2: " << delta2.toString() << " nocsToTlr: " << nocsToTlr
-  //<< " nocsToTlh: " << nocsToTlh << endl;
-  //extended tl
-  RectCoord etl(usedCS,
-                firstGmdTl.r - (nocsToTlr * cellSize),
-                firstGmdTl.h + (nocsToTlh * cellSize));
-  //cout << "extended top left: " << etl.toString() << endl;
-
-  //adjust br to multiple of cellSize
-  RectCoord delta3 = br - etl;
-  int nocsR = int(std::ceil(abs(delta3.r / cellSize))); //no of cells
-  if(nocsR == 0)
-    nocsR++; //the selection is choosing at least one cell
-  int nocsH = int(std::ceil(abs(delta3.h / cellSize)));
-  if(nocsH == 0)
-    nocsH++;
-  //cout << "delta3: " << delta3.toString() << " nocsR: " << nocsR
-  //<< " nocsH: " << nocsH << endl;
-  //the extended final bounding rect
-  RectCoord ebr(usedCS,
-                etl.r + (nocsR * cellSize),
-                etl.h - (nocsH * cellSize));
-  RCRect extendedBoundingRect(etl, ebr);
-  //cout << "extended bounding rect: " << extendedBoundingRect.toString() << endl;
-
-  //for efficiency reasons every data element just references a vector
-  //of gridproxies with available grids from a given region (same gridmetadata)
-  //but these have to be unique, thus a number of vectors is created below
-  //which will be stored in the according virtual grid which can
-  //be referenced directly in the data elements
-  map<GridMetaData, GridProxies*> gmd2gps;
-  //get the unique set of all dataset names to be used below
+  map<string, GridPPtr> dsn2grid;
   set<string> uniqueDatasetNames;
-  BOOST_FOREACH(const GridMetaData& gmd, cs2gmds)
+  BOOST_FOREACH(CS2GMDS::value_type p, cs2gmds)
   {
-    GridProxies* gps = new GridProxies;
-    GMD2GPS::const_iterator ci = gmd2gridProxies.find(gmd);
-    if(ci == gmd2gridProxies.end())
-      continue;
-    const GridProxies& agps = ci->second;
-    BOOST_FOREACH(GridProxyPtr agp, agps)
+    BOOST_FOREACH(const GridMetaData& gmd, p.second)
     {
-      string s = agp->datasetName;
-      if(uniqueDatasetNames.find(s) == uniqueDatasetNames.end())
+      GMD2GPS::const_iterator ci = gmd2gridProxies.find(gmd);
+      if(ci == gmd2gridProxies.end())
+        continue;
+      const GridProxies& agps = ci->second;
+      BOOST_FOREACH(GridProxyPtr agp, agps)
       {
-        uniqueDatasetNames.insert(s);
-        gps->push_back(agp);
-      }
-    }
-
-    gmd2gps.insert(make_pair(gmd, gps));
-
-    //cout << "copied these proxies: " << endl;
-    //for_each(gps->begin(), gps->end(),
-    //         cout << boost::lambda::bind(&GridProxy::toString, _1) << "\n");
-  }
-  //for_each(uniqueDatasetNames.begin(), uniqueDatasetNames.end(),
-  //         cout << _1 << '\n');
-  vector<GridProxies*> gpss;
-  transform(gmd2gps.begin(), gmd2gps.end(), back_inserter(gpss),
-            [](pair<const GridMetaData, GridProxies*> v){ return v.second; });
-
-  RealVirtualGrid* vg = new RealVirtualGrid(usedCS, extendedBoundingRect,
-                                            cellSize,
-                                            nocsH, nocsR, gpss);
-
-  //now we have to iterate through the virtual grid and fill its cells
-  //either with no data values or with references to the potential grids
-  //and the correct indices into it
-  for(unsigned int i = 0; i < vg->rows(); i++)
-  {
-    for(unsigned int k = 0; k < vg->cols(); k++)
-    {
-      vector<GridMetaData>::iterator it = cs2gmds.begin();// - 1;
-      const RectCoord& c = vg->rcCoordAt(i, k);
-
-      auto f = [&](const GridMetaData& gmd){ return gmd.rcRect().contains(c, true); };
-
-      while((it = find_if(it, cs2gmds.end(), f)) != cs2gmds.end())
-      {
-        //else it vg is preinitialized with no data values
-        const GridMetaData& gmd = *it;
-
-        //this is just temporary as it won't work if a virtual grid
-        //consists of data from more than one region, but better than
-        //nothing until the whole virtual grid thing will be redone
-        if(gmd.regionName == "uecker" ||
-           gmd.regionName == "sachsen" ||
-           gmd.regionName == "brazil-sinop" ||
-           gmd.regionName == "brazil-campo-verde")
-          vg->setCustomId(gmd.regionName);
-
-        pair<Row, Col> rc = rowColInGrid(gmd, c);
-        //cout << "using gmd: " << gmd.toString() << endl;
-        //cout << "( " << i << "," << k << ") indexR (col): " << rc.col
-        //<< " indexH (row): " << rc.row << endl;
-
-        //cout << "adding data at: " << i << "/" << k << endl;
-        vg->addDataAt(i, k, VirtualGrid::Data(gmd2gps[gmd],
-                                              rc.first, rc.second));
-
-        it++;
+        uniqueDatasetNames.insert(agp->datasetName);
       }
     }
   }
 
-  return vg;
+  //create all the grids needed
+  BOOST_FOREACH(string dsn, uniqueDatasetNames)
+  {
+    dsn2grid[dsn] = GridPPtr(new GridP(dsn, noOfRows, noOfCols, minCellSize, tl.r, br.h, -9999, usedCS));
+  }
+
+  if(dsn2grid.empty())
+    return NULL;
+
+  GridPPtr someGrid = dsn2grid.begin()->second;
+  for(int r = 0, rs = someGrid->rows(); r < rs; r++)
+  {
+    for(int c = 0, cs = someGrid->cols(); c < cs; c++)
+    {
+      RectCoord cellCenter = someGrid->rcCoordAtCenter(r, c);
+      double sgCellSize = someGrid->cellSize();
+
+      LatLngCoord llcc = RC2latLng(cellCenter);
+
+      BOOST_FOREACH(CS2GMDS::value_type p, cs2gmds)
+      {
+        CoordinateSystem cs = p.first;
+        RectCoord rccc = latLng2RC(llcc, cs);
+
+        BOOST_FOREACH(const GridMetaData& gmd, p.second)
+        {
+          GMD2GPS::const_iterator ci = gmd2gridProxies.find(gmd);
+          if(ci == gmd2gridProxies.end())
+            continue;
+          const GridProxies& agps = ci->second;
+          if(agps.empty())
+            continue;
+
+          GridP* g = agps.front()->gridPtr();
+          double gCellSize = g->cellSize();
+
+          auto pos = g->rc2rowCol(rccc);
+
+          //if any value lies farther outside than a cellwidth of the target grid, it can't intersect the closest
+          //source cell thus we associate a no data value with the target grid value
+          bool setNoDataValue =
+              (pos.row < 0 && abs(pos.row*gCellSize) > sgCellSize) ||
+              (pos.col < 0 && abs(pos.col*gCellSize) > sgCellSize) ||
+              (pos.row > 0 && pos.isRowOutside && abs((pos.row - g->rows())*gCellSize > sgCellSize)) ||
+              (pos.col > 0 && pos.isColOutside && abs((pos.col - g->cols())*gCellSize > sgCellSize));
+
+          //if the position is in the cell outside, just associate the target grid value with the border value of
+          //the source grid
+          if(!setNoDataValue)
+          {
+            if(pos.row < 0)
+              pos.row = 0;
+            else if(pos.row > 0 && pos.isRowOutside)
+              pos.row = g->rows() - 1;
+            if(pos.col < 0)
+              pos.col = 0;
+            else if(pos.col > 0 && pos.isColOutside)
+              pos.col = g->cols() - 1;
+          }
+
+          BOOST_FOREACH(GridProxyPtr agp, agps)
+          {
+            GridPPtr tg = dsn2grid[agp->datasetName];
+            if(setNoDataValue)
+              tg->setNoDataValueAt(r,c);
+            else
+              tg->setDataAt(r, c, agp->gridPtr()->dataAt(pos.row, pos.col));
+          }
+        }
+      }
+    }
+  }
+
+  return new VirtualGrid2(usedCS, RCRect(tl, br), minCellSize, noOfRows, noOfCols, dsn2grid);
 }
-
-
 
 VirtualGrid*
 GridManager::virtualGridForGridMetaData(const GridMetaData& gmd,

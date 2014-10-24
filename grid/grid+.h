@@ -470,7 +470,15 @@ namespace Grids
 
 		GridP* transformP(std::function<float(float)> transformFunction) const;
 
-		std::pair<int, int> rc2rowCol(Tools::RectCoord rcc) const;
+    struct Rc2RowColRes
+    {
+      Rc2RowColRes() : row(-1), col(-1), isRowOutside(true), isColOutside(true) {}
+      Rc2RowColRes(int row, int col, bool isRowOutside = false, bool isColOutside = false)
+        : row(row), col(col), isRowOutside(isRowOutside), isColOutside(isColOutside) {}
+      int row, col;
+      bool isRowOutside, isColOutside;
+    };
+    Rc2RowColRes rc2rowCol(Tools::RectCoord rcc) const;
 
 		GridP* invert(float value);
 

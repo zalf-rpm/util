@@ -703,35 +703,36 @@ GridP* GridP::setAllFieldsWithoutTo(float withoutValue, float toNewValue, bool i
 	return this;
 }
 
-pair<int, int> GridP::rc2rowCol(Tools::RectCoord rc) const
+GridP::Rc2RowColRes GridP::rc2rowCol(Tools::RectCoord rc) const
 {
 	grid& g = gridRef();
 	int row = -1, col = -1;
-	if(g.xcorner <= rc.r && rc.r <= (g.xcorner + cellSize()*cols())
-		 && g.ycorner <= rc.h && rc.h <= (g.ycorner + cellSize()*rows()))
-	{
-		col = int(std::floor((rc.r - g.xcorner)/cellSize()));
-		if(col == cols())
-			--col;
-		row = rows() - int(std::ceil((rc.h - g.ycorner)/cellSize()));
-		if(row == rows())
-			--row;
-	}
-	return make_pair(row, col);
+
+  bool rowsInside = g.xcorner <= rc.r && rc.r <= (g.xcorner + cellSize()*cols());
+  bool colsInside = g.ycorner <= rc.h && rc.h <= (g.ycorner + cellSize()*rows());
+
+  col = int(std::floor((rc.r - g.xcorner)/cellSize()));
+  if(col == cols())
+    --col;
+  row = rows() - int(std::ceil((rc.h - g.ycorner)/cellSize()));
+  if(row == rows())
+    --row;
+
+  return Rc2RowColRes(row, col, !rowsInside, !colsInside);
 }
 
 float GridP::dataAt(RectCoord rcc) const
 {
-	pair<int, int> p = rc2rowCol(rcc);
-	return p.first == -1 || p.second == -1
-		? noDataValue() : dataAt(p.first, p.second);
+  auto p = rc2rowCol(rcc);
+  return p.row < 0 || p.col < 0
+    ? noDataValue() : dataAt(p.row, p.col);
 }
 
 GridP* GridP::setDataAt(Tools::RectCoord rcc, float value)
 {
-	pair<int, int> p = rc2rowCol(rcc);
-	if(p.first != -1 || p.second == -1)
-		setDataAt(p.first, p.second, value);
+  auto p = rc2rowCol(rcc);
+  if(p.row >= 0 && p.col >= 0)
+    setDataAt(p.row, p.col, value);
 	return this;
 }
 
