@@ -63,7 +63,7 @@ namespace Tools
 
 		RectCoord(CoordinateSystem cs) : Coord2D(cs), r(0), h(0) { }
 
-		RectCoord(double r, double h) : Coord2D(GK5_EPSG31469), r(r), h(h) { }
+//		RectCoord(double r, double h) : Coord2D(GK5_EPSG31469), r(r), h(h) { }
 
 		RectCoord(CoordinateSystem cs, double r, double h)
 			: Coord2D(cs), r(r), h(h) { }

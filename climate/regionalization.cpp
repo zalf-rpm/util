@@ -159,8 +159,8 @@ namespace
 
 		RCRect extendedRegion = gmd.rcRect();
 		int bs = borderSize * 1000; //m
-		extendedRegion.tl = extendedRegion.tl + RectCoord(-bs, bs);
-		extendedRegion.br = extendedRegion.br + RectCoord(bs, -bs);
+    extendedRegion.tl = extendedRegion.tl + RectCoord(gmd.coordinateSystem, -bs, bs);
+    extendedRegion.br = extendedRegion.br + RectCoord(gmd.coordinateSystem, bs, -bs);
 		cout << "region: " << gmd.rcRect().toString()
 				 << " with border-size-increment of " << borderSize << " [km] -> "
 				 << " extendedRegion: " << extendedRegion.toString() << endl;

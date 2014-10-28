@@ -183,13 +183,15 @@ namespace Grids
 		Tools::CoordinateSystem _coordinateSystem;
 	};
 
+  typedef std::map<std::string, GridPPtr> Dsn2GridPPtr;
+
   class VirtualGrid2
   {
   public:
     VirtualGrid2(Tools::CoordinateSystem cs,
                  const Grids::RCRect& rect, double cellSize,
                  unsigned int rows, unsigned int cols,
-                 std::map<std::string, GridPPtr> dsn2grid,
+                 std::map<std::string, GridPPtr> dsn2grid = std::map<std::string, GridPPtr>(),
                  int noDataValue = -9999)
       : _noDataValue(noDataValue),
         _rect(rect),
@@ -218,9 +220,11 @@ namespace Grids
      * @param col
      * @return
      */
-    virtual double dataAt(unsigned int row, unsigned int col) const = 0;
+    virtual std::map<std::string, double>
+    dataAt(unsigned int row, unsigned int col) const;
 
-    virtual double dataAt(const Tools::RectCoord& rcc) const = 0;
+    virtual std::map<std::string, double>
+    dataAt(const Tools::RectCoord& rcc) const;
 
     //! number of rows of virtual grid
     unsigned int rows() const { return _rows; }
@@ -297,7 +301,8 @@ namespace Grids
     double _cellSize;
     unsigned int _rows;
     unsigned int _cols;
-    std::map<std::string, GridPPtr> _dsn2grid;
+
+    Dsn2GridPPtr _dsn2grid;
 
     LatLngPolygonsMatrix _cellPolygons;
 
@@ -319,14 +324,14 @@ namespace Grids
 									double cellSize, unsigned int rows, unsigned int cols,
 									int noDataValue = -9999);
 
-		virtual std::vector<Data> dataAt(unsigned int row, unsigned int col) const
-		{
-			return std::vector<Data>(1, Data(_gps, row, col));
-		}
+    virtual std::vector<Data> dataAt(unsigned int row, unsigned int col) const
+    {
+      return std::vector<Data>(1, Data(_gps, row, col));
+    }
 
-		virtual std::vector<Data> dataAt(const Tools::RectCoord& rcc) const;
+    virtual std::vector<Data> dataAt(const Tools::RectCoord& rcc) const;
 
-		virtual std::vector<const GridP*> availableGrids();
+    virtual std::vector<const GridP*> availableGrids();
 
 		virtual std::string toShortDescription() const;
 
@@ -335,6 +340,27 @@ namespace Grids
 		//! reference to gridmanager's vector holding the proxies
 		const std::vector<GridProxyPtr>* _gps;
 	};
+
+  //----------------------------------------------------------------------------
+
+  class NoVirtualGrid2 : public VirtualGrid2
+  {
+  public:
+    NoVirtualGrid2(Tools::CoordinateSystem cs,
+                  const std::vector<GridProxyPtr>* gps,
+                  const Grids::RCRect& rect,
+                  double cellSize, unsigned int rows, unsigned int cols,
+                  int noDataValue = -9999);
+
+    virtual std::vector<const GridP*> availableGrids();
+
+    virtual std::string toShortDescription() const;
+
+    virtual bool isNoVirtualGrid() const { return true; }
+  private:
+    //! reference to gridmanager's vector holding the proxies
+    const std::vector<GridProxyPtr>* _gps;
+  };
 
 	//----------------------------------------------------------------------------
 
@@ -415,15 +441,21 @@ namespace Grids
 		GridManager(Env env);
 		~GridManager();
 
+    VirtualGrid2* createVirtualGrid(const Tools::Quadruple<Tools::LatLngCoord>& llrect,
+                                    double cellSize,
+                                    const Path& userSubPath = "general");
+
+    /*
 		VirtualGrid*
 		createVirtualGrid(const Tools::Quadruple<Tools::LatLngCoord>& llrect,
 											double cellSize, const Path& userSubPath = "general",
 											Tools::CoordinateSystem targetCoordinateSystem = Tools::GK5_EPSG31469);
+                      */
 		
-		VirtualGrid* virtualGridForGridMetaData(const GridMetaData& gmd,
+    VirtualGrid2* virtualGridForGridMetaData(const GridMetaData& gmd,
 																						const Path& userSubPath = "general");
 
-		VirtualGrid* virtualGridForRegionName(const std::string& regionName,
+    VirtualGrid2* virtualGridForRegionName(const std::string& regionName,
 																					const Path& userSubPath = "general");
 
 		GridMetaData gridMetaDataForRegionName(const std::string& regionName,
@@ -477,13 +509,15 @@ namespace Grids
 		 * grids available in the system and can be used to create
 		 * particular virtual grids from the grid types available (eg. dgm, stt ...)
 		 */
-		VirtualGrid* createVirtualGrid(const Tools::Quadruple<Tools::RectCoord>& rcrect,
-																	 double cellSize,
-																	 const Path& userSubPath = "general");
+//		VirtualGrid* createVirtualGrid(const Tools::Quadruple<Tools::RectCoord>& rcrect,
+//																	 double cellSize,
+//																	 const Path& userSubPath = "general");
 
-		VirtualGrid* createVirtualGrid(const GMD2GPS& gmd2gridProxies,
-																	 const Tools::Quadruple<Tools::RectCoord>& rcrect,
-																	 double cellSize);
+
+
+//		VirtualGrid* createVirtualGrid(const GMD2GPS& gmd2gridProxies,
+//																	 const Tools::Quadruple<Tools::RectCoord>& rcrect,
+//																	 double cellSize);
 
     VirtualGrid2* createVirtualGrid(const GMD2GPS& gmd2gridProxies,
                                    const Tools::Quadruple<Tools::LatLngCoord>& llrect);

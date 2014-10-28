@@ -126,7 +126,7 @@ const LatLngPolygonsMatrix& VirtualGrid::latLngCellPolygons()
       {
 				double left = _rect.tl.r + (double(i) * _cellSize);
 				double top = _rect.tl.h - (double(j) * _cellSize);
-				rccs[(j*(_cols+1))+i] = RectCoord(left, top);
+        rccs[(j*(_cols+1))+i] = RectCoord(coordinateSystem(), left, top);
 				//cout << "(" << left << "," << top << ") ";
 			}
 		}
@@ -151,6 +151,31 @@ const LatLngPolygonsMatrix& VirtualGrid::latLngCellPolygons()
 	return _cellPolygons;
 }
 
+//------------------------------------------------------------------------------
+
+map<string, double> VirtualGrid2::dataAt(unsigned int row, unsigned int col) const
+{
+  map<string, double> res;
+
+  BOOST_FOREACH(Dsn2GridPPtr::value_type p, _dsn2grid)
+  {
+    res[p.first] = p.second->dataAt(row, col);
+  }
+
+  return res;
+}
+
+map<string, double> VirtualGrid2::dataAt(const RectCoord& rcc) const
+{
+  map<string, double> res;
+
+  BOOST_FOREACH(Dsn2GridPPtr::value_type p, _dsn2grid)
+  {
+    res[p.first] = p.second->dataAt(rcc);
+  }
+
+  return res;
+}
 
 vector<const GridP*> VirtualGrid2::availableGrids()
 {
@@ -214,7 +239,7 @@ const LatLngPolygonsMatrix& VirtualGrid2::latLngCellPolygons()
       {
         double left = _rect.tl.r + (double(i) * _cellSize);
         double top = _rect.tl.h - (double(j) * _cellSize);
-        rccs[(j*(_cols+1))+i] = RectCoord(left, top);
+        rccs[(j*(_cols+1))+i] = RectCoord(coordinateSystem(), left, top);
         //cout << "(" << left << "," << top << ") ";
       }
     }
@@ -281,6 +306,40 @@ vector<VirtualGrid::Data> NoVirtualGrid::dataAt(const RectCoord& rcc) const
 	if(iy < 0) iy = 0;
 
 	return dataAt(iy, ix);
+}
+
+
+//------------------------------------------------------------------------------
+
+NoVirtualGrid2::NoVirtualGrid2(CoordinateSystem cs,
+                             const std::vector<GridProxyPtr>* gps,
+                             const Grids::RCRect& rect,
+                             double cellSize, unsigned int rows,
+                             unsigned int cols,
+                             int noDataValue)
+  : VirtualGrid2(cs, rect, cellSize, rows, cols, map<string, GridPPtr>(), noDataValue),
+    _gps(gps)
+{
+}
+
+vector<const GridP*> NoVirtualGrid2::availableGrids()
+{
+  if(_dsn2grid.empty())
+  {
+    BOOST_FOREACH(GridProxyPtr gp, *_gps)
+    {
+      _dsn2grid[gp->datasetName] = GridPPtr(gp->copyOfFullGrid());
+    }
+  }
+  return VirtualGrid2::availableGrids();//_availableGrids;
+}
+
+string NoVirtualGrid2::toShortDescription() const
+{
+  ostringstream s;
+  s << Tools::capitalize(_name) << " ZG:" << cellSize();
+  //s << "Standard-Region [" << cols() << "x" << rows() << "], ZG:" << cellSize();
+  return s.str();
 }
 
 //------------------------------------------------------------------------------
@@ -408,6 +467,7 @@ void GridManager::init(const Path& userSubPath)
 	//cout << "leaving GridManager::init(" << userSubPath << ")" << endl;
 }
 
+/*
 VirtualGrid* GridManager::
 createVirtualGrid(const Quadruple<LatLngCoord>& llrect, double cellSize,
 									const Path& userSubPath, CoordinateSystem tcs)
@@ -418,17 +478,29 @@ createVirtualGrid(const Quadruple<LatLngCoord>& llrect, double cellSize,
 //	for_each(rcs.begin(), rcs.end(), [](RectCoord rc){ cout << rc.toString() << endl; });
 	return createVirtualGrid(Quadruple<RectCoord>(rcs), cellSize, userSubPath);
 }
+*/
 
-VirtualGrid* GridManager::createVirtualGrid(const Quadruple<RectCoord>& rcpoly,
+//VirtualGrid* GridManager::createVirtualGrid(const Quadruple<RectCoord>& rcpoly,
+//                                            double cellSize,
+//                                            const Path& userSubPath)
+//{
+//  Path2GPS::const_iterator ci = _gmdMap.find(userSubPath);
+//  if(ci != _gmdMap.end())
+//    return createVirtualGrid(ci->second, rcpoly, cellSize);
+//  return NULL;
+//}
+
+VirtualGrid2* GridManager::createVirtualGrid(const Quadruple<LatLngCoord>& llrect,
                                             double cellSize,
                                             const Path& userSubPath)
 {
 	Path2GPS::const_iterator ci = _gmdMap.find(userSubPath);
 	if(ci != _gmdMap.end())
-		return createVirtualGrid(ci->second, rcpoly, cellSize);
+    return createVirtualGrid(ci->second, llrect);//, cellSize);
 	return NULL;
 }
 
+/*
 VirtualGrid*
 GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 															 const Quadruple<RectCoord>& rcpoly,
@@ -600,12 +672,13 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 
 	return vg;
 }
+*/
 
 VirtualGrid2*
 GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
                                const Quadruple<Tools::LatLngCoord>& llrect)
 {
-  map<CoordinateSystem, RCRect> cs2boundingRect;
+  //map<CoordinateSystem, RCRect> cs2boundingRect;
   typedef map<CoordinateSystem, vector<GridMetaData>> CS2GMDS;
   CS2GMDS cs2gmds;
   int minCellSize = 100000000;
@@ -615,10 +688,10 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
   BOOST_FOREACH(GMD2GPS::value_type p, gmd2gridProxies)
   {
     auto cs = p.first.coordinateSystem;
-    auto ci = cs2boundingRect.find(cs);
-    RCRect boundingRect;
-    if(ci == cs2boundingRect.end())
-    {
+//    auto ci = cs2boundingRect.find(cs);
+//    RCRect boundingRect;
+//    if(ci == cs2boundingRect.end())
+//    {
       //first convert latlng to rect coordinates of gmd
       const vector<RectCoord>& rcs = latLng2RC(asTlTrBrBl<vector<LatLngCoord> >(llrect), cs);
       auto rcpoly = Quadruple<RectCoord>(rcs);
@@ -626,11 +699,11 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
       //create and store a bounding rect in this rect coordinate system
       RectCoord tl(cs, min(rcpoly.tl.r, rcpoly.bl.r), max(rcpoly.tl.h, rcpoly.tr.h));
       RectCoord br(cs, max(rcpoly.tr.r, rcpoly.br.r), min(rcpoly.bl.h, rcpoly.br.h));
-      boundingRect = RCRect(tl, br);
-      cs2boundingRect[cs] = boundingRect;
-    }
-    else
-      boundingRect = ci->second;
+      RCRect boundingRect = RCRect(tl, br);
+//      cs2boundingRect[cs] = boundingRect;
+//    }
+//    else
+//      boundingRect = ci->second;
 
     //cout << "checking gmd: " << it->first.toString() << endl;
     if(p.first.rcRect().intersects(boundingRect))
@@ -667,7 +740,7 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
   int noOfRows = int(std::ceil((rcpoly.tl.h - rcpoly.br.h)/minCellSize));
   int noOfCols = int(std::ceil((rcpoly.br.r - rcpoly.tl.r)/minCellSize));
   RectCoord tl(usedCS, min(rcpoly.tl.r, rcpoly.bl.r), max(rcpoly.tl.h, rcpoly.tr.h));
-  RectCoord br(usedCS, tl.r + noOfCols, tl.h - noOfRows);
+  RectCoord br(usedCS, tl.r + noOfCols*minCellSize, tl.h - noOfRows*minCellSize);
 
   map<string, GridPPtr> dsn2grid;
   set<string> uniqueDatasetNames;
@@ -681,6 +754,7 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
       const GridProxies& agps = ci->second;
       BOOST_FOREACH(GridProxyPtr agp, agps)
       {
+        cout << "dsn: |" << agp->datasetName << "|" << endl;
         uniqueDatasetNames.insert(agp->datasetName);
       }
     }
@@ -694,6 +768,8 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 
   if(dsn2grid.empty())
     return NULL;
+
+  string regionName;
 
   GridPPtr someGrid = dsn2grid.begin()->second;
   for(int r = 0, rs = someGrid->rows(); r < rs; r++)
@@ -712,6 +788,13 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 
         BOOST_FOREACH(const GridMetaData& gmd, p.second)
         {
+          if(gmd.regionName == "uecker" ||
+             gmd.regionName == "sachsen" ||
+             gmd.regionName == "uelzen" ||
+             gmd.regionName == "brazil-sinop" ||
+             gmd.regionName == "brazil-campo-verde")
+            regionName = gmd.regionName;
+
           GMD2GPS::const_iterator ci = gmd2gridProxies.find(gmd);
           if(ci == gmd2gridProxies.end())
             continue;
@@ -759,10 +842,13 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
     }
   }
 
-  return new VirtualGrid2(usedCS, RCRect(tl, br), minCellSize, noOfRows, noOfCols, dsn2grid);
+  auto vg = new VirtualGrid2(usedCS, RCRect(tl, br), minCellSize, noOfRows, noOfCols, dsn2grid);
+  vg->setCustomId(regionName);
+
+  return vg;
 }
 
-VirtualGrid*
+VirtualGrid2*
 GridManager::virtualGridForGridMetaData(const GridMetaData& gmd,
                                         const Path& userSubPath)
 {
@@ -772,8 +858,8 @@ GridManager::virtualGridForGridMetaData(const GridMetaData& gmd,
 		GMD2GPS::const_iterator ci2 = ci->second.find(gmd);
     if(ci2 != ci->second.end())
     {
-			NoVirtualGrid* nvg =
-					new NoVirtualGrid(gmd.coordinateSystem,
+      NoVirtualGrid2* nvg =
+          new NoVirtualGrid2(gmd.coordinateSystem,
 														&(ci2->second),
 														gmd.rcRect(), gmd.cellsize,
                             gmd.nrows, gmd.ncols);
@@ -787,7 +873,7 @@ GridManager::virtualGridForGridMetaData(const GridMetaData& gmd,
 	return NULL;
 }
 
-VirtualGrid* GridManager::virtualGridForRegionName(const string& regionName,
+VirtualGrid2* GridManager::virtualGridForRegionName(const string& regionName,
 																									 const Path& userSubPath) {
 	BOOST_FOREACH(const GridMetaData& gmd, regionGmds(userSubPath)) {
 		if(gmd.regionName == regionName)
@@ -818,7 +904,7 @@ GridPPtr GridManager::gridFor(const string& regionName,
           BOOST_FOREACH(GridProxyPtr gp, gps)
           {
 						if(gp->datasetName == datasetName)
-							return createSubgrid(gp->gridPPtr(), subgridMetaData);
+              return createSubgrid(gp->gridPPtr(), subgridMetaData);
 					}
 				}
 			}
@@ -837,12 +923,12 @@ GridPPtr GridManager::createSubgrid(GridPPtr g, GridMetaData subgridMetaData,
   if(subgridMetaData.isValid() && gmd != subgridMetaData)
   {
 		RCRect r = gmd.rcRect().intersected(subgridMetaData.rcRect());
-		pair<int, int> tlRowCol = g->rc2rowCol(r.tl);
-		pair<int, int> brRowCol = g->rc2rowCol(r.br);
-		int top = tlRowCol.first;
-		int left = tlRowCol.second;
-		int rows = brRowCol.first - tlRowCol.first;
-		int cols = brRowCol.second - tlRowCol.second;
+    auto tlRowCol = g->rc2rowCol(r.tl);
+    auto brRowCol = g->rc2rowCol(r.br);
+    int top = tlRowCol.row;
+    int left = tlRowCol.col;
+    int rows = brRowCol.row - tlRowCol.row;
+    int cols = brRowCol.col - tlRowCol.col;
 		res = GridPPtr(g->subGridClone(top, left, rows, cols));
   }
   else
