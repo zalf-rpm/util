@@ -754,7 +754,7 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
       const GridProxies& agps = ci->second;
       BOOST_FOREACH(GridProxyPtr agp, agps)
       {
-        cout << "dsn: |" << agp->datasetName << "|" << endl;
+//        cout << "dsn: |" << agp->datasetName << "|" << endl;
         uniqueDatasetNames.insert(agp->datasetName);
       }
     }
