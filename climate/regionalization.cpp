@@ -158,6 +158,7 @@ namespace
 		}
 
 		RCRect extendedRegion = gmd.rcRect();
+    CoordinateSystem erCS = extendedRegion.tl.coordinateSystem;
 		int bs = borderSize * 1000; //m
     extendedRegion.tl = extendedRegion.tl + RectCoord(gmd.coordinateSystem, -bs, bs);
     extendedRegion.br = extendedRegion.br + RectCoord(gmd.coordinateSystem, bs, -bs);
@@ -168,9 +169,9 @@ namespace
 		vector<const ClimateStation*> filteredStations;
     BOOST_FOREACH(const ClimateStation* cs, sim->climateStations())
     {
-			if(extendedRegion.contains(cs->rcCoord()))
+      if(extendedRegion.contains(cs->rcCoord(erCS)))
       {
-				cout << "----> included: " << cs->name() << " rcc: " << cs->rcCoord().toString() << endl;
+        cout << "----> included: " << cs->name() << " rcc: " << cs->rcCoord(erCS).toString() << endl;
 				filteredStations.push_back(cs);
 			}
 		}
@@ -342,7 +343,9 @@ Results Regionalization::regionalize(Env env)
 		realization2years[r] =  Tools::range<set<Year> >(env.fromYear, env.toYear);
 	}
 
-	GridMetaData gmd(env.dgm->gridPtr());
+  CoordinateSystem usedCS = env.dgm->coordinateSystem();
+
+  GridMetaData gmd(env.dgm);//->gridPtr());
 
 	set<ACD> acdsSet(env.acds.begin(), env.acds.end());
 
@@ -471,7 +474,7 @@ Results Regionalization::regionalize(Env env)
             ostringstream dsn;
             dsn << year;
 //            cout << "trying to load: year: " << year << " path: " << pathToHdf.str() << endl;
-            GridPPtr g = GridPPtr(new GridP(dsn.str(), GridP::HDF, pathToHdf.str()));
+            GridPPtr g = GridPPtr(new GridP(dsn.str(), GridP::HDF, pathToHdf.str(), usedCS));
             if(g->isValid())
             {
 //              cout << "found grid in hdf" << endl;
@@ -539,7 +542,7 @@ Results Regionalization::regionalize(Env env)
 					}
 
 					//cache also rc coordinate of station
-					year2xs[currentYear].push_back(X(*cs, cs->rcCoord(), values));
+          year2xs[currentYear].push_back(X(*cs, cs->rcCoord(usedCS), values));
 //					cout << "current year: " << currentYear << " station: " << cs->name();
 //					BOOST_FOREACH(FuncResult::value_type p, vals)
 //					{

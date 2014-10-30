@@ -170,7 +170,7 @@ namespace Climate
 		/*!
 		 * @return the stations Gauss-Krüger 5. Meridian coordinate
 		 */
-		Tools::RectCoord rcCoord(Tools::CoordinateSystem cs = Tools::GK5_EPSG31469) const
+    Tools::RectCoord rcCoord(Tools::CoordinateSystem cs) const// = Tools::GK5_EPSG31469) const
 		{ return Tools::latLng2RC(geoCoord(), cs); }
 
 		/*!

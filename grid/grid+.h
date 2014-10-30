@@ -66,7 +66,7 @@ namespace Grids
 
 	struct RCRect
 	{
-		RCRect(Tools::CoordinateSystem cs = Tools::UndefinedCoordinateSystem)
+    RCRect(Tools::CoordinateSystem cs = Tools::CoordinateSystem())
 			: tl(cs), br(cs) {}
 
 		RCRect(const Tools::RectCoord& tl, const Tools::RectCoord& br)
@@ -110,9 +110,9 @@ namespace Grids
 	//! metadata common to all grids
 	struct GridMetaData
 	{
-		GridMetaData(Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
+    GridMetaData(Tools::CoordinateSystem cs = Tools::CoordinateSystem());// = Tools::GK5_EPSG31469);
 
-		GridMetaData(const grid* g, Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
+    GridMetaData(const grid* g, Tools::CoordinateSystem cs);// = Tools::GK5_EPSG31469);
 
 		GridMetaData(const GridP* g);
 
@@ -220,21 +220,21 @@ namespace Grids
 	public:
 		enum FileType { HDF, ASCII };
 
-		GridP(Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
+    GridP(Tools::CoordinateSystem cs = Tools::CoordinateSystem());// = Tools::GK5_EPSG31469);
 
 		//! new grid with given size and initialized to no data
 		GridP(const std::string& datasetName,
 			int nrows, int ncols, float cellSize,
 			double llx, double lly, float noDataValue,
-			Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
+      Tools::CoordinateSystem cs);// = Tools::GK5_EPSG31469);
 
 		GridP(GridMetaData gmd, const std::string& datasetName = std::string());
 
 		GridP(const std::string& datasetName,
 			FileType ft, const std::string& pathToFile,
-			Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
+      Tools::CoordinateSystem cs);// = Tools::GK5_EPSG31469);
 
-		GridP(grid* wrapThisGrid, Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
+    GridP(grid* wrapThisGrid, Tools::CoordinateSystem cs);// = Tools::GK5_EPSG31469);
 
 		//! copy constructor
 		GridP(const GridP& other);
@@ -249,9 +249,9 @@ namespace Grids
 		/**
 		* conversion copy constructor
 		*/
-		GridP(const grid& other, Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
+    GridP(const grid& other, Tools::CoordinateSystem cs);// = Tools::GK5_EPSG31469);
 
-		GridP(grid const *const other, Tools::CoordinateSystem cs = Tools::GK5_EPSG31469);
+    GridP(grid const *const other, Tools::CoordinateSystem cs);// = Tools::GK5_EPSG31469);
 
 		//! copies other
 		GridP& operator=(const grid& other);
@@ -739,7 +739,7 @@ namespace Grids
 	{
 		enum State { eNew, eChanged, eNormal };
 
-		GridProxy(Tools::CoordinateSystem cs = Tools::GK5_EPSG31469)
+    GridProxy(Tools::CoordinateSystem cs)// = Tools::GK5_EPSG31469)
 			: modificationTime(0), state(eNormal), coordinateSystem(cs) { }
 		GridProxy(Tools::CoordinateSystem cs,
 			const std::string& dsn, const std::string& fn,

@@ -26,14 +26,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <sstream>
 
+#include "boost/foreach.hpp"
+
 #include "proj_api.h"
 
+#ifndef NO_DB
+#include "db/abstract-db-connections.h"
+#endif
 #include "coord-trans.h"
 #include "tools/helper.h"
 
+#define LOKI_OBJECT_LEVEL_THREADING
+#include "loki/Threads.h"
+
 using namespace std;
 using namespace Tools;
+using namespace Db;
 
+struct L: public Loki::ObjectLevelLockable<L> {};
+
+/*
 string Tools::coordinateSystemToString(CoordinateSystem cs)
 {
 	switch(cs)
@@ -46,7 +58,9 @@ string Tools::coordinateSystemToString(CoordinateSystem cs)
 	}
 	return "unknown coordinate system";
 }
+*/
 
+/*
 string Tools::coordinateSystemToShortString(CoordinateSystem cs)
 {
 	switch(cs)
@@ -60,21 +74,74 @@ string Tools::coordinateSystemToShortString(CoordinateSystem cs)
 	}
 	return "unknown";
 }
+*/
+
+string Tools::coordinateSystemToString(CoordinateSystem cs)
+{
+  if(cs.data)
+    return cs.data->name;
+  return string();
+}
+
+string Tools::coordinateSystemToShortString(CoordinateSystem cs)
+{
+  if(cs.data)
+    return cs.data->shortName;
+  return string();
+}
 
 CoordinateSystem Tools::shortStringToCoordinateSystem(string cs, CoordinateSystem def)
 {
-  if(Tools::toLower(cs) == "gk5")
-    return GK5_EPSG31469;
-  else if(Tools::toLower(cs) == "utm21s")
-    return UTM21S_EPSG32721;
-  else if(Tools::toLower(cs) == "utm32n")
-    return UTM32N_EPSG25832;
-  else if(Tools::toLower(cs) == "latlng")
-    return LatLng_EPSG4326;
+  static L lockable;
 
-  return def;
+  typedef map<string, CoordinateSystem> M;
+  static bool initialized = false;
+  static M ss2cs;
+
+  if (!initialized)
+  {
+    L::Lock lock(lockable);
+
+    if (!initialized)
+    {
+      DBPtr con(newConnection("coord-trans"));
+      DBRow row;
+
+      string query =
+          "select id, name, short_name, source_conversion_factor, target_conversion_factor,  switch_2d_coordinates, params "
+          "from proj4_conversion_params "
+          "order by id";
+
+      con->select(query.c_str());
+
+      while (!(row = con->getRow()).empty())
+      {
+        int id = satoi(row[0]);
+
+        auto csd = CoordinateSystemDataPtr(new CoordinateSystemData);
+        csd->name = row[1];
+        csd->shortName = row[2];
+
+        CoordConversionParams ccps;
+        ccps.sourceConversionFactor = satof(row[3]);
+        ccps.targetConversionFactor = satof(row[4]);
+        ccps.switch2DCoordinates = satob(row[5]);
+        ccps.projectionParams = row[6];
+
+        csd->proj4Params = ccps;
+
+        ss2cs[Tools::toLower(csd->shortName)] = CoordinateSystem(id, csd);
+      }
+
+      initialized = true;
+    }
+  }
+
+  M::const_iterator ci = ss2cs.find(Tools::toLower(cs));
+  return ci != ss2cs.end() ? ci->second : def;
 }
 
+/*
 CoordConversionParams Tools::coordConversionParams(CoordinateSystem cs)
 {
 	CoordConversionParams ccp;
@@ -118,6 +185,7 @@ CoordConversionParams Tools::coordConversionParams(CoordinateSystem cs)
 		}
 	return ccp;
 }
+*/
 
 /*
 CoordConversionParams Tools::GK5Params()
@@ -165,6 +233,27 @@ string RectCoord::toString() const {
 //------------------------------------------------------------------------------
 
 const double LatLngCoord::eps = 0.000001;
+
+LatLngCoord LatLngCoord::latLngCoordPrototype()
+{
+  static L lockable;
+
+  static bool initialized = false;
+  static LatLngCoord llc;
+
+  if (!initialized)
+  {
+    L::Lock lock(lockable);
+
+    if (!initialized)
+    {
+      llc = shortStringToCoordinateSystem("LatLng");
+      initialized = true;
+    }
+  }
+
+  return llc;
+}
 
 string LatLngCoord::toString() const
 {

@@ -247,7 +247,7 @@ void CarbiocialSimulation::setClimateStations()
 	Db::DBRow row;
 	while(!(row = connection().getRow()).empty())
 	{
-		LatLngCoord llc = RC2latLng(RectCoord(UTM21S_EPSG32721, satoi(row[3]), satoi(row[4])));
+    LatLngCoord llc = RC2latLng(RectCoord(shortStringToCoordinateSystem("UTM21S"), satoi(row[3]), satoi(row[4])));
 
 		ostringstream ss;
 		ss << "LatLng(" << llc.lat << "," << llc.lng << ")";

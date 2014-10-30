@@ -290,6 +290,11 @@ namespace Tools
 		return s.empty() ? def : std::atof(s.c_str());
 	}
 
+  inline bool satob(const std::string& s, bool def = false)
+  {
+    return s.empty() ? def : std::atoi(s.c_str()) != 0;
+  }
+
 }
 
 

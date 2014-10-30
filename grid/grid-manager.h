@@ -497,7 +497,7 @@ namespace Grids
 										const std::string& gridFileName,
 										time_t modificationTime = 0,
 										const std::string& pathToGrid = std::string(),
-                    Tools::CoordinateSystem cs = Tools::UndefinedCoordinateSystem);
+                    Tools::CoordinateSystem cs = Tools::CoordinateSystem());
 
 	private: //methods
 		const RegDataMap* regionalizedData(const std::string& region) const;
@@ -550,8 +550,7 @@ namespace Grids
 
 		//! extract metadata from a grid file
 		GridMetaData extractMetadataFromGrid(const std::string& gridFileName,
-																				 Tools::CoordinateSystem cs
-																				 = Tools::GK5_EPSG31469) const;
+                                         Tools::CoordinateSystem cs) const;// = Tools::GK5_EPSG31469) const;
 
 		//! update the store by any changes to the grids available
 		void updateHdfStore(const Path& userSubPath,

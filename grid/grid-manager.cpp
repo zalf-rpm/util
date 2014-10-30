@@ -717,7 +717,7 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
   //find most often used coordinate system in the selected region
   //we assume that this coordinate system can safely be used in this region,
   //else there wouldn't be that many grids there
-  CoordinateSystem usedCS = UndefinedCoordinateSystem;
+  CoordinateSystem usedCS = CoordinateSystem();
   int noOfGPS = 0;
   BOOST_FOREACH(CS2NO::value_type p, cs2noOfGPS)
   {
@@ -729,7 +729,7 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
   }
 
   //if we didn't find any coordinate system we leave
-  if(usedCS == UndefinedCoordinateSystem)
+  if(usedCS == CoordinateSystem())
     return NULL;
 
   //determine the dimensions of the bounding rect if the top left corner is exactly
@@ -1096,13 +1096,8 @@ GridManager::addNewGridProxy(const Path& userSubPath,
 //		<< " pathToGridFile: " << pathToGridFile << endl;
   CoordinateSystem fileNameCS = extractCoordinateSystem(gridFileName);
   CoordinateSystem cs2 = cs;
-  if(cs2 == UndefinedCoordinateSystem)
-  {
-    if(fileNameCS != UndefinedCoordinateSystem)
-      cs2 = fileNameCS;
-    else
-      cs2 = GK5_EPSG31469;
-  }
+  if(!cs2.isValid() && fileNameCS.isValid())
+    cs2 = fileNameCS;
 
   GridMetaData gmd = extractMetadataFromGrid(pathToGridFile, cs2);
 	gmd.regionName = extractRegionName(gridFileName);
@@ -1449,7 +1444,7 @@ void GridManager::readRegionalizedData()
 			string datasetName = oss.str();
 
 //      cout << "datasetName: " << datasetName << endl;
-			GridProxyPtr gp = GridProxyPtr(new GridProxy(GK5_EPSG31469,
+      GridProxyPtr gp = GridProxyPtr(new GridProxy(shortStringToCoordinateSystem("gk5"),
 																									 datasetName, "", path,
 																									 hdfFileName, 0));
 
@@ -1590,7 +1585,7 @@ Tools::CoordinateSystem GridManager::extractCoordinateSystem(const string& gfn) 
   int dotPos = gfn.find_first_of(".", start2);
   string csShortString = gfn.substr(start2, dotPos - start2);
   //cout << "csShortString: " << csShortString << endl;
-  return shortStringToCoordinateSystem(csShortString, Tools::UndefinedCoordinateSystem);
+  return shortStringToCoordinateSystem(csShortString, Tools::CoordinateSystem());
 }
 
 void GridManager::writeGrid2HdfMappingFile(const Path& userSubPath)
