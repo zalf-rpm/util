@@ -442,7 +442,6 @@ namespace Grids
 		~GridManager();
 
     VirtualGrid2* createVirtualGrid(const Tools::Quadruple<Tools::LatLngCoord>& llrect,
-                                    double cellSize,
                                     const Path& userSubPath = "general");
 
     /*

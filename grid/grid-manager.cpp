@@ -491,7 +491,6 @@ createVirtualGrid(const Quadruple<LatLngCoord>& llrect, double cellSize,
 //}
 
 VirtualGrid2* GridManager::createVirtualGrid(const Quadruple<LatLngCoord>& llrect,
-                                            double cellSize,
                                             const Path& userSubPath)
 {
 	Path2GPS::const_iterator ci = _gmdMap.find(userSubPath);
@@ -788,12 +787,14 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 
         BOOST_FOREACH(const GridMetaData& gmd, p.second)
         {
-          if(gmd.regionName == "uecker" ||
-             gmd.regionName == "sachsen" ||
-             gmd.regionName == "uelzen" ||
-             gmd.regionName == "brazil-sinop" ||
-             gmd.regionName == "brazil-campo-verde")
-            regionName = gmd.regionName;
+//          cout << "gmd: " << gmd.toCanonicalString() << " regionName: " << regionName << endl;
+          regionName = gmd.regionName;
+//          if(gmd.regionName == "uecker" ||
+//             gmd.regionName == "sachsen" ||
+//             gmd.regionName == "uelzen" ||
+//             gmd.regionName == "brazil-sinop" ||
+//             gmd.regionName == "brazil-campo-verde")
+//            regionName = gmd.regionName;
 
           GMD2GPS::const_iterator ci = gmd2gridProxies.find(gmd);
           if(ci == gmd2gridProxies.end())

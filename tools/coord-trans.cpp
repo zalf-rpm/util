@@ -234,12 +234,12 @@ string RectCoord::toString() const {
 
 const double LatLngCoord::eps = 0.000001;
 
-LatLngCoord LatLngCoord::latLngCoordPrototype()
+CoordinateSystem LatLngCoord::latLngCoordinateSystem()
 {
   static L lockable;
 
   static bool initialized = false;
-  static LatLngCoord llc;
+  static CoordinateSystem llc;
 
   if (!initialized)
   {

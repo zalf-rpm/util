@@ -69,6 +69,11 @@ struct CoordinateSystem
     return id != other.id || data.get() != other.data.get();
   }
 
+  inline bool operator<(const CoordinateSystem& other) const
+  {
+    return id < other.id;
+  }
+
   bool isValid() const { return id > 0 || data.get() != NULL; }
 
   int id;
@@ -95,9 +100,9 @@ enum CoordinateSystem
 };
 */
 
-inline std::string coordinateSystemToString(CoordinateSystem cs);
+std::string coordinateSystemToString(CoordinateSystem cs);
 
-inline std::string coordinateSystemToShortString(CoordinateSystem cs);
+std::string coordinateSystemToShortString(CoordinateSystem cs);
 
 CoordinateSystem shortStringToCoordinateSystem(std::string cs, CoordinateSystem def = CoordinateSystem());
 
@@ -179,23 +184,21 @@ struct RectCoord : public Coord2D<double>
    */
 struct LatLngCoord : public Coord2D<double>
 {
-  static LatLngCoord latLngCoordPrototype();
+  static CoordinateSystem latLngCoordinateSystem();
 
-  LatLngCoord() : Coord2D(latLngCoordPrototype()), lat(0), lng(0) {}
+  LatLngCoord() : Coord2D(latLngCoordinateSystem()), lat(0), lng(0) {}
 
   LatLngCoord(CoordinateSystem)
-    : Coord2D(latLngCoordPrototype()), lat(0), lng(0)
+    : Coord2D(latLngCoordinateSystem()), lat(0), lng(0)
   {}
 
   LatLngCoord(double lat, double lng)
-    : Coord2D(latLngCoordPrototype()), lat(lat), lng(lng)
+    : Coord2D(latLngCoordinateSystem()), lat(lat), lng(lng)
   {}
 
   LatLngCoord(CoordinateSystem, double lat, double lng)
-    : Coord2D(latLngCoordPrototype()), lat(lat), lng(lng)
+    : Coord2D(latLngCoordinateSystem()), lat(lat), lng(lng)
   {}
-
-
 
   virtual double firstDimension() const { return lat; }
   virtual double secondDimension() const { return lng; }

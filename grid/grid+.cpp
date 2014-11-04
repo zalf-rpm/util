@@ -520,7 +520,7 @@ int GridP::readHdf(const string& pathToHdfFile, const string& datasetName)
   _grid->ycorner=hd->get_d_attribute("yllcorner");
   _grid->csize=hd->get_f_attribute("cell-size");
   char* cs = hd->get_s_attribute("coordinate-system");
-  _coordinateSystem = Tools::shortStringToCoordinateSystem(cs);
+  _coordinateSystem = Tools::shortStringToCoordinateSystem(string(cs));
   free(cs);
   //cerr << ncols << " " << nrows << " " << csize << endl;
   hd->read_f_feld(datasetName.c_str()); // writes to f1 in grid
