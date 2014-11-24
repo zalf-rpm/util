@@ -771,6 +771,8 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
   string regionName;
 
   GridPPtr someGrid = dsn2grid.begin()->second;
+
+  /*
   for(int r = 0, rs = someGrid->rows(); r < rs; r++)
   {
     for(int c = 0, cs = someGrid->cols(); c < cs; c++)
@@ -842,6 +844,82 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
       }
     }
   }
+  */
+
+
+  BOOST_FOREACH(CS2GMDS::value_type p, cs2gmds)
+  {
+    BOOST_FOREACH(const GridMetaData& gmd, p.second)
+    {
+      //          cout << "gmd: " << gmd.toCanonicalString() << " regionName: " << regionName << endl;
+      regionName = gmd.regionName;
+      //          if(gmd.regionName == "uecker" ||
+      //             gmd.regionName == "sachsen" ||
+      //             gmd.regionName == "uelzen" ||
+      //             gmd.regionName == "brazil-sinop" ||
+      //             gmd.regionName == "brazil-campo-verde")
+      //            regionName = gmd.regionName;
+
+      GMD2GPS::const_iterator ci = gmd2gridProxies.find(gmd);
+      if(ci == gmd2gridProxies.end())
+        continue;
+      const GridProxies& agps = ci->second;
+      if(agps.empty())
+        continue;
+
+      GridP* g = agps.front()->gridPtr();
+      double gCellSize = g->cellSize();
+
+      for(int r = 0, rows = someGrid->rows(); r < rows; r++)
+      {
+        for(int c = 0, cols = someGrid->cols(); c < cols; c++)
+        {
+          RectCoord cellCenter = someGrid->rcCoordAtCenter(r, c);
+          double sgCellSize = someGrid->cellSize();
+
+          LatLngCoord llcc = RC2latLng(cellCenter);
+
+          CoordinateSystem cs = p.first;
+          RectCoord rccc = latLng2RC(llcc, cs);
+
+          auto pos = g->rc2rowCol(rccc);
+
+          //if any value lies farther outside than a cellwidth of the target grid, it can't intersect the closest
+          //source cell thus we associate a no data value with the target grid value
+          bool setNoDataValue =
+              (pos.row < 0 && abs(pos.row*gCellSize) > sgCellSize) ||
+              (pos.col < 0 && abs(pos.col*gCellSize) > sgCellSize) ||
+              (pos.row > 0 && pos.isRowOutside && abs((pos.row - g->rows())*gCellSize > sgCellSize)) ||
+              (pos.col > 0 && pos.isColOutside && abs((pos.col - g->cols())*gCellSize > sgCellSize));
+
+          //if the position is in the cell outside, just associate the target grid value with the border value of
+          //the source grid
+          if(!setNoDataValue)
+          {
+            if(pos.row < 0)
+              pos.row = 0;
+            else if(pos.row > 0 && pos.isRowOutside)
+              pos.row = g->rows() - 1;
+            if(pos.col < 0)
+              pos.col = 0;
+            else if(pos.col > 0 && pos.isColOutside)
+              pos.col = g->cols() - 1;
+          }
+
+          BOOST_FOREACH(GridProxyPtr agp, agps)
+          {
+            GridPPtr tg = dsn2grid[agp->datasetName];
+            if(setNoDataValue)
+              tg->setNoDataValueAt(r,c);
+            else
+              tg->setDataAt(r, c, agp->gridPtr()->dataAt(pos.row, pos.col));
+          }
+        }
+      }
+    }
+  }
+
+  cout << "regionName: " << regionName << " noOfRows: " << noOfRows << " noOfCols: " << noOfCols << endl;
 
   auto vg = new VirtualGrid2(usedCS, RCRect(tl, br), minCellSize, noOfRows, noOfCols, dsn2grid);
   vg->setCustomId(regionName);
