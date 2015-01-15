@@ -844,9 +844,9 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
       }
     }
   }
-  */
+  /*/
 
-
+  //*
   BOOST_FOREACH(CS2GMDS::value_type p, cs2gmds)
   {
     BOOST_FOREACH(const GridMetaData& gmd, p.second)
@@ -918,6 +918,7 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
       }
     }
   }
+  //*/
 
   cout << "regionName: " << regionName << " noOfRows: " << noOfRows << " noOfCols: " << noOfCols << endl;
 
