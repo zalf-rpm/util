@@ -1,4 +1,4 @@
-#include <QtCore/QtCore>
+#include <QtCore>
 #include <sstream>
 
 #include "qt-helper.h"
@@ -107,3 +107,206 @@ Tools::createStandardDeviationPolygon(const QVector<double>& xs,
 }
 
 //------------------------------------------------------------------------------
+
+QVariant Tools::executeJs(QWebFrame* webFrame, QString jsc, QStringList vns,
+                          QVariantList ivs, QString jsBridgeObjectName)
+{
+  QObject* jsBridge = new QObject;
+
+  for(int i = 0; i < vns.size(); i++)
+  {
+    QString vn = vns.at(i);
+    if(ivs.size() > i)
+    {
+      QVariant v = ivs.at(i);
+      //qDebug() << "v: " << v;
+      switch(v.type())
+      {
+      case QVariant::Map:
+        jsBridge->setProperty(vn.toStdString().c_str(), v.toMap());
+        break;
+      case QVariant::List:
+        jsBridge->setProperty(vn.toStdString().c_str(), v.toList());
+        break;
+      default:
+        jsBridge->setProperty(vn.toStdString().c_str(), v);
+      }
+    }
+    else
+    {
+      jsBridge->setProperty(vn.toStdString().c_str(), QVariant(-1));
+    }
+  }
+
+  //qDebug() << "jsc: " << jsc;
+
+  webFrame->addToJavaScriptWindowObject(jsBridgeObjectName, jsBridge);
+  QVariant res = webFrame->evaluateJavaScript(jsc);
+
+  return res;
+}
+
+QVariant Tools::executeJs(QWebFrame* webFrame, const QString& jsc, const QString& varName,
+                          const QVariant& value,
+                          const QString& jsBridgeObjectName)
+{
+  QObject* jsBridge = new QObject;
+
+  switch(value.type())
+  {
+    case QVariant::Map:
+      jsBridge->setProperty(varName.toStdString().c_str(), value.toMap());
+      break;
+    case QVariant::List:
+      jsBridge->setProperty(varName.toStdString().c_str(), value.toList());
+      break;
+    default:
+      jsBridge->setProperty(varName.toStdString().c_str(), value);
+  }
+
+  webFrame->addToJavaScriptWindowObject(jsBridgeObjectName, jsBridge);
+  return webFrame->evaluateJavaScript(jsc);
+}
+
+//---------------------------------------------------------------------------------------------
+
+QVariant Tools::encodeString(QString s)
+{
+  if(s.startsWith(":"))
+    return QVariantList() << "k" << s.mid(1);
+  else if(s.startsWith("'"))
+    return QVariantList() << "y" << s.mid(1);
+
+  return QVariant(s);
+}
+
+QJsonArray Tools::encodeCljson(QVariantList vs)
+{
+  QVariantList l;
+  l.append("v");
+  foreach(QVariant v, vs)
+  {
+    QVariant var = encodeCljsonFormat(v);
+    qDebug() << "var: " << var;
+    l.append(var);
+  }
+
+  return QJsonArray::fromVariantList(l);
+}
+
+QVariant Tools::encodeCljsonFormat(QVariant v)
+{
+  switch(int(v.type()))
+  {
+  case QMetaType::QVariantMap:
+  {
+    QVariantList l;
+    l.append("m");
+    QVariantMap m = v.toMap();
+    foreach(QString key, m.keys())
+    {
+      l.append(encodeCljsonFormat(encodeString(key)));
+      l.append(encodeCljsonFormat(m[key]));
+    }
+    return l;
+    break;
+  }
+  case QMetaType::QVariantList:
+  {
+    QVariantList l;
+    l.append("v");
+    foreach(QVariant v, l)
+    {
+      l.append(encodeCljsonFormat(v));
+    }
+    return l;
+    break;
+  }
+  case QMetaType::Bool:
+  case QMetaType::Double:
+    return v;
+    break;
+  case QMetaType::QDate:
+    return v.toDate().toString("yyyy-MM-dd");
+    break;
+  case QMetaType::QUuid:
+    return QVariantList() << "uuid" << v.toUuid().toString().remove(QRegularExpression("[\{\}]"));
+    break;
+  case QMetaType::QString:
+    return encodeString(v.toString());
+    break;
+  default: ;
+  }
+
+  return v;
+}
+
+QVariant Tools::decodeCljson(QJsonValue v)
+{
+  return v.isArray() ? decodeCljsonTagged(v.toArray()) : v.toVariant();
+}
+
+QVariant Tools::decodeCljsonTagged(QJsonArray a)
+{
+  QString tag = a.at(0).toString("");
+  if(tag == "v")
+  {
+    QVariantList l;
+    for(int i = 1, size = a.size(); i < size; i++)
+      l.append(decodeCljson(a.at(i)));
+    return l;
+  }
+  else if(tag == "l")
+  {
+    QVariantList l;
+    for(int i = 1, size = a.size(); i < size; i++)
+      l.append(decodeCljson(a.at(i)));
+    return l;
+  }
+  else if(tag == "m")
+  {
+    QVariantMap m;
+    for(int i = 1, size = a.size(); i < size; i += 2)
+    {
+      QVariant key = decodeCljson(a.at(i));
+      QString skey;
+      switch(key.type())
+      {
+      case QVariant::Map:
+      case QVariant::List:
+        skey = QString(key.toJsonDocument().toJson()); break;
+      case QVariant::Bool:
+        skey = QString("%1").arg(key.toBool()); break;
+      case QVariant::Double:
+        skey = QString("%1").arg(key.toDouble()); break;
+      case QVariant::Date:
+        skey = key.toDate().toString(); break;
+      case QVariant::String:
+        skey = key.toString(); break;
+      default: ;
+      }
+
+      m[skey] = decodeCljson(a.at(i+1));
+    }
+    return m;
+  }
+  else if(tag == "s")
+  {
+    QVariantList l;
+    for(int i = 1, size = a.size(); i < size; i++)
+      l.append(decodeCljson(a.at(i)));
+    return l;
+  }
+  else if(tag == "k")
+    return QString(":") + a.at(1).toString();
+  else if(tag == "y")
+    return QString("'") + a.at(1).toString();
+  else if(tag == "z")
+    return QVariant("z tag is currently unimplemented");
+  else if(tag == "uuid")
+    return QUuid(a.at(1).toString());
+  else if(tag == "inst")
+    return QVariant(QDate::fromString(a.at(1).toString().mid(0, 10), "yyyy-MM-dd"));
+
+  return QVariant(tag + " tag is currently unimplemented");
+}

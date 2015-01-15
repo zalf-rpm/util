@@ -4,8 +4,14 @@
 #include <QtCore/QObject>
 #include <QtCore/QVariantList>
 #include <QtWidgets/QComboBox>
+#include <QtWebkitWidgets/QWebFrame>
 #include <QtCore/QTimer>
 #include <QtCore/QQueue>
+#include <QtCore/QVariant>
+#include <QtCore/QJsonArray>
+#include <QtCore/QJsonValue>
+#include <QtCore/QJsonDocument>
+
 #include <string>
 
 #ifndef Q_MOC_RUN
@@ -170,6 +176,41 @@ namespace Tools
 																 const QVector<double>& ys,
 																 const QVector<double>& sigmas);
 
+  //----------------------------------------------------------------------------
+
+  QVariant executeJs(QWebFrame* webFrame, QString jsCode, QStringList varNames,
+                     QVariantList initValues,
+                     QString jsBridgeObjectName = "jsb");
+  inline QVariant executeJs(QWebFrame* webFrame, QString jsCode, QStringList varNames,
+                     QString jsBridgeObjectName = "jsb")
+  {
+    return executeJs(webFrame, jsCode, varNames, QVariantList(), jsBridgeObjectName);
+  }
+  inline QVariant executeJs(QWebFrame* webFrame, QString jsCode, QString jsBridgeObjectName = "jsb")
+  {
+    return executeJs(webFrame, jsCode, QStringList(), QVariantList(), jsBridgeObjectName);
+  }
+
+  QVariant executeJs(QWebFrame* webFrame, const QString& jsc,
+                     const QString& varName, const QVariant& value,
+                     const QString& jsBridgeObjectName = "jsb");
+
+  //-------------------------------------------------------------------------------
+
+  QVariant encodeString(QString s);
+
+  QVariant encodeCljsonFormat(QVariant v);
+
+  QJsonArray encodeCljson(QVariantList v);
+
+  inline QByteArray encodeToCljsonString(QVariantList v)
+  {
+    return QJsonDocument(encodeCljson(v)).toJson();
+  }
+
+  QVariant decodeCljson(QJsonValue v);
+
+  QVariant decodeCljsonTagged(QJsonArray a);
 }
 
 Q_DECLARE_METATYPE(Tools::JaNein)
