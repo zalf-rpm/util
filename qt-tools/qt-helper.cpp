@@ -170,6 +170,27 @@ QVariant Tools::executeJs(QWebFrame* webFrame, const QString& jsc, const QString
 
 //---------------------------------------------------------------------------------------------
 
+QJsonValue Tools::cljsonKeyword(const QString& kw)
+{
+  return QJsonArray() << "k" << kw;
+}
+
+QJsonValue Tools::cljsonSymbol(const QString& s)
+{
+  return QJsonArray() << "y" << s;
+}
+
+QJsonValue Tools::cljsonDate(const QDate& d)
+{
+  return QJsonArray() << "inst" << (d.toString("yyyy-MM-dd") + "T00:00:00.000-00:00");
+}
+
+QJsonValue Tools::cljsonUuid(const QUuid& uuid)
+{
+  return QJsonArray() << "uuid" << uuid.toString().remove(QRegularExpression("[\{\}]"));
+}
+
+
 QVariant Tools::encodeString(QString s)
 {
   if(s.startsWith(":"))
@@ -214,8 +235,9 @@ QVariant Tools::encodeCljsonFormat(QVariant v)
   case QMetaType::QVariantList:
   {
     QVariantList l;
+    QVariantList vs = v.toList();
     l.append("v");
-    foreach(QVariant v, l)
+    foreach(QVariant v, vs)
     {
       l.append(encodeCljsonFormat(v));
     }
@@ -227,7 +249,7 @@ QVariant Tools::encodeCljsonFormat(QVariant v)
     return v;
     break;
   case QMetaType::QDate:
-    return v.toDate().toString("yyyy-MM-dd");
+    return QVariantList() << "inst" << (v.toDate().toString("yyyy-MM-dd") + "T00:00:00.000-00:00");
     break;
   case QMetaType::QUuid:
     return QVariantList() << "uuid" << v.toUuid().toString().remove(QRegularExpression("[\{\}]"));

@@ -197,13 +197,29 @@ namespace Tools
 
   //-------------------------------------------------------------------------------
 
+  QJsonValue cljsonKeyword(const QString& kw);
+
+  QJsonValue cljsonSymbol(const QString& s);
+
+  QJsonValue cljsonDate(const QDate& d);
+
+  QJsonValue cljsonUuid(const QUuid& uuid);
+
+//  template<typename Key, typename Value>
+//  QJsonArray cljMap(const QMap<Key, Value>& m)
+//  {
+
+//  }
+
+  //QJsonValue cljsonList(const & s);
+
   QVariant encodeString(QString s);
 
   QVariant encodeCljsonFormat(QVariant v);
 
   QJsonArray encodeCljson(QVariantList v);
 
-  inline QByteArray encodeToCljsonString(QVariantList v)
+  inline QByteArray encodeToCljsonByteArray(QVariantList v)
   {
     return QJsonDocument(encodeCljson(v)).toJson();
   }
