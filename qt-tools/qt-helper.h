@@ -197,6 +197,14 @@ namespace Tools
 
   //-------------------------------------------------------------------------------
 
+  inline QJsonArray emptyCljsonVector() { return QJsonArray() << "v"; }
+
+  inline QJsonArray emptyCljsonMap() { return QJsonArray() << "m"; }
+
+  inline QJsonArray emptyCljsonSet() { return QJsonArray() << "s"; }
+
+  inline QJsonArray emptyCljsonList() { return QJsonArray() << "l"; }
+
   QJsonValue cljsonKeyword(const QString& kw);
 
   QJsonValue cljsonSymbol(const QString& s);
