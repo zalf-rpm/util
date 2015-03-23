@@ -467,7 +467,7 @@ namespace Grids
 										 GridMetaData subgridMetaData = GridMetaData());
 
 		std::vector<GridPPtr> gridsFor(const std::string& regionName,
-																	 const std::set<std::string>& datasetNames,
+                                   std::set<std::string> datasetNames = std::set<std::string>(),
 																	 const Path& userSubPath = "general",
 																	 int cellSize = 100,
 																	 GridMetaData subgridMetaData = GridMetaData());

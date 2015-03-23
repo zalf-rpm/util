@@ -1020,7 +1020,7 @@ GridPPtr GridManager::createSubgrid(GridPPtr g, GridMetaData subgridMetaData,
 }
 
 vector<GridPPtr> GridManager::gridsFor(const string& regionName,
-																			 const set<string>& datasetNames,
+                                       set<string> datasetNames,
 																			 const Path& userSubPath,
 																			 int cellSize,
                                        GridMetaData subgridMetaData)
@@ -1042,8 +1042,10 @@ vector<GridPPtr> GridManager::gridsFor(const string& regionName,
 					const GridProxies& gps = ci2->second;
           BOOST_FOREACH(GridProxyPtr gp, gps)
           {
-						if(datasetNames.find(gp->datasetName) != datasetNames.end())
-							res.push_back(createSubgrid(gp->gridPPtr(), subgridMetaData));
+            //in case of empty dataset names we interpret this as return all grids
+            if(datasetNames.find(gp->datasetName) != datasetNames.end() ||
+               datasetNames.empty())
+              res.push_back(createSubgrid(gp->gridPPtr(), subgridMetaData));
 					}
 				}
 			}
