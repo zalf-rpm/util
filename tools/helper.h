@@ -64,7 +64,7 @@ namespace Tools
 	inline double atof_comma(const char* c)
 	{
 		std::string s(c);
-		int pos = s.find_first_of(',');
+    size_t pos = s.find_first_of(',');
 		if(pos != std::string::npos)
 			return std::atof(s.replace(pos, 1, ".").c_str());
 
@@ -73,7 +73,7 @@ namespace Tools
 
 	inline double atof_comma(std::string s)
   {
-		int pos = s.find_first_of(',');
+    size_t pos = s.find_first_of(',');
     if(pos != std::string::npos)
       return std::atof(s.replace(pos, 1, ".").c_str());
 

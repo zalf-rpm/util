@@ -610,7 +610,7 @@ namespace Climate
 
 		double at(unsigned int index) const { return _cache.at(index); }
 
-    unsigned int size() const { return _cache.size(); }
+    size_t size() const { return _cache.size(); }
 
 	private:
 		std::vector<double> _cache;

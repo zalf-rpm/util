@@ -579,7 +579,8 @@ namespace Tools
 //------------------------------------------------------------------------------
 
 template<class Collection>
-Collection Tools::linearRegression(const Collection& xs, const Collection& ys) {
+Collection Tools::linearRegression(const Collection& xs, const Collection& ys)
+{
   typedef typename Collection::value_type T;
 
   Q_ASSERT(xs.size() <= ys.size());
@@ -589,7 +590,8 @@ Collection Tools::linearRegression(const Collection& xs, const Collection& ys) {
   T sumXY, sumX, sumY, sumXSq;
   b_r = a_r = sumXY = sumX = sumY = sumXSq = 0;
 
-  for(int i = 0; i < n; i++){
+  for(int i = 0; i < n; i++)
+  {
     T x_i = xs.at(i);
     T y_i = ys.at(i);
     sumXY += x_i * y_i;
@@ -602,15 +604,15 @@ Collection Tools::linearRegression(const Collection& xs, const Collection& ys) {
   a_r = (sumY - (b_r * sumX)) / (T(n));
 
   Collection ys_r(n);
-  for(int i = 0; i < n; i++){
+  for(int i = 0; i < n; i++)
     ys_r[i] = a_r + (b_r * xs.at(i));
-  }
 
   return ys_r;
 }
 
 template<class Collection>
-Collection Tools::cumulativeSum(const Collection& ys, int n){
+Collection Tools::cumulativeSum(const Collection& ys, int n)
+{
   typedef typename Collection::value_type T;
 
   T acc = 0;
@@ -623,23 +625,24 @@ Collection Tools::cumulativeSum(const Collection& ys, int n){
 
 template<class Collection>
 Collection Tools::expGlidingAverage(const Collection& ys,
-                                    typename Collection::value_type alpha) {
-                                      typedef typename Collection::value_type T;
+                                    typename Collection::value_type alpha)
+{
+  typedef typename Collection::value_type T;
 
-                                      if(ys.empty())
-                                        return Collection();
+  if(ys.empty())
+    return Collection();
 
-                                      Collection yas(ys.size());
-                                      T ya = yas[0] = ys.first();
-                                      for(int i = 1; i < ys.size(); i++){
-                                        ya = yas[i] = (alpha * ys.at(i)) + ((1-alpha) * ya);
-                                      }
+  Collection yas(ys.size());
+  T ya = yas[0] = ys.first();
+  for(int i = 1; i < ys.size(); i++)
+    ya = yas[i] = (alpha * ys.at(i)) + ((1-alpha) * ya);
 
-                                      return yas;
+  return yas;
 }
 
 template<class Collection>
-Collection Tools::simpleGlidingAverage(const Collection& ys, int n){
+Collection Tools::simpleGlidingAverage(const Collection& ys, int n)
+{
   typedef typename Collection::value_type T;
 
   int lr = int(T(isEven(n) ? n : n-1) / 2.0);  //left right
@@ -650,11 +653,12 @@ Collection Tools::simpleGlidingAverage(const Collection& ys, int n){
 
   Collection yas(ys.size() - (2*lr));
   T sum = 0;
-  for(int i = 0; i < n; i++){
+  for(int i = 0; i < n; i++)
     sum += ys.at(i);
-  }
+
   yas[0] = sum / T(n);
-  for(int i = 0; i < ys.size() - n; i++){
+  for(int i = 0; i < ys.size() - n; i++)
+  {
     sum = sum - ys.at(i) + ys.at(i+n);
     yas[i+1] = sum / T(n);
   }
@@ -669,11 +673,14 @@ std::pair<typename Collection::value_type, typename Collection::value_type>
 	Tools::minMax(const Collection& ys)
 {
   typedef typename Collection::value_type T;
-  if(ys.empty()) return std::make_pair(T(0), T(0));
+  if(ys.empty())
+    return std::make_pair(T(0), T(0));
+
   T minY = *(ys.begin());
   T maxY = *(ys.begin());
   for(typename Collection::const_iterator ci = ys.begin();
-    ci != ys.end(); ci++){
+    ci != ys.end(); ci++)
+  {
       T y = *ci;
       if(y < minY) minY = y;
       if(y > maxY) maxY = y;

@@ -15,7 +15,6 @@
 #include "loki/Threads.h"
 
 using namespace Db;
-using namespace Db;
 using namespace std;
 using namespace boost;
 using namespace Tools;
