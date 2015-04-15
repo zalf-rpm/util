@@ -256,7 +256,8 @@ double Tools::cloudAmount2globalRadiation(int doy,
 }
 
 HistogramData Tools::histogramDataByStepSize(const vector<double>& ys,
-                                            double step, int normalizeCount)
+                                             double step,
+                                             int normalizeCount)
 {
   HistogramData res;
   if(ys.empty()) 
@@ -369,6 +370,29 @@ BoxPlotInfo::BoxPlotInfo(double m, double q25, double q75, double min, double ma
   : median(m), Q25(q25), Q75(q75), min(min), max(max),
   minInnerFence(0), maxInnerFence(0){}
 
+double BoxPlotInfo::lowerInnerFence(int roundToDigits) const
+{
+  return Tools::round(Q25 - 1.5 * IQ(), roundToDigits);
+}
+
+//! upper inner fence value
+double BoxPlotInfo::upperInnerFence(int roundToDigits) const
+{
+  return Tools::round(Q75 + 1.5 * IQ(), roundToDigits);
+}
+
+//! lower outer fence value
+double BoxPlotInfo::lowerOuterFence(int roundToDigits) const
+{
+  return Tools::round(Q25 - 3.0 * IQ(), roundToDigits);
+}
+
+//! upper outer fence value
+double BoxPlotInfo::upperOuterFence(int roundToDigits) const
+{
+  return Tools::round(Q75 + 3.0 * IQ(), roundToDigits);
+}
+
 string BoxPlotInfo::toString() const 
 {
   ostringstream s;
@@ -402,7 +426,7 @@ string BoxPlotInfo::toString() const
 
 
 BoxPlotInfo Tools::boxPlotAnalysis(const std::vector<double>& data,
-                                  bool orderedData)
+                                   bool orderedData, int roundToDigits)
 {
   if(data.empty())
     return BoxPlotInfo();
@@ -415,13 +439,15 @@ BoxPlotInfo Tools::boxPlotAnalysis(const std::vector<double>& data,
   }
   const vector<double>& odata = orderedData ? data : _odata;
 
-  BoxPlotInfo bpi(median(odata), quartile(0.25, odata), quartile(0.75, odata),
-    odata.front(), odata.back());
+  BoxPlotInfo bpi(median(odata, roundToDigits),
+                  quartile(0.25, odata, roundToDigits),
+                  quartile(0.75, odata, roundToDigits),
+                  odata.front(), odata.back());
 
   //get extreme lower outliers
   remove_copy_if(odata.begin(), odata.end(),
-    inserter(bpi.extremeLowerOutliers, bpi.extremeLowerOutliers.end()),
-    _1 >= bpi.lowerOuterFence());
+                 inserter(bpi.extremeLowerOutliers, bpi.extremeLowerOutliers.end()),
+                 [&](double elo){ return elo >= bpi.lowerOuterFence(); });//_1 >= bpi.lowerOuterFence());
   //keep just the 10 smallest elements, delete the rest
   if(bpi.extremeLowerOutliers.size() > 10)
   {
@@ -434,8 +460,9 @@ BoxPlotInfo Tools::boxPlotAnalysis(const std::vector<double>& data,
 
   //get mild lower outliers
   remove_copy_if(odata.begin(), odata.end(),
-    inserter(bpi.mildLowerOutliers, bpi.mildLowerOutliers.end()),
-    _1 < bpi.lowerOuterFence() || _1 >= bpi.lowerInnerFence());
+                 inserter(bpi.mildLowerOutliers, bpi.mildLowerOutliers.end()),
+                 [&](double lof){ return lof < bpi.lowerOuterFence() || lof >= bpi.lowerInnerFence(); });
+  //_1 < bpi.lowerOuterFence() || _1 >= bpi.lowerInnerFence());
   //keep just the 10 smallest elements, delete the rest
   if(bpi.mildLowerOutliers.size() > 10)
   {
@@ -448,8 +475,9 @@ BoxPlotInfo Tools::boxPlotAnalysis(const std::vector<double>& data,
 
   //get mild upper outliers
   remove_copy_if(odata.begin(), odata.end(),
-    inserter(bpi.mildUpperOutliers, bpi.mildUpperOutliers.end()),
-    _1 <= bpi.upperInnerFence() || _1 > bpi.upperOuterFence());
+                 inserter(bpi.mildUpperOutliers, bpi.mildUpperOutliers.end()),
+                 [&](double uif){ return uif <= bpi.upperInnerFence() || uif > bpi.upperOuterFence(); });
+  //_1 <= bpi.upperInnerFence() || _1 > bpi.upperOuterFence());
   //keep just the 10 largest elements, delete the rest
   if(bpi.mildUpperOutliers.size() > 10)
   {
@@ -462,8 +490,9 @@ BoxPlotInfo Tools::boxPlotAnalysis(const std::vector<double>& data,
 
   //get extreme upper outliers
   remove_copy_if(odata.begin(), odata.end(),
-    inserter(bpi.extremeUpperOutliers, bpi.extremeUpperOutliers.end()),
-    _1 <= bpi.upperOuterFence());
+                 inserter(bpi.extremeUpperOutliers, bpi.extremeUpperOutliers.end()),
+                 [&](double euo){ return euo <= bpi.upperOuterFence(); });
+  //_1 <= bpi.upperOuterFence());
   //keep just the 10 largest elements, delete the rest
   if(bpi.extremeUpperOutliers.size() > 10)
   {
@@ -477,7 +506,7 @@ BoxPlotInfo Tools::boxPlotAnalysis(const std::vector<double>& data,
   //get smallest value above lower inner fence
   bpi.minInnerFence = bpi.min;
   vector<double>::const_iterator
-    ci = find_if(odata.begin(), odata.end(), _1 > bpi.lowerInnerFence());
+      ci = find_if(odata.begin(), odata.end(), [&](double lif){ return lif > bpi.lowerInnerFence(); });//_1 > bpi.lowerInnerFence());
   if(ci != odata.end())
     bpi.minInnerFence = *ci;
 
@@ -488,7 +517,7 @@ BoxPlotInfo Tools::boxPlotAnalysis(const std::vector<double>& data,
   while(ci != odata.end())
   {
     cilast = ci++;
-    ci = find_if(ci, odata.end(), _1 < bpi.upperInnerFence());
+    ci = find_if(ci, odata.end(), [&](double uif){ return uif < bpi.upperInnerFence(); });//_1 < bpi.upperInnerFence());
   }
   if(cilast != odata.end())
     bpi.maxInnerFence = *cilast;
@@ -505,7 +534,7 @@ return isEven(size)
 }
 */
 
-double Tools::quartile(double xth, const vector<double>& odata)
+double Tools::quartile(double xth, const vector<double>& odata, int roundToDigits)
 {
   switch(odata.size())
   {
@@ -524,7 +553,7 @@ double Tools::quartile(double xth, const vector<double>& odata)
   if(ip1 >= odata.size())
     ip1 = odata.size()-1;
 
-  return odata.at(int(i)) + frac * (odata.at(int(ip1)) - odata.at(int(i)));
+  return Tools::round(odata.at(int(i)) + frac*(odata.at(int(ip1)) - odata.at(int(i))), roundToDigits);
 }
 
 //------------------------------------------------------------------------------

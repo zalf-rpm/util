@@ -26,8 +26,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef GRIDPLUS_H_
 #define GRIDPLUS_H_
 
+#ifdef WIN32
 #ifdef WINSOCK2
 #include <WinSock2.h>
+#else
+#include <WinSock.h>
+#endif //WINSOCK2
 #endif
 
 #include <vector>
@@ -504,8 +508,8 @@ namespace Grids
 															 ignoreNoDataValues);
 		}
 
-		template<class Container, typename T>
-		Container mapF(std::function<T(float)> transformFunc,
+    template<class Container>
+    Container mapF(std::function<typename Container::value_type(float)> transformFunc,
 									 bool ignoreNoDataValues = true) const
 		{
 			Container cont;
@@ -520,6 +524,23 @@ namespace Grids
 			}
 			return cont;
 		}
+
+    template<class Container>
+    Container mapIndexedF(std::function<typename Container::value_type(int, int, float)> rowColTransformFunc,
+                          bool ignoreNoDataValues = true) const
+    {
+      Container cont;
+      for(int r = 0, rs = rows(); r < rs; r++)
+      {
+        for(int c = 0, cs = cols(); c < cs; c++)
+        {
+          if(isNoDataField(r, c) && ignoreNoDataValues)
+            continue;
+          cont.insert(cont.end(), rowColTransformFunc(r, c, dataAt(r, c)));
+        }
+      }
+      return cont;
+    }
 
 		template<typename T>
 		T foldF(T init, std::function<T(T, float)> foldFunc) const

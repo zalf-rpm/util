@@ -629,11 +629,10 @@ HistogramData GridP::histogram(int noOfClasses)
 	double stepSize = diff / double(noOfClasses);
 	double ceiledStepSize = stepSize == 0 ? 1 : std::ceil(stepSize);
 
-	res = histogramDataByStepSize
-		(vector<double>(linear.begin(), linear.begin() + k + 1), ceiledStepSize);
-	for(int i = 0, size = res.classes.size(); i < size; i++)
-		//store percent of pixels in a certain class
-		res.classes[i] = (res.classes[i] / nop) * 100;
+  res = histogramDataByStepSize(vector<double>(linear.begin(), linear.begin() + k + 1), ceiledStepSize);
+  for(int i = 0, size = res.classes.size(); i < size; i++)
+    //store percent of pixels in a certain class
+    res.classes[i] = (res.classes[i] / nop) * 100;
 
 	return res;
 }

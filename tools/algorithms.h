@@ -176,7 +176,8 @@ namespace Tools
   * @return [borders, xs, class-counts]
   */
   HistogramData histogramDataByStepSize(const std::vector<double>& ys,
-    double step, int normalizeCount = 1);
+                                        double step,
+                                        int normalizeCount = 1);
 
   /*!
   * similar to histogramDataByStepSize, but with a given amount of classes
@@ -268,16 +269,16 @@ namespace Tools
     double IQ() const { return Q75 - Q25; }
 
     //! lower inner fence value
-    double lowerInnerFence() const { return Q25 - 1.5 * IQ(); }
+    double lowerInnerFence(int roundToDigits = 1) const;
 
     //! upper inner fence value
-    double upperInnerFence() const { return Q75 + 1.5 * IQ(); }
+    double upperInnerFence(int roundToDigits = 1) const;
 
     //! lower outer fence value
-    double lowerOuterFence() const { return Q25 - 3.0 * IQ(); }
+    double lowerOuterFence(int roundToDigits = 1) const;
 
     //! upper outer fence value
-    double upperOuterFence() const { return Q75 + 3.0 * IQ(); }
+    double upperOuterFence(int roundToDigits = 1) const;
 
     //! set of mild lower outliers
     std::set<double> mildLowerOutliers;
@@ -303,24 +304,23 @@ namespace Tools
   * necessary to create a box plot
   */
   BoxPlotInfo boxPlotAnalysis(const std::vector<double>& data,
-    bool orderedData = false);
+                              bool orderedData = false,
+                              int roundToDigits = 1);
 
   /*!
   * calculate median of given vector of values
   * @param orderedData an ordered vector of input values
   * @return median of all the values in orderedData
   */
-  // double median(const std::vector<double>& orderedData);
   template<class Collection>
-  double median(const Collection& orderedData)
+  double median(const Collection& orderedData, int roundToDigits = 1)
   {
     int size = orderedData.size();
     if(size == 0)
       return 0;
     return isEven(size)
-      ? (orderedData.at((size / 2) - 1) +
-      orderedData.at((size / 2) + 1 - 1)) / 2.0
-      : orderedData.at(int(size / 2.0) + 1 - 1);
+        ? Tools::round((orderedData.at((size/2) - 1) + orderedData.at((size/2) + 1 - 1))/2.0, roundToDigits)
+        : orderedData.at(int(size/2.0) + 1 - 1);
   }
 
 
@@ -330,7 +330,7 @@ namespace Tools
   * @param orderedData ordered input data
   * @return the x*100 % quarile of the values in orderedData
   */
-  double quartile(double xth, const std::vector<double>& orderedData);
+  double quartile(double xth, const std::vector<double>& orderedData, int roundToDigits = 1);
 
   //----------------------------------------------------------------------------
 
