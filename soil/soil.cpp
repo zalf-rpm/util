@@ -40,6 +40,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "soil.h"
 #include "conversion.h"
+#include "tools/debug.h"
+#include "constants.h"
 
 #define LOKI_OBJECT_LEVEL_THREADING
 #include "loki/Threads.h"
@@ -347,7 +349,7 @@ string SoilParameters::toString() const
  */
 double SoilParameters::texture2lambda(double sand, double clay)
 {
-  return Tools::texture2lambda(sand, clay);
+  return ::texture2lambda(sand, clay);
 }
 
 //------------------------------------------------------------------------------
