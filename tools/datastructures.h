@@ -32,10 +32,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <map>
 #include <set>
 
-#ifndef Q_MOC_RUN
-#include "boost/foreach.hpp"
-#endif //Q_MOC_RUN
-
 #include "helper.h"
 
 namespace Tools
@@ -149,7 +145,7 @@ namespace Tools
     {
       std::set<int> s;
       s.insert(0);
-      BOOST_FOREACH(typename MatType::value_type p, _m)
+      for(typename MatType::value_type p : _m)
       {
         s.insert(p.second.size());
       }

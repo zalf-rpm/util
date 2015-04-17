@@ -31,15 +31,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cmath>
 #include <utility>
 
-#include "boost/foreach.hpp"
-
 #include "db/abstract-db-connections.h"
-#include "tools/use-stl-algo-boost-lambda.h"
 #include "tools/helper.h"
 #include "tools/algorithms.h"
 
-#include "soil.h"
 #include "conversion.h"
+#include "soil.h"
 #include "tools/debug.h"
 #include "constants.h"
 
@@ -531,11 +528,11 @@ string Soil::soilProfileId2KA5Layers(const string& abstractDbSchema,
 //------------------------------------------------------------------------------
 
 const SoilPMs* Soil::soilParametersFromHermesFile(int soilId,
-                                                    const string& pathToFile,
-                                                    int layerThicknessCm,
-                                                    int maxDepthCm,
-                                                    double soil_ph,
-                                                    double drainage_coeff)
+                                                  const string& pathToFile,
+                                                  int layerThicknessCm,
+                                                  int maxDepthCm,
+                                                  double soil_ph,
+                                                  double drainage_coeff)
 {
   debug() << pathToFile.c_str() << endl;
   int maxNoOfLayers = int(double(maxDepthCm) / double(layerThicknessCm));

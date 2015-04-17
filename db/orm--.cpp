@@ -4,12 +4,8 @@
 #include <map>
 #include <cstdio>
 
-#include <boost/foreach.hpp>
-
 #include "orm--.h"
 #include "tools/algorithms.h"
-
-#include "tools/use-stl-algo-boost-lambda.h"
 
 #define LOKI_OBJECT_LEVEL_THREADING
 #include "loki/Threads.h"

@@ -28,8 +28,8 @@
 
 namespace Tools
 {
-	std::function<std::string (double)>
-	gridValueTransformFunction4datasetName(const std::string& datasetName);
+  std::function<std::string(double)>
+  gridValueTransformFunction4datasetName(std::string datasetName, std::string regionName = std::string());
 
 	//----------------------------------------------------------------------------
 

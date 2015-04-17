@@ -27,10 +27,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sstream>
 #include <algorithm>
 
-#include <boost/foreach.hpp>
-
-#include "tools/use-stl-algo-boost-lambda.h"
-
 #include "climate/climate-common.h"
 
 using namespace std;

@@ -2,8 +2,6 @@
 #include <cmath>
 #include <vector>
 
-#include <boost/foreach.hpp>
-
 #include "clock-spec.h"
 #include "tools/algorithms.h"
 
@@ -116,19 +114,19 @@ string ClockSpec::toString() const
 	ostringstream s; s
 	<< "ClockSpec:\nrings:\n";
 
-  BOOST_FOREACH(RingSpec rs, rings)
+  for(RingSpec rs : rings)
   {
     s << rs.toString();
   }
 
 	s << "compareAltRings:\n";
-  BOOST_FOREACH(RingSpec rs, compareAltRings())
+  for(RingSpec rs : compareAltRings())
   {
     s << rs.toString();
   }
 
 	s << "referenceAltRings:\n";
-  BOOST_FOREACH(RingSpec rs, referenceAltRings())
+  for(RingSpec rs : referenceAltRings())
   {
     s << rs.toString();
   }

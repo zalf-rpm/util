@@ -35,7 +35,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cassert>
 
 #include "algorithms.h"
-#include "tools/use-stl-algo-boost-lambda.h"
 #include "tools/date.h"
 #include "tools/helper.h"
 
@@ -398,10 +397,10 @@ string BoxPlotInfo::toString() const
   ostringstream s;
   s << "\nextreme lower outliers: [ ";
   for_each(extremeLowerOutliers.begin(), extremeLowerOutliers.end(),
-    s << _1 << " ");
+           [&s](double v){ s << v << " "; });
   s << "]\nmild lower outliers: [ ";
   for_each(mildLowerOutliers.begin(), mildLowerOutliers.end(),
-    s << _1 << " ");
+           [&s](double v){ s << v << " "; });
   s << "]" << endl;
 
   s << "min(" << min << ") << "
@@ -416,10 +415,10 @@ string BoxPlotInfo::toString() const
 
   s << "mild upper outliers: [ ";
   for_each(mildUpperOutliers.begin(), mildUpperOutliers.end(),
-    s << _1 << " ");
+           [&s](double v){ s << v << " "; });
   s << "]\nextreme upper outliers: [ ";
   for_each(extremeUpperOutliers.begin(), extremeUpperOutliers.end(),
-    s << _1 << " ");
+           [&s](double v){ s << v << " "; });
   s << "]" << endl;
   return s.str();
 }

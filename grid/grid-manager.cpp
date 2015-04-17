@@ -35,10 +35,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cassert>
 #include <set>
 
-#include <boost/foreach.hpp>
-
-#include "tools/use-stl-algo-boost-lambda.h"
-
 #include "grid-manager.h"
 #include "tools/algorithms.h"
 #include "db/abstract-db-connections.h"
@@ -68,7 +64,7 @@ vector<const GridP*> VirtualGrid::availableGrids()
 {
 	vector<const GridP*> ags(_availableGrids.size());
 	std::transform(_availableGrids.begin(), _availableGrids.end(),
-								 ags.begin(), boost::lambda::_1);
+                 ags.begin(), [](GridP* g){return g;});
 	return ags;
 }
 
@@ -83,12 +79,12 @@ bool VirtualGrid::areGridDatasetsAvailable(const list<string>& gdsns) //const
 {
 	set<string> given;
 	std::transform(gdsns.begin(), gdsns.end(), inserter(given, given.end()),
-								 boost::lambda::_1);
+                 [](const string& s){return s;});
 
 	set<string> all;
   const vector<const GridP*>& ags = availableGrids();
   std::transform(ags.begin(), ags.end(), inserter(all, all.end()),
-								 std::bind(&GridP::datasetName, std::placeholders::_1));
+                 [](const GridP* g){ return g->datasetName(); });
 
 	return std::includes(all.begin(), all.end(), given.begin(), given.end());
 }
@@ -98,11 +94,11 @@ map<string, const GridP*>
 {
 	set<string> given;
 	std::transform(gdsns.begin(), gdsns.end(), inserter(given, given.end()),
-								 boost::lambda::_1);
+                 [](const string& s){return s;});
 
 	map<string, const GridP*> m;
   const vector<const GridP*>& ags = availableGrids();
-  BOOST_FOREACH(const GridP* ag, ags)
+  for(const GridP* ag : ags)
   {
     const string& s = ag->datasetName();
     if(given.find(s) != given.end())
@@ -157,7 +153,7 @@ map<string, double> VirtualGrid2::dataAt(unsigned int row, unsigned int col) con
 {
   map<string, double> res;
 
-  BOOST_FOREACH(Dsn2GridPPtr::value_type p, _dsn2grid)
+  for(Dsn2GridPPtr::value_type p : _dsn2grid)
   {
     res[p.first] = p.second->dataAt(row, col);
   }
@@ -169,7 +165,7 @@ map<string, double> VirtualGrid2::dataAt(const RectCoord& rcc) const
 {
   map<string, double> res;
 
-  BOOST_FOREACH(Dsn2GridPPtr::value_type p, _dsn2grid)
+  for(Dsn2GridPPtr::value_type p : _dsn2grid)
   {
     res[p.first] = p.second->dataAt(rcc);
   }
@@ -215,7 +211,7 @@ VirtualGrid2::gridsForDatasetNames(const list<string>& gdsns) //const
 
   map<string, const GridP*> m;
   const vector<const GridP*>& ags = availableGrids();
-  BOOST_FOREACH(const GridP* ag, ags)
+  for(const GridP* ag : ags)
   {
     const string& s = ag->datasetName();
     if(given.find(s) != given.end())
@@ -282,7 +278,7 @@ vector<const GridP*> NoVirtualGrid::availableGrids()
 {
   if(_availableGrids.empty())
   {
-    BOOST_FOREACH(GridProxyPtr gp, *_gps)
+    for(GridProxyPtr gp : *_gps)
     {
 			_availableGrids.push_back(gp->copyOfFullGrid());
 		}
@@ -326,7 +322,7 @@ vector<const GridP*> NoVirtualGrid2::availableGrids()
 {
   if(_dsn2grid.empty())
   {
-    BOOST_FOREACH(GridProxyPtr gp, *_gps)
+    for(GridProxyPtr gp : *_gps)
     {
       _dsn2grid[gp->datasetName] = GridPPtr(gp->copyOfFullGrid());
     }
@@ -381,11 +377,11 @@ vector<const GridP*> RealVirtualGrid::availableGrids()
     {
       for(unsigned int j = 0; j < cols(); j++)
       {
-        BOOST_FOREACH(Data d, dataAt(i, j))
+        for(Data d : dataAt(i, j))
         {
           if(!d.isNoData())
           {
-            BOOST_FOREACH(GridProxyPtr gp, *d.gridProxies())
+            for(GridProxyPtr gp : *d.gridProxies())
             {
               //target grid
               GridP* tg = valueD(dsn2g, gp->datasetName,
@@ -514,7 +510,7 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 
 	vector<GridMetaData> gmds;
 	//filter all GridMetaData with correct cellsize and intersecting rect
-	BOOST_FOREACH(GMD2GPS::value_type p, gmd2gridProxies)
+  for(GMD2GPS::value_type p, gmd2gridProxies)
 	{
 		//cout << "checking gmd: " << it->first.toString() << endl;
 		if(p.first.cellsize == cellSize
@@ -593,14 +589,14 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 	map<GridMetaData, GridProxies*> gmd2gps;
 	//get the unique set of all dataset names to be used below
 	set<string> uniqueDatasetNames;
-  BOOST_FOREACH(const GridMetaData& gmd, gmds)
+  for(const GridMetaData& gmd, gmds)
   {
 		GridProxies* gps = new GridProxies;
 		GMD2GPS::const_iterator ci = gmd2gridProxies.find(gmd);
 		if(ci == gmd2gridProxies.end())
 			continue;
 		const GridProxies& agps = ci->second;
-    BOOST_FOREACH(GridProxyPtr agp, agps)
+    for(GridProxyPtr agp, agps)
     {
       string s = agp->datasetName;
       if(uniqueDatasetNames.find(s) == uniqueDatasetNames.end())
@@ -684,7 +680,7 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
   typedef map<CoordinateSystem, int> CS2NO;
   CS2NO cs2noOfGPS;
   //filter all GridMetaData with correct cellsize and intersecting rect
-  BOOST_FOREACH(GMD2GPS::value_type p, gmd2gridProxies)
+  for(GMD2GPS::value_type p : gmd2gridProxies)
   {
     auto cs = p.first.coordinateSystem;
 //    auto ci = cs2boundingRect.find(cs);
@@ -718,7 +714,7 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
   //else there wouldn't be that many grids there
   CoordinateSystem usedCS = CoordinateSystem();
   int noOfGPS = 0;
-  BOOST_FOREACH(CS2NO::value_type p, cs2noOfGPS)
+  for(CS2NO::value_type p : cs2noOfGPS)
   {
     if(p.second > noOfGPS)
     {
@@ -743,15 +739,15 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 
   map<string, GridPPtr> dsn2grid;
   set<string> uniqueDatasetNames;
-  BOOST_FOREACH(CS2GMDS::value_type p, cs2gmds)
+  for(CS2GMDS::value_type p : cs2gmds)
   {
-    BOOST_FOREACH(const GridMetaData& gmd, p.second)
+    for(const GridMetaData& gmd : p.second)
     {
       GMD2GPS::const_iterator ci = gmd2gridProxies.find(gmd);
       if(ci == gmd2gridProxies.end())
         continue;
       const GridProxies& agps = ci->second;
-      BOOST_FOREACH(GridProxyPtr agp, agps)
+      for(GridProxyPtr agp : agps)
       {
 //        cout << "dsn: |" << agp->datasetName << "|" << endl;
         uniqueDatasetNames.insert(agp->datasetName);
@@ -760,7 +756,7 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
   }
 
   //create all the grids needed
-  BOOST_FOREACH(string dsn, uniqueDatasetNames)
+  for(string dsn : uniqueDatasetNames)
   {
     dsn2grid[dsn] = GridPPtr(new GridP(dsn, noOfRows, noOfCols, minCellSize, tl.r, br.h, -9999, usedCS));
   }
@@ -782,12 +778,12 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
 
       LatLngCoord llcc = RC2latLng(cellCenter);
 
-      BOOST_FOREACH(CS2GMDS::value_type p, cs2gmds)
+      for(CS2GMDS::value_type p, cs2gmds)
       {
         CoordinateSystem cs = p.first;
         RectCoord rccc = latLng2RC(llcc, cs);
 
-        BOOST_FOREACH(const GridMetaData& gmd, p.second)
+        for(const GridMetaData& gmd, p.second)
         {
 //          cout << "gmd: " << gmd.toCanonicalString() << " regionName: " << regionName << endl;
           regionName = gmd.regionName;
@@ -832,7 +828,7 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
               pos.col = g->cols() - 1;
           }
 
-          BOOST_FOREACH(GridProxyPtr agp, agps)
+          for(GridProxyPtr agp, agps)
           {
             GridPPtr tg = dsn2grid[agp->datasetName];
             if(setNoDataValue)
@@ -847,9 +843,9 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
   /*/
 
   //*
-  BOOST_FOREACH(CS2GMDS::value_type p, cs2gmds)
+  for(CS2GMDS::value_type p : cs2gmds)
   {
-    BOOST_FOREACH(const GridMetaData& gmd, p.second)
+    for(const GridMetaData& gmd : p.second)
     {
       //          cout << "gmd: " << gmd.toCanonicalString() << " regionName: " << regionName << endl;
       regionName = gmd.regionName;
@@ -906,7 +902,7 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
               pos.col = g->cols() - 1;
           }
 
-          BOOST_FOREACH(GridProxyPtr agp, agps)
+          for(GridProxyPtr agp : agps)
           {
             GridPPtr tg = dsn2grid[agp->datasetName];
             if(setNoDataValue)
@@ -955,7 +951,7 @@ GridManager::virtualGridForGridMetaData(const GridMetaData& gmd,
 
 VirtualGrid2* GridManager::virtualGridForRegionName(const string& regionName,
 																									 const Path& userSubPath) {
-	BOOST_FOREACH(const GridMetaData& gmd, regionGmds(userSubPath)) {
+  for(const GridMetaData& gmd : regionGmds(userSubPath)) {
 		if(gmd.regionName == regionName)
 			return virtualGridForGridMetaData(gmd, userSubPath);
 	}
@@ -970,7 +966,7 @@ GridPPtr GridManager::gridFor(const string& regionName,
 	static L lockable;
 	L::Lock lock(lockable);
 
-  BOOST_FOREACH(const GridMetaData& gmd, regionGmds(userSubPath))
+  for(const GridMetaData& gmd : regionGmds(userSubPath))
   {
     if(gmd.regionName == regionName && gmd.cellsize == cellSize)
     {
@@ -981,7 +977,7 @@ GridPPtr GridManager::gridFor(const string& regionName,
         if(ci2 != ci->second.end())
         {
 					const GridProxies& gps = ci2->second;
-          BOOST_FOREACH(GridProxyPtr gp, gps)
+          for(GridProxyPtr gp : gps)
           {
 						if(gp->datasetName == datasetName)
               return createSubgrid(gp->gridPPtr(), subgridMetaData);
@@ -1029,7 +1025,7 @@ vector<GridPPtr> GridManager::gridsFor(const string& regionName,
 	L::Lock lock(lockable);
 
 	vector<GridPPtr> res;
-  BOOST_FOREACH(const GridMetaData& gmd, regionGmds(userSubPath))
+  for(const GridMetaData& gmd : regionGmds(userSubPath))
   {
     if(gmd.regionName == regionName && gmd.cellsize == cellSize)
     {
@@ -1040,7 +1036,7 @@ vector<GridPPtr> GridManager::gridsFor(const string& regionName,
         if(ci2 != ci->second.end())
         {
 					const GridProxies& gps = ci2->second;
-          BOOST_FOREACH(GridProxyPtr gp, gps)
+          for(GridProxyPtr gp : gps)
           {
             //in case of empty dataset names we interpret this as return all grids
             if(datasetNames.find(gp->datasetName) != datasetNames.end() ||
@@ -1059,7 +1055,7 @@ vector<GridPPtr> GridManager::gridsFor(const string& regionName,
 GridMetaData GridManager::gridMetaDataForRegionName(const string& regionName,
                                                     const Path& userSubPath)
 {
-  BOOST_FOREACH(const GridMetaData& gmd, regionGmds(userSubPath))
+  for(const GridMetaData& gmd : regionGmds(userSubPath))
   {
 		if(gmd.regionName == regionName)
 			return gmd;
@@ -1259,7 +1255,7 @@ void GridManager::updateHdfStore(const Path& userSubPath,
 	//go through all (potential) hdfs (aka common grid-metadata)
 	//and create or update the grids
 	bool somethingChanged = false;
-	BOOST_FOREACH(GMD2GPS::value_type& p, _gmdMap[userSubPath])
+  for(GMD2GPS::value_type& p : _gmdMap[userSubPath])
   {
 		GridProxies toBeDeletedFromHDF;
 		GridProxies& gps = p.second;
@@ -1268,7 +1264,7 @@ void GridManager::updateHdfStore(const Path& userSubPath,
 		bool update = false; //is a grid new or has changed ?
 		bool onlyAppend = true; //are all the grids new ?
 		string hdfFileName; //we have to get the name from one of the proxies
-    BOOST_FOREACH(GridProxyPtr gp, gps)
+    for(GridProxyPtr gp : gps)
     {
 			ostringstream userInfo;
 			userInfo << "path: (" << userSubPath << ") " << gp->toString() << " -> ";
@@ -1314,7 +1310,7 @@ void GridManager::updateHdfStore(const Path& userSubPath,
 
 //		cout << "removing found left over elements from the hdfs.ini file" << endl;
 //		cout << "---------------------------------" << endl;
-		BOOST_FOREACH(GridProxyPtr gp, toBeDeletedFromHDF)
+    for(GridProxyPtr gp : toBeDeletedFromHDF)
 		{
 //			cout << "removing leftover gp from hdfs.ini: " << gp->toString() << endl;
 			gps.erase(find(gps.begin(), gps.end(), gp));
@@ -1330,7 +1326,7 @@ void GridManager::updateHdfStore(const Path& userSubPath,
 					//reach for the underlying grid of every proxy in order to load it
 					//and be able to store it anew in the hdf-file
 					//for_each(gps.begin(), gps.end(), [](GridProxyPtr gp){ gp->gridPtr(); });
-					BOOST_FOREACH(GridProxyPtr gp, gps)
+          for(GridProxyPtr gp : gps)
 					{
 					  gp->gridPtr();
 					}
@@ -1350,7 +1346,7 @@ void GridManager::updateHdfStore(const Path& userSubPath,
 				//reach for the underlying grid of every proxy in order to load it
 				//and be able to store it anew in the hdf-file
 				//for_each(gps.begin(), gps.end(), [](GridProxyPtr gp){ gp->gridPtr(); });
-				BOOST_FOREACH(GridProxyPtr gp, gps)
+        for(GridProxyPtr gp : gps)
 				{
 				  gp->gridPtr();
 				}
@@ -1374,7 +1370,7 @@ void GridManager::updateHdfStore(const Path& userSubPath,
 
 //			cout << "removing to be elements which couldn't be saved" << endl;
 //			cout << "--------------------------" << endl;
-			BOOST_FOREACH(GridProxyPtr gp, toBeDeletedSaveProblem)
+      for(GridProxyPtr gp : toBeDeletedSaveProblem)
 			{
 //				cout << "removing unsaved gp: " << gp->toString() << endl;
 				gps.erase(find(gps.begin(), gps.end(), gp));
@@ -1407,7 +1403,7 @@ GridManager::appendToHdf(const Path& userSubPath,
 	GridProxies toBeDeletedSaveProblem;
 
 	cout << "userSubPath: " << userSubPath << " appending to hdf:(if new) " << newHdfFileName << endl;
-  BOOST_FOREACH(GridProxyPtr gp, proxies)
+  for(GridProxyPtr gp : proxies)
   {
 		//string datasetName = extractDatasetName(gp->fileName);
 		//string regionName = extractRegionName(gp->fileName);
@@ -1464,14 +1460,14 @@ void GridManager::readRegionalizedData()
 	IniParameterMap ipm(_env.regionalizationIniFilePath);
 
   const Names2Values& groups = ipm.values("groups");
-  BOOST_FOREACH(Names2Values::value_type g, groups)
+  for(Names2Values::value_type g : groups)
   {
     const string& group = g.first;
 //    cout << "group: " << group << endl;
     const string& section = g.second;
     const Names2Values& elements = ipm.values(section);
 //    cout << "section: " << section << endl;
-    BOOST_FOREACH(Names2Values::value_type e, elements)
+    for(Names2Values::value_type e : elements)
     {
       const string& element = e.first;
 //      cout << "element: " << element << endl;
@@ -1574,7 +1570,7 @@ GridManager::regionalizedGroupOfData(const string& region,
 	Groups2Members::const_iterator ci = _groups2members.find(groupId);
   if(ci != _groups2members.end())
   {
-		BOOST_FOREACH(const string& dataId, ci->second)
+    for(const string& dataId : ci->second)
     {
 			//for(GroupMemberIds::const_iterator ci2 = ci->second.begin();
 			//		ci2 != ci->second.end(); ci2++) {
@@ -1685,9 +1681,9 @@ void GridManager::writeGrid2HdfMappingFile(const Path& userSubPath)
 		Path2GPS::const_iterator ci = _gmdMap.find(userSubPath);
     if(ci != _gmdMap.end())
     {
-      BOOST_FOREACH(GMD2GPS::value_type p, ci->second)
+      for(GMD2GPS::value_type p : ci->second)
       {
-        BOOST_FOREACH(GridProxyPtr gp, p.second)
+        for(GridProxyPtr gp : p.second)
         {
 					//cout << "gfn: " << gp->fileName
 					//	<< " hfn: " << gp->hdfFileName << endl;
@@ -1706,7 +1702,7 @@ vector<vector<LatLngCoord> > GridManager::regions(const Path& userSubPath) const
 	Path2GPS::const_iterator ci = _gmdMap.find(userSubPath);
   if(ci != _gmdMap.end())
   {
-    BOOST_FOREACH(GMD2GPS::value_type p, ci->second)
+    for(GMD2GPS::value_type p : ci->second)
     {
 			v.push_back(RC2latLng(p.first.rcRect().toTlTrBrBlVector()));
 		}
@@ -1720,7 +1716,7 @@ vector<GridMetaData> GridManager::regionGmds(const Path& userSubPath) const
 	Path2GPS::const_iterator ci = _gmdMap.find(userSubPath);
   if(ci != _gmdMap.end())
   {
-    BOOST_FOREACH(GMD2GPS::value_type p, ci->second)
+    for(GMD2GPS::value_type p : ci->second)
     {
 			//cout << "gmd: " << p.first.toString() << endl;
 			v.push_back(p.first);

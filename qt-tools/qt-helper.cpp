@@ -3,30 +3,23 @@
 
 #include "qt-helper.h"
 #include "tools/agricultural-helper.h"
+#include "soil/soil.h"
 
 using namespace Tools;
 using namespace std;
 using namespace boost;
 
-namespace
-{
-	string sttCode2stt(double value){ return sttFromCode(int(value)); }
-	
-	string dgm(double value)
-	{
-		ostringstream s;
-		s << value << " m ü.NN";
-		return s.str();
-	}
-}
-
 std::function<string (double)>
-Tools::gridValueTransformFunction4datasetName(const string& datasetName){
-
-	if(datasetName == "stt")
-		return std::function<string(double)>(sttCode2stt);
+Tools::gridValueTransformFunction4datasetName(string datasetName, string regionName)
+{
+  if(datasetName == "stt")
+    return [](double v){ return sttFromCode(int(v)); };
 	if(datasetName == "dgm")
-		return std::function<string(double)>(dgm);
+    return [](double v){ return QString("%1m ü.NN").arg(v).toStdString(); };
+  if(datasetName == "slope")
+    return [](double v){ return QString("%1%").arg(v).toStdString(); };
+  if(datasetName == "soil-profile-id")
+    return [=](double v) -> string { return Soil::soilProfileId2KA5Layers(QString("soil-profiles-%1").arg(regionName.c_str()).toStdString(), v); };
 
 	return std::function<string(double)>();
 }

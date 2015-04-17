@@ -26,8 +26,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <sstream>
 
-#include "boost/foreach.hpp"
-
 #include "proj_api.h"
 
 #ifndef NO_DB

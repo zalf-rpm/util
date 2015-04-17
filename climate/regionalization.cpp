@@ -27,10 +27,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cstring>
 #include <sstream>
 
-#include <boost/foreach.hpp>
-
-#include "tools/use-stl-algo-boost-lambda.h"
-
 #include "regionalization.h"
 #include "tools/coord-trans.h"
 #include "tools/date.h"
@@ -79,7 +75,7 @@ namespace
 
     double nn_quer = 0.0;
     vector<double> values_quer(valuesSize, 0.0);
-    BOOST_FOREACH(const X& x, stations)
+    for(const X& x : stations)
     {
       nn_quer += x.station.nn();
       values_quer += x.values;
@@ -94,7 +90,7 @@ namespace
 
     vector<double> var_nn_values(valuesSize, 0.0), var_values(valuesSize, 0.0);
     double var_nn = 0.0;
-    BOOST_FOREACH(const X& x, stations)
+    for(const X& x : stations)
     {
       double nn_diff = x.station.nn() - nn_quer;
       vector<double> values_diff = x.values - values_quer;
@@ -167,7 +163,7 @@ namespace
 				 << " extendedRegion: " << extendedRegion.toString() << endl;
 
 		vector<const ClimateStation*> filteredStations;
-    BOOST_FOREACH(const ClimateStation* cs, sim->climateStations())
+    for(const ClimateStation* cs : sim->climateStations())
     {
       if(extendedRegion.contains(cs->rcCoord(erCS)))
       {
@@ -191,7 +187,7 @@ namespace
   string acdsToString(set<ACD> acds)
   {
     ostringstream s;
-    BOOST_FOREACH(ACD acd, acds)
+    for(ACD acd : acds)
     {
       s << int(acd) << "_";
     }
@@ -263,14 +259,14 @@ void Regionalization::preloadClimateData(ClimateRealization* r,
 														borderSize < 0 ? borderSizeIncrementKM() : borderSize);
 	int nocs = climateStations.size();
 	int csCount = 0;
-  BOOST_FOREACH(const ClimateStation* cs, climateStations)
+  for(const ClimateStation* cs : climateStations)
   {
 //		cout << "Filling climate data cache for:"
 //				<< " ClimateStation: " << cs->name()
 //				<< " ClimateRealization: " << r->name()
 //				<< " GridMetaData: " << gmd.toString()
 //				<< " ACDs: [ ";
-//		BOOST_FOREACH(ACD acd, acds)
+//		for(ACD acd : acds)
 //		{
 //			cout << acd << " ";
 //		}
@@ -300,7 +296,7 @@ namespace
 Results Regionalization::regionalize(Env env)
 {
 //	cout << "entering Climate::regionalize acds: ( ";
-//	BOOST_FOREACH(ACD acd, env.acds)
+//	for(ACD acd, env.acds)
 //	{
 //		cout << acd << " ";
 //	}
@@ -338,7 +334,7 @@ Results Regionalization::regionalize(Env env)
 
 	typedef map<ClimateRealization*, set<Year> > Real2Years;
 	Real2Years realization2years;
-  BOOST_FOREACH(ClimateRealization* r, realizations)
+  for(ClimateRealization* r : realizations)
   {
 		realization2years[r] =  Tools::range<set<Year> >(env.fromYear, env.toYear);
 	}
@@ -370,7 +366,7 @@ Results Regionalization::regionalize(Env env)
 				Scen2Res::const_iterator ci3 = ci2->second.find(scen->id());
         if(ci3 != ci2->second.end())
         {
-          BOOST_FOREACH(ClimateRealization* real, realizations)
+          for(ClimateRealization* real : realizations)
           {
 						RealizationName realn = real->name();
 						set<Year>& years = realization2years[real];
@@ -402,7 +398,7 @@ Results Regionalization::regionalize(Env env)
 											Year2Res::const_iterator ci7 = r.find(year);
                       if(ci7 != r.end())
                       {
-                        BOOST_FOREACH(const ResId2Res::value_type& p, rs)
+                        for(const ResId2Res::value_type& p : rs)
                         {
 													ResultId rid = p.first;
 													const Year2Res& r = p.second;
@@ -452,16 +448,16 @@ Results Regionalization::regionalize(Env env)
       string pathToHdfCache = env.cacheInfo.pathToHdfCache;
       string functionIdString = env.cacheInfo.functionIdString;
 
-      BOOST_FOREACH(Real2Years::value_type p, realization2years)
+      for(Real2Years::value_type p : realization2years)
       {
         ClimateRealization* r = p.first;
         set<Year>& years = p.second;
 
         //assume that the cache contains for every year all the resultids
-        BOOST_FOREACH(Year year, years)
+        for(Year year : years)
         {
           bool foundYear = false;
-          BOOST_FOREACH(ResultId rid, env.cacheInfo.resultIds)
+          for(ResultId rid : env.cacheInfo.resultIds)
           {
             ostringstream pathToHdf;
             pathToHdf << pathToHdfCache;
@@ -509,7 +505,7 @@ Results Regionalization::regionalize(Env env)
   if(climateStations.empty())
     return res;
 
-  BOOST_FOREACH(Real2Years::value_type p, realization2years)
+  for(Real2Years::value_type p : realization2years)
   {
 		ClimateRealization* r = p.first;
 //		cout << "calculating realization: " << r->name() << endl;
@@ -518,7 +514,7 @@ Results Regionalization::regionalize(Env env)
 		typedef map<Year, vector<X> > XS;
 		XS year2xs;
 
-    BOOST_FOREACH(const ClimateStation* cs, climateStations)
+    for(const ClimateStation* cs : climateStations)
     {
 			DataAccessor da = r->dataAccessorFor(env.acds, cs->geoCoord(),
                                            Date(1, 1, env.fromYear),
@@ -536,7 +532,7 @@ Results Regionalization::regionalize(Env env)
 					const FuncResult& vals = env.f(yda);
 
 					vector<double> values;
-          BOOST_FOREACH(FuncResult::value_type p, vals)
+          for(FuncResult::value_type p : vals)
           {
 						values.push_back(p.second);
 					}
@@ -544,7 +540,7 @@ Results Regionalization::regionalize(Env env)
 					//cache also rc coordinate of station
           year2xs[currentYear].push_back(X(*cs, cs->rcCoord(usedCS), values));
 //					cout << "current year: " << currentYear << " station: " << cs->name();
-//					BOOST_FOREACH(FuncResult::value_type p, vals)
+//					for(FuncResult::value_type p, vals)
 //					{
 //						cout << " [id: " << p.first << "|value: " << p.second << "]";
 //					}
@@ -556,7 +552,7 @@ Results Regionalization::regionalize(Env env)
 		//get results for current realization
 		//is basically the same as the avg realization results
 		AvgRealizationsResults newRes;
-    BOOST_FOREACH(XS::value_type p, year2xs)
+    for(XS::value_type p : year2xs)
     {
       int year = p.first;
 //			cout << year << "|" << r->name() << " " << endl;
@@ -578,7 +574,7 @@ Results Regionalization::regionalize(Env env)
         rr = regression(xs);
 
         // inverse distance and regression
-        BOOST_FOREACH(X& x, xs)
+        for(X& x : xs)
         {
           x.residua = x.values - ((rr.m * x.station.nn()) + rr.n);
 //					cout << "residua=values-((m*nn)+n)=" << toString(x.values)
@@ -602,7 +598,7 @@ Results Regionalization::regionalize(Env env)
               double sum = 0.0;
               vector<double> sumz(noOfResults, 0.0);
 
-              BOOST_FOREACH(const X& x, xs)
+              for(const X& x : xs)
               {
 								double dist = x.rc.distanceTo(RectCoord(g->coordinateSystem(),
 																												r + (cellSize * j),
@@ -681,11 +677,11 @@ Results Regionalization::regionalize(Env env)
       //assumes for instance that all years are being stored at the same time
       //and thus are available at the same time
       L::Lock lock(memoryCacheLockable);
-      BOOST_FOREACH(const AvgRealizationsResults::value_type& p, newRes)
+      for(const AvgRealizationsResults::value_type& p : newRes)
       {
 				ResultId rid = p.first;
 				const AvgRealizationsResult& arr = p.second;
-        BOOST_FOREACH(const AvgRealizationsResult::value_type& p2, arr)
+        for(const AvgRealizationsResult::value_type& p2 : arr)
         {
 					Year year = p2.first;
 					GridPPtr g = p2.second;
@@ -728,11 +724,11 @@ Results Regionalization::regionalize(Env env)
 		}
 
 		//add potentially missing years to result
-    BOOST_FOREACH(AvgRealizationsResults::value_type p, newRes)
+    for(AvgRealizationsResults::value_type p : newRes)
     {
 			ResultId rid = p.first;
 			const AvgRealizationsResult& arr = p.second;
-      BOOST_FOREACH(const AvgRealizationsResult::value_type& p2, arr)
+      for(const AvgRealizationsResult::value_type& p2 : arr)
       {
 				Year year = p2.first;
 				GridPPtr g = p2.second;
@@ -753,10 +749,10 @@ AvgRealizationsResults Regionalization::regionalizeAndAvgRealizations(Env env)
 	AvgRealizationsResults res;
 
 	const Results& rs = regionalize(env);
-  BOOST_FOREACH(const Results::value_type& p, rs)
+  for(const Results::value_type& p : rs)
   {
 		ResultId rid = p.first;
-    BOOST_FOREACH(const Result::value_type& p2, p.second)
+    for(const Result::value_type& p2 : p.second)
     {
       res[rid][p2.first] = Grids::average(p2.second);
 		}

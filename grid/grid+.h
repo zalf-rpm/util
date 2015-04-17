@@ -40,12 +40,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifndef Q_MOC_RUN
 #include <boost/shared_ptr.hpp>
-#include <boost/foreach.hpp>
-#include <boost/function.hpp>
-#include <boost/lambda/if.hpp>
+//#include <boost/function.hpp>
+//#include <boost/lambda/if.hpp>
 #endif //Q_MOC_RUN
 
-#include "tools/stl-algo-boost-lambda.h"
+//#include "tools/stl-algo-boost-lambda.h"
 
 #include "grid.h"
 #include "tools/coord-trans.h"
@@ -585,7 +584,7 @@ namespace Grids
 			{
 				if(res->isDataField(r, c))
 				{
-					BOOST_FOREACH(typename CollectionOfGrids::value_type g, gridps)
+          for(typename CollectionOfGrids::value_type g : gridps)
 					{
 						if(g->isNoDataField(r, c))
 						{
@@ -884,7 +883,7 @@ namespace Grids
 				res.insert(make_pair(percentNoData, double(noDataValue()))); 
 		}
 
-		BOOST_FOREACH(Map::value_type p, m)
+    for(Map::value_type p : m)
 		{
 			double percent = double(p.second)/double(allPixels)*100.0;
 			double rp = Tools::round(percent, roundResultToDigits);

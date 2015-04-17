@@ -29,10 +29,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <functional>
 #include <list>
 
-#include <boost/foreach.hpp>
-
-#include "tools/use-stl-algo-boost-lambda.h"
-
 #ifdef WIN32
 #include "grid/dirent.h"
 #include <direct.h>
@@ -85,7 +81,7 @@ namespace
     list<string> subpaths = splitPath(pathToDir);
 
     string subpath = pathToDir.at(0) == '/' ? "/" : "";
-    BOOST_FOREACH(string sp, subpaths)
+    for(string sp : subpaths)
     {
       subpath += sp + "/";
 
@@ -672,7 +668,7 @@ multimap<double, double, greater<double> >
 			res.insert(make_pair(percentNoData, double(noDataValue()))); 
 	}
 	
-  BOOST_FOREACH(Map::value_type p, m)
+  for(Map::value_type p : m)
   {
 		double percent = double(p.second)/double(allPixels)*100.0;
 		double rp = round<double>(percent, roundResultToDigits);
