@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <cstring>
 #include <sstream>
+#include <mutex>
 
 #include "regionalization.h"
 #include "tools/coord-trans.h"
@@ -33,9 +34,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "db/abstract-db-connections.h"
 #include "tools/helper.h"
 #include "tools/algorithms.h"
-
-#define LOKI_OBJECT_LEVEL_THREADING
-#include "loki/Threads.h"
 
 using namespace std;
 using namespace Climate;
@@ -45,8 +43,6 @@ using namespace Tools;
 
 namespace
 {
-  struct L : public Loki::ObjectLevelLockable<L> {};
-
   struct X
   {
     X()  { }
@@ -125,7 +121,7 @@ namespace
                                                       GridMetaData gmd,
                                                       int borderSize)
   {
-    static L lockable;
+    static mutex lockable;
 		typedef map<GridMetaData, vector<const ClimateStation*> > M2;
 		typedef map<ClimateSimulation*, M2> M1;
 		static M1 m;
@@ -147,7 +143,7 @@ namespace
 		};
 
 		{
-			L::Lock lock(lockable);
+      lock_guard<mutex> lock(lockable);
 			const vector<const ClimateStation*> fcss = X::tryToFind(m, sim, gmd);
 			if(!fcss.empty())
 				return fcss;
@@ -173,7 +169,7 @@ namespace
 		}
 
 		{
-			L::Lock lock(lockable);
+      lock_guard<mutex> lock(lockable);
 			const vector<const ClimateStation*> fcss = X::tryToFind(m, sim, gmd);
 			//nobody else inserted them already
 			if(fcss.empty())
@@ -200,12 +196,12 @@ namespace
 
 int Regionalization::borderSizeIncrementKM(int newGlobalValue)
 {
-	static L lockable;
+  static mutex lockable;
 	static int globalValue = defaultBorderSize;
 
 	if(newGlobalValue > 0)
 	{
-		L::Lock lock(lockable);
+    lock_guard<mutex> lock(lockable);
 		globalValue = newGlobalValue;
 	}
 
@@ -234,12 +230,12 @@ FuncResult Regionalization::defaultFunction(AvailableClimateData acd,
 
 int Regionalization::uniqueFunctionId(const string& fid)
 {
-	static L lockable;
+  static mutex lockable;
 	static map<string, int> idCounts;
 	static int idCount = 0;
 
 	{
-		L::Lock lock(lockable);
+    lock_guard<mutex> lock(lockable);
 		if(idCounts.find(fid) == idCounts.end())
 			idCounts[fid] = idCount++;
 	}
@@ -304,8 +300,8 @@ Results Regionalization::regionalize(Env env)
 //			<< " functionIdString: " << env.cacheInfo.functionIdString
 //			<< " from: " << env.fromYear << " to: " << env.toYear << endl;
 
-  static L memoryCacheLockable;
-  static L diskCacheLockable;
+  static mutex memoryCacheLockable;
+  static mutex diskCacheLockable;
 	typedef string SimulationId;
 	typedef string ScenarioId;
 	typedef string RealizationName;
@@ -347,7 +343,7 @@ Results Regionalization::regionalize(Env env)
 
 	{
 		//lock the cache, so only one thread can change it
-    L::Lock lock(memoryCacheLockable);
+    lock_guard<mutex> lock(memoryCacheLockable);
 
     //check if cache contains the same grid size already
     GMD2Res::const_iterator ci = cache.find(gmd);
@@ -440,7 +436,7 @@ Results Regionalization::regionalize(Env env)
   }
 
   {
-    L::Lock lock(diskCacheLockable);
+    lock_guard<mutex> lock(diskCacheLockable);
 
     //if data are not yet in the cache, try to load them from a hdf
     if(env.cacheInfo.cacheData)
@@ -476,7 +472,7 @@ Results Regionalization::regionalize(Env env)
 //              cout << "found grid in hdf" << endl;
               foundYear = true;
               {
-                L::Lock lock(memoryCacheLockable);
+                lock_guard<mutex> lock(memoryCacheLockable);
                 cache[gmd][sim->id()][scen->id()][r->id()][acdsSet]
                     [env.functionId][rid][year] = g;
               }
@@ -676,7 +672,7 @@ Results Regionalization::regionalize(Env env)
       //stored, because the cache-code at the start of this function
       //assumes for instance that all years are being stored at the same time
       //and thus are available at the same time
-      L::Lock lock(memoryCacheLockable);
+      lock_guard<mutex> lock(memoryCacheLockable);
       for(const AvgRealizationsResults::value_type& p : newRes)
       {
 				ResultId rid = p.first;
@@ -713,7 +709,7 @@ Results Regionalization::regionalize(Env env)
 
             //should be ok to store separately because the memory cache
             //is anyway only used during this runtime-session
-            L::Lock lock(diskCacheLockable);
+            lock_guard<mutex> lock(diskCacheLockable);
 //            cout << "writing into hdf: year: " << year << " path: " << pathToHdf.str() << endl;
             g->writeHdf(pathToHdf.str(), dsn.str(), "", coordinateSystemToShortString(gmd.coordinateSystem), -1);
 //						cout << "writeAscii path: " << pathToHdf.str() << endl;

@@ -37,22 +37,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <functional>
 #include <iostream>
-
-#ifndef Q_MOC_RUN
-#include <boost/shared_ptr.hpp>
-//#include <boost/function.hpp>
-//#include <boost/lambda/if.hpp>
-#endif //Q_MOC_RUN
-
-//#include "tools/stl-algo-boost-lambda.h"
+#include <memory>
+#include <mutex>
 
 #include "grid.h"
 #include "tools/coord-trans.h"
 #include "tools/algorithms.h"
 #include "tools/datastructures.h"
-
-#define LOKI_OBJECT_LEVEL_THREADING
-#include "loki/Threads.h"
 
 namespace Grids
 {
@@ -211,11 +202,11 @@ namespace Grids
 
 	//----------------------------------------------------------------------------
 
-	typedef boost::shared_ptr<grid> GridPtr;
+  typedef std::shared_ptr<grid> GridPtr;
 
 	class GridP;
 
-	typedef boost::shared_ptr<GridP> GridPPtr;
+  typedef std::shared_ptr<GridP> GridPPtr;
 
 	//!grid+ class
 	class GridP
@@ -459,11 +450,10 @@ namespace Grids
 
 		GridP* replace(float searchValue, float replaceValue)
 		{
-			//		return transformInPlace(boost::lambda::if_then_else_return
-			//														(boost::lambda::_1 == searchValue,
-			//														 replaceValue, boost::lambda::_1));
-			return transformInPlace([=](float v){ return v == searchValue
-				? replaceValue : v; });
+      return transformInPlace([=](float v)
+      {
+        return v == searchValue ? replaceValue : v;
+      });
 		}
 
 		GridPPtr transform(std::function<float(float)> transformFunction) const
@@ -755,7 +745,7 @@ namespace Grids
 	//----------------------------------------------------------------------------
 
 	//! hold just some information about the grid, without having to load it
-	struct GridProxy : public Loki::ObjectLevelLockable<GridProxy>
+  struct GridProxy
 	{
 		enum State { eNew, eChanged, eNormal };
 
@@ -809,9 +799,10 @@ namespace Grids
 		Tools::CoordinateSystem coordinateSystem;
 	protected:
 		GridPPtr g;
+    std::mutex _lockable;
 	};
 
-	typedef boost::shared_ptr<GridProxy> GridProxyPtr;
+  typedef std::shared_ptr<GridProxy> GridProxyPtr;
 
 	//----------------------------------------------------------------------------
 

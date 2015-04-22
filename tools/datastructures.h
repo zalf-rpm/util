@@ -88,33 +88,35 @@ namespace Tools
   {
 	public:
 		StdMatrix() {}
-    StdMatrix(unsigned int noOfRows, unsigned int noOfCols, T init = T())
+    StdMatrix(std::size_t noOfRows, std::size_t noOfCols, T init = T())
     : _m(noOfRows, std::vector<T>(noOfCols, init)) {}
 
 		std::vector<T>& operator[](unsigned int row){ return _m[row]; }
 
-    const std::vector<T>& operator[](unsigned int row) const
+    const std::vector<T>& operator[](std::size_t row) const
     {
 			return _m.at(row);
 		}
 
-		T& valueAt(unsigned int row, unsigned int col){ return _m[row][col]; }
+    T& valueAt(std::size_t row, std::size_t col){ return _m[row][col]; }
 
-		const T& valueAt(unsigned int row, unsigned int col) const {
+    const T& valueAt(std::size_t row, std::size_t col) const
+    {
 			return _m.at(row).at(col);
 		}
 
-		unsigned rows() const { return _m.size(); }
-		unsigned cols() const { return _m.size() > 0 ? _m.front().size() : 0; }
+    std::size_t rows() const { return _m.size(); }
+    std::size_t cols() const { return _m.size() > 0 ? _m.front().size() : 0; }
 
-    void resize(unsigned int rows, unsigned int cols, T init = T()){
+    void resize(std::size_t rows, std::size_t cols, T init = T())
+    {
       _m.resize(rows, std::vector<T>(cols, init));
 		}
 
 		bool isEmpty() const { return _m.empty(); }
 
 	private:
-		std::vector<std::vector<T> > _m;
+    std::vector<std::vector<T>> _m;
 	};
 
   //----------------------------------------------------------------------------

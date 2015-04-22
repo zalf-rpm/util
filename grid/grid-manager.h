@@ -26,6 +26,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef GRIDMANAGER_H_
 #define GRIDMANAGER_H_
 
+#pragma warning(disable:4503)
+
 #include <vector>
 #include <string>
 #include <map>
@@ -50,17 +52,17 @@ namespace Grids
 		{
 			Data() : _isNoData(true), _gps(NULL), _row(0), _col(0) {}
 			Data(const std::vector<GridProxyPtr>* grids,
-					unsigned int row, unsigned int col)
+          std::size_t row, std::size_t col)
 			: _isNoData(false), _gps(grids), _row(row), _col(col) {}
 			bool isNoData() const { return _isNoData; }
 			const std::vector<GridProxyPtr>* gridProxies() const { return _gps; }
-			unsigned int row() const { return _row; }
-			unsigned int col() const { return _col; }
+      std::size_t row() const { return _row; }
+      std::size_t col() const { return _col; }
 		private:
 			bool _isNoData;
 			const std::vector<GridProxyPtr>* _gps;
-			unsigned int _row;
-			unsigned int _col;
+      std::size_t _row;
+      std::size_t _col;
 		};
 
 	public:
@@ -221,16 +223,16 @@ namespace Grids
      * @return
      */
     virtual std::map<std::string, double>
-    dataAt(unsigned int row, unsigned int col) const;
+    dataAt(std::size_t row, std::size_t col) const;
 
     virtual std::map<std::string, double>
     dataAt(const Tools::RectCoord& rcc) const;
 
     //! number of rows of virtual grid
-    unsigned int rows() const { return _rows; }
+    std::size_t rows() const { return _rows; }
 
     //! number of columns of the virtual grid
-    unsigned int cols() const { return _cols; }
+    std::size_t cols() const { return _cols; }
 
     //! used value for representing "no data" for the virtual grid
     int noDataValue() const { return _noDataValue; }
@@ -299,8 +301,8 @@ namespace Grids
     int _noDataValue;
     RCRect _rect;
     double _cellSize;
-    unsigned int _rows;
-    unsigned int _cols;
+    std::size_t _rows;
+    std::size_t _cols;
 
     Dsn2GridPPtr _dsn2grid;
 
@@ -321,10 +323,10 @@ namespace Grids
 		NoVirtualGrid(Tools::CoordinateSystem cs,
 									const std::vector<GridProxyPtr>* gps,
 									const Grids::RCRect& rect,
-									double cellSize, unsigned int rows, unsigned int cols,
+                  double cellSize, std::size_t rows, std::size_t cols,
 									int noDataValue = -9999);
 
-    virtual std::vector<Data> dataAt(unsigned int row, unsigned int col) const
+    virtual std::vector<Data> dataAt(std::size_t row, std::size_t col) const
     {
       return std::vector<Data>(1, Data(_gps, row, col));
     }

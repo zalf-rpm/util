@@ -101,7 +101,7 @@ namespace Soil
     std::map<int,double> getMap(std::string bodart) const;
 
     //Returns number of elements of internal map data structure.
-    int size() const { return cap_rates_map.size(); }
+    size_t size() const { return cap_rates_map.size(); }
 
   private:
     std::map<std::string, std::map<int, double>> cap_rates_map;

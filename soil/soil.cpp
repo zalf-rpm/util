@@ -30,34 +30,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <fstream>
 #include <cmath>
 #include <utility>
+#include <mutex>
 
 #include "db/abstract-db-connections.h"
 #include "tools/helper.h"
 #include "tools/algorithms.h"
-
 #include "conversion.h"
 #include "soil.h"
 #include "tools/debug.h"
 #include "constants.h"
 
-#define LOKI_OBJECT_LEVEL_THREADING
-#include "loki/Threads.h"
-
 using namespace Db;
 using namespace std;
 using namespace Tools;
 using namespace Soil;
-
-namespace
-{
-  /**
- * @brief Lockable object
- */
-  struct L: public Loki::ObjectLevelLockable<L> {};
-
-}
-
-//------------------------------------------------------------------------------
 
 void CapillaryRiseRates::addRate(std::string bodart, int distance, double value)
 {
@@ -103,13 +89,13 @@ std::map<int,double> CapillaryRiseRates::getMap(std::string bodart) const
 
 const CapillaryRiseRates& Soil::readCapillaryRiseRates()
 {
-  static L lockable;
+  static mutex lockable;
   static bool initialized = false;
   static CapillaryRiseRates cap_rates;
 
   if (!initialized)
   {
-    L::Lock lock(lockable);
+    lock_guard<mutex> lock(lockable);
 
     if(!initialized)
     {
@@ -359,7 +345,7 @@ const SoilPMs* Soil::soilParameters(const string& abstractDbSchema,
 {
   int maxNoOfLayers = int(double(maxDepthCm)/double(layerThicknessCm));
 
-  static L lockable;
+  static mutex lockable;
 
   typedef map<int, SoilPMsPtr> Map;
   typedef map<string, Map> Map2;
@@ -372,7 +358,7 @@ const SoilPMs* Soil::soilParameters(const string& abstractDbSchema,
 
   if(!initialized)
   {
-    L::Lock lock(lockable);
+    lock_guard<mutex> lock(lockable);
 
     if (!initialized)
     {
@@ -478,7 +464,7 @@ const SoilPMs* Soil::soilParameters(const string& abstractDbSchema,
 string Soil::soilProfileId2KA5Layers(const string& abstractDbSchema,
                                        int soilProfileId)
 {
-  static L lockable;
+  static mutex lockable;
 
   typedef map<int, string> Map;
   typedef map<string, Map> Map2;
@@ -491,7 +477,7 @@ string Soil::soilProfileId2KA5Layers(const string& abstractDbSchema,
 
   if (!initialized)
   {
-    L::Lock lock(lockable);
+    lock_guard<mutex> lock(lockable);
 
     if (!initialized)
     {
@@ -537,14 +523,14 @@ const SoilPMs* Soil::soilParametersFromHermesFile(int soilId,
   debug() << pathToFile.c_str() << endl;
   int maxNoOfLayers = int(double(maxDepthCm) / double(layerThicknessCm));
 
-  static L lockable;
+  static mutex lockable;
 
   typedef map<int, SoilPMsPtr> Map;
   static bool initialized = false;
   static Map spss;
   if (!initialized)
   {
-    L::Lock lock(lockable);
+    lock_guard<mutex> lock(lockable);
 
     if (!initialized)
     {
@@ -651,14 +637,14 @@ const SoilPMs* Soil::soilParametersFromHermesFile(int soilId,
 
 RPSCDRes Soil::readPrincipalSoilCharacteristicData(string soilType, double rawDensity)
 {
-  static L lockable;
+  static mutex lockable;
   typedef map<int, RPSCDRes> M1;
   typedef map<string, M1> M2;
   static M2 m;
   static bool initialized = false;
   if(!initialized)
   {
-    L::Lock lock(lockable);
+    lock_guard<mutex> lock(lockable);
 
     if(!initialized)
     {
@@ -714,14 +700,14 @@ RPSCDRes Soil::readPrincipalSoilCharacteristicData(string soilType, double rawDe
 
 RPSCDRes Soil::readSoilCharacteristicModifier(string soilType, double organicMatter)
 {
-  static L lockable;
+  static mutex lockable;
   typedef map<int, RPSCDRes> M1;
   typedef map<string, M1> M2;
   static M2 m;
   static bool initialized = false;
   if(!initialized)
   {
-    L::Lock lock(lockable);
+    lock_guard<mutex> lock(lockable);
 
     if(!initialized)
     {

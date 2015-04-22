@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
 #include <sstream>
+#include <mutex>
 
 #include "proj_api.h"
 
@@ -34,14 +35,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "coord-trans.h"
 #include "tools/helper.h"
 
-#define LOKI_OBJECT_LEVEL_THREADING
-#include "loki/Threads.h"
-
 using namespace std;
 using namespace Tools;
 using namespace Db;
-
-struct L: public Loki::ObjectLevelLockable<L> {};
 
 /*
 string Tools::coordinateSystemToString(CoordinateSystem cs)
@@ -90,7 +86,7 @@ string Tools::coordinateSystemToShortString(CoordinateSystem cs)
 
 CoordinateSystem Tools::shortStringToCoordinateSystem(string cs, CoordinateSystem def)
 {
-  static L lockable;
+  static mutex lockable;
 
   typedef map<string, CoordinateSystem> M;
   static bool initialized = false;
@@ -98,7 +94,7 @@ CoordinateSystem Tools::shortStringToCoordinateSystem(string cs, CoordinateSyste
 
   if (!initialized)
   {
-    L::Lock lock(lockable);
+    lock_guard<mutex> lock(lockable);
 
     if (!initialized)
     {
@@ -234,14 +230,14 @@ const double LatLngCoord::eps = 0.000001;
 
 CoordinateSystem LatLngCoord::latLngCoordinateSystem()
 {
-  static L lockable;
+  static mutex lockable;
 
   static bool initialized = false;
   static CoordinateSystem llc;
 
   if (!initialized)
   {
-    L::Lock lock(lockable);
+    lock_guard<mutex> lock(lockable);
 
     if (!initialized)
     {

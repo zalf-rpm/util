@@ -26,19 +26,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef GRID_TYPES_H_
 #define GRID_TYPES_H_
 
-#ifndef Q_MOC_RUN
-#include "boost/shared_ptr.hpp"
-#endif //Q_MOC_RUN
-
 #include <map>
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace Grids
 {
 	struct GridProxy;
 
-	typedef boost::shared_ptr<GridProxy> GridProxyPtr;
+  typedef std::shared_ptr<GridProxy> GridProxyPtr;
 
 	//! year 2 gridproxy -> to lazily load the grids
 	typedef std::map<int, GridProxyPtr> Year2ProxyMap;

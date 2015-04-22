@@ -38,6 +38,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sstream>
 #include <iterator>
 #include <cassert>
+#include <functional>
 
 namespace Tools
 {
@@ -45,22 +46,6 @@ namespace Tools
 #undef max
 
 	std::vector<std::string> splitString(std::string s, std::string splitElements);
-
-	//! reverse a typelist
-	/*
-		template<class TypeList>
-		struct Reverse {
-		private:
-			typedef typename Reverse<typename TypeList::Tail>::Result temp;
-		public:
-			typedef LOKI_TYPELIST_2(temp, typename TypeList::Head) Result;
-		};
-
-		template<class Head>
-		struct Reverse<Loki::Typelist<Head, Loki::NullType> > {
-			typedef Head Result;
-		};
-		*/
 
 	int createRandomNumber();
 	int createRandomNumber(int max);
@@ -477,25 +462,25 @@ namespace Tools
   std::vector<T> operator+(const std::vector<T>& left, T right)
   {
     return scalVecOp(left, right, std::plus<T>());
-  };
+  }
 
   template<typename T>
   std::vector<T> operator-(const std::vector<T>& left, T right)
   {
     return scalVecOp(left, right, std::minus<T > ());
-  };
+  }
 
   template<typename T>
   std::vector<T> operator*(const std::vector<T>& left, T right)
   {
-    return scalVecOp(left, right, std::multiplies<T > ());
-  };
+    return scalVecOp(left, right, std::multiplies<T>());
+  }
 
   template<typename T>
   std::vector<T> operator/(const std::vector<T>& left, T right)
   {
-    return scalVecOp(left, right, std::divides<T > ());
-  };
+    return scalVecOp(left, right, std::divides<T>());
+  }
 
   /*!
   * inplace scalar operation on vector

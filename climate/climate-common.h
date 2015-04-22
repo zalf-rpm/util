@@ -28,8 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <vector>
 #include <string>
-
-#include "boost/shared_ptr.hpp"
+#include <memory>
 
 #include "tools/date.h"
 
@@ -180,7 +179,7 @@ namespace Climate
 		Tools::Date _endDate;
 
 		typedef std::vector<std::vector<double> > VVD;
-		boost::shared_ptr<VVD> _data;
+    std::shared_ptr<VVD> _data;
 
 		//! offsets to actual available climate data enum numbers
 		std::vector<short> _acd2dataIndex;

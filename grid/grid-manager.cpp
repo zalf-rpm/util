@@ -34,6 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cstdlib>
 #include <cassert>
 #include <set>
+#include <mutex>
 
 #include "grid-manager.h"
 #include "tools/algorithms.h"
@@ -42,22 +43,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "tools/helper.h"
 #include "grid+.h"
 
-#define LOKI_OBJECT_LEVEL_THREADING
-#include "loki/Threads.h"
-
 using namespace Grids;
 using namespace std;
 using namespace Tools;
 
-namespace
-{
-	struct L : public Loki::ObjectLevelLockable<L> {};
-}
-
 VirtualGrid::~VirtualGrid()
 {
-	for_each(_availableGrids.begin(), _availableGrids.end(),
-					 [](GridP* g){ delete g; });//boost::lambda::bind(delete_ptr(), _1));
+  for_each(_availableGrids.begin(), _availableGrids.end(), [](GridP* g){ delete g; });
 }
 
 vector<const GridP*> VirtualGrid::availableGrids()
@@ -149,7 +141,7 @@ const LatLngPolygonsMatrix& VirtualGrid::latLngCellPolygons()
 
 //------------------------------------------------------------------------------
 
-map<string, double> VirtualGrid2::dataAt(unsigned int row, unsigned int col) const
+map<string, double> VirtualGrid2::dataAt(size_t row, size_t col) const
 {
   map<string, double> res;
 
@@ -264,11 +256,11 @@ const LatLngPolygonsMatrix& VirtualGrid2::latLngCellPolygons()
 //------------------------------------------------------------------------------
 
 NoVirtualGrid::NoVirtualGrid(CoordinateSystem cs,
-														 const std::vector<GridProxyPtr>* gps,
-														 const Grids::RCRect& rect,
-														 double cellSize, unsigned int rows,
-														 unsigned int cols,
-														 int noDataValue)
+                             const std::vector<GridProxyPtr>* gps,
+                             const Grids::RCRect& rect,
+                             double cellSize, size_t rows,
+                             size_t cols,
+                             int noDataValue)
 	: VirtualGrid(cs, rect, cellSize, rows, cols, noDataValue),
 		_gps(gps)
 {
@@ -348,16 +340,12 @@ RealVirtualGrid::RealVirtualGrid(CoordinateSystem cs, const RCRect& rect,
 		_data(rows, cols),
 		_usedGridProxies(proxies.begin(), proxies.end())
 {
-	//for_each(_data.begin(), _data.end(),
-	//         _1 = boost::lambda::bind(new_ptr<vector<Data> >(), _cols));
 }
 
 RealVirtualGrid::~RealVirtualGrid()
 {
 	for_each(_usedGridProxies.begin(), _usedGridProxies.end(),
-					 [](vector<GridProxyPtr>* gs){ delete gs; });
-					 //boost::lambda::bind(delete_ptr(), _1));
-	//for_each(_data.begin(), _data.end(), boost::lambda::bind(delete_ptr(), _1));
+           [](vector<GridProxyPtr>* gs){ delete gs; });
 }
 
 vector<RealVirtualGrid::Data>
@@ -963,8 +951,8 @@ GridPPtr GridManager::gridFor(const string& regionName,
                               const Path& userSubPath, int cellSize,
                               GridMetaData subgridMetaData)
 {
-	static L lockable;
-	L::Lock lock(lockable);
+  static mutex lockable;
+  lock_guard<mutex> lock(lockable);
 
   for(const GridMetaData& gmd : regionGmds(userSubPath))
   {
@@ -1021,8 +1009,8 @@ vector<GridPPtr> GridManager::gridsFor(const string& regionName,
 																			 int cellSize,
                                        GridMetaData subgridMetaData)
 {
-	static L lockable;
-	L::Lock lock(lockable);
+  static mutex lockable;
+  lock_guard<mutex> lock(lockable);
 
 	vector<GridPPtr> res;
   for(const GridMetaData& gmd : regionGmds(userSubPath))
@@ -1505,7 +1493,7 @@ void GridManager::readRegionalizedData()
 //    << " | fromTo: " << fromTo << " | sim: " << sim
 //    << " | scen: " << scen << endl;
 
-		int s = fromTo.find_first_of("-");
+    size_t s = fromTo.find_first_of("-");
 		int from = atoi(trim(fromTo.substr(0, s)).c_str()); //1961
 		int to = atoi(trim(fromTo.substr(s+1)).c_str()); //2050
 
@@ -1513,7 +1501,7 @@ void GridManager::readRegionalizedData()
     path.append("/").append(sim).append("/").append(scen).append("/");
 //    cout << "path: " << path << endl;
 
-		int pi = datasetNamesPattern.find_first_of(pattern);
+    size_t pi = datasetNamesPattern.find_first_of(pattern);
     for(int year = from; year <= to; year++)
     {
 			ostringstream oss;
@@ -1652,15 +1640,15 @@ string GridManager::extractDatasetName(const string& gfn) const
 
 string GridManager::extractRegionName(const string& gfn) const
 {
-	int start = gfn.find_first_of("_")+1;
+  size_t start = gfn.find_first_of("_")+1;
 	return gfn.substr(start, gfn.find_first_of("_", start) - start);
 }
 
 Tools::CoordinateSystem GridManager::extractCoordinateSystem(const string& gfn) const
 {
-  int start1 = gfn.find_first_of("_")+1;
-  int start2 = gfn.find_first_of("_", start1)+1;
-  int dotPos = gfn.find_first_of(".", start2);
+  size_t start1 = gfn.find_first_of("_")+1;
+  size_t start2 = gfn.find_first_of("_", start1)+1;
+  size_t dotPos = gfn.find_first_of(".", start2);
   string csShortString = gfn.substr(start2, dotPos - start2);
   //cout << "csShortString: " << csShortString << endl;
   return shortStringToCoordinateSystem(csShortString, Tools::CoordinateSystem());

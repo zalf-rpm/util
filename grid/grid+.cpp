@@ -45,7 +45,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using namespace Grids;
 using namespace std;
 using namespace Tools;
-using namespace boost;
 
 namespace
 {
@@ -1075,7 +1074,7 @@ GridP* GridProxy::gridPtr()
 {
   if(!g)
   {
-		Lock lock(this);
+    lock_guard<mutex> lock(_lockable);
     if(!g)
     {
 			if(!pathToHdf.empty())

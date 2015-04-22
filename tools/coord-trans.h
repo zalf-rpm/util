@@ -29,8 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <cmath>
 #include <cassert>
-
-#include "boost/shared_ptr.hpp"
+#include <memory>
 
 #include "proj_api.h"
 
@@ -51,7 +50,7 @@ struct CoordinateSystemData
   std::string name, shortName;
   CoordConversionParams proj4Params;
 };
-typedef boost::shared_ptr<CoordinateSystemData> CoordinateSystemDataPtr;
+typedef std::shared_ptr<CoordinateSystemData> CoordinateSystemDataPtr;
 
 //can be used as value object
 struct CoordinateSystem

@@ -30,11 +30,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sstream>
 #include <string>
 #include <cstring>
-
-#ifndef Q_MOC_RUN
-#include "boost/algorithm/string/case_conv.hpp"
-#endif //Q_MOC_RUN
-#include "loki/TypeTraits.h"
+#include <locale>
+#include <algorithm>
 
 namespace Tools
 {
@@ -215,43 +212,68 @@ namespace Tools
 
   //----------------------------------------------------------------------------
 
-  template<typename T, bool isStdFundamental>
-  struct ToString
-  {
-    std::string operator()(const T& object){ return object.toString(); }
-  };
+//  template<typename T, bool isStdFundamental>
+//  struct ToString
+//  {
+//    std::string operator()(const T& object){ return object.toString(); }
+//  };
+
+//  template<typename T>
+//  struct ToString<T, true>
+//  {
+//    std::string operator()(const T& object)
+//    {
+//      std::ostringstream s;
+//      s << object;
+//      return s.str();
+//    }
+//  };
+
+//  template<typename T>
+//  struct ToString<T, false>
+//  {
+//    std::string operator()(const T& object)
+//    {
+//      std::ostringstream s;
+//      s << "[";
+//      typename T::const_iterator end = object.end();
+//      for(typename T::const_iterator ci = object.begin(); ci != end; ci++)
+//        s << *ci << (ci+1 == end ? "]" : ",");
+//      return s.str();
+//    }
+//  };
+
+//  template<typename T>
+//  std::string toString(T t)
+//  {
+//    const bool isStdF = Loki::TypeTraits<T>::isStdFundamental;
+//    return ToString<T, isStdF>()(t);
+//  }
 
   template<typename T>
-  struct ToString<T, true>
-  {
-    std::string operator()(const T& object)
-    {
-      std::ostringstream s;
-      s << object;
-      return s.str();
-    }
-  };
+  std::string toString(T t) { return t.toString(indent, detailed); }
 
   template<typename T>
-  struct ToString<T, false>
-  {
-    std::string operator()(const T& object)
-    {
-      std::ostringstream s;
-      s << "[";
-      typename T::const_iterator end = object.end();
-      for(typename T::const_iterator ci = object.begin(); ci != end; ci++)
-        s << *ci << (ci+1 == end ? "]" : ",");
-      return s.str();
-    }
-  };
+  std::string toString(T* t){ return t->toString(indent, detailed); }
 
-  template<typename T>
-  std::string toString(T t)
-  {
-    const bool isStdF = Loki::TypeTraits<T>::isStdFundamental;
-    return ToString<T, isStdF>()(t);
-  }
+//  template<typename Container>
+//  std::string toString(const Container& c)
+//  {
+//      std::ostringstream s;
+//      s << "[";
+//      typename Container::const_iterator end = c.end();
+//      for(typename Container::const_iterator ci = c.begin(); ci != end; ci++)
+//        s << *ci << (ci+1 == end ? "]" : ",");
+//      return s.str();
+//  }
+
+  inline std::string toString(int i){ std::ostringstream s; s << i; return s.str(); }
+
+  inline std::string toString(double d){ std::ostringstream s; s << d; return s.str(); }
+
+  inline std::string toString(float f){ std::ostringstream s; s << f; return s.str(); }
+
+  inline std::string toString(bool b){ std::ostringstream s; s << b; return s.str(); }
 
   //----------------------------------------------------------------------------
 
@@ -268,31 +290,39 @@ namespace Tools
 
 	//-----------------------------------------------------------------------
 
-	inline std::string toLower(const std::string& arg)
+  inline std::string toLower(const std::string& str)
 	{
-		return boost::to_lower_copy(arg);
+    std::locale loc;
+    std::string lowerStr;
+    for(auto elem : str)
+      lowerStr.append(1, std::tolower(elem,loc));
+    return lowerStr;
 	}
 
-	inline std::string toUpper(const std::string& arg)
+  inline std::string toUpper(const std::string& str)
 	{
-		return boost::to_upper_copy(arg);
+    std::locale loc;
+    std::string upperStr;
+    for(auto elem : str)
+      upperStr.append(1, std::toupper(elem,loc));
+    return upperStr;
 	}
 
 	//-------------------------------------------------------------------------
 
 	inline int satoi(const std::string& s, int def = 0)
 	{
-		return s.empty() ? def : std::atoi(s.c_str());
+    return s.empty() ? def : std::stoi(s);
 	}
 
 	inline double satof(const std::string& s, double def = 0.0)
 	{
-		return s.empty() ? def : std::atof(s.c_str());
+    return s.empty() ? def : std::stof(s);
 	}
 
   inline bool satob(const std::string& s, bool def = false)
   {
-    return s.empty() ? def : std::atoi(s.c_str()) != 0;
+    return s.empty() ? def : std::stoi(s) != 0;
   }
 
 }

@@ -3,23 +3,14 @@
 #include <iostream>
 #include <map>
 #include <cstdio>
+#include <mutex>
 
 #include "orm--.h"
 #include "tools/algorithms.h"
 
-#define LOKI_OBJECT_LEVEL_THREADING
-#include "loki/Threads.h"
-
 using namespace Db;
 using namespace std;
-using namespace boost;
 using namespace Tools;
-
-namespace
-{
-	struct L : public Loki::ObjectLevelLockable<L> {};
-
-}
 
 string Identifiable::toString(const string& /*indent*/, bool /*detailed*/) const
 {

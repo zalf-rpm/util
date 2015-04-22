@@ -6,11 +6,8 @@
 #include <QtWidgets/QComboBox>
 #include <QtCore/QTimer>
 #include <QtCore/QQueue>
-#include <string>
 
-#ifndef Q_MOC_RUN
-#include <boost/function.hpp>
-#endif //Q_MOC_RUN
+#include <string>
 
 #include "tools/helper.h"
 

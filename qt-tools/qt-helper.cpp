@@ -7,7 +7,6 @@
 
 using namespace Tools;
 using namespace std;
-using namespace boost;
 
 std::function<string (double)>
 Tools::gridValueTransformFunction4datasetName(string datasetName, string regionName)

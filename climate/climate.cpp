@@ -32,8 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cassert>
 #include <map>
 #include <list>
-
-#include <boost/algorithm/string/case_conv.hpp>
+#include <mutex>
 
 #include "climate/climate.h"
 #include "db/abstract-db-connections.h"
@@ -45,17 +44,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using namespace std;
 using namespace Climate;
 using namespace Tools;
-
-using namespace Loki;
-
-using boost::shared_ptr;
-
-namespace
-{
-  struct L : public ObjectLevelLockable<L> {};
-}
-
-//------------------------------------------------------------------------------
 
 string ClimateStation::toString() const
 {
@@ -96,10 +84,10 @@ std::vector<LatLngCoord> ClimateSimulation::geoCoords() const
 LatLngCoord ClimateSimulation::
 climateStation2geoCoord(const string& stationName) const
 {
-  string lowerStationName = boost::to_lower_copy(stationName);
+  string lowerStationName = toLower(stationName);
   for(ClimateStation* cs : _stations)
   {
-    if(boost::to_lower_copy(cs->name()).find(lowerStationName) != string::npos)
+    if(toLower(cs->name()).find(lowerStationName) != string::npos)
       return cs->geoCoord();
 	}
 	return LatLngCoord();
@@ -137,10 +125,10 @@ getClosestClimateDataGeoCoord(const LatLngCoord& gc) const
 
 ClimateStation ClimateSimulation::climateStation(const string& stationName) const
 {
-  string lowerStationName = boost::to_lower_copy(stationName);
+  string lowerStationName = toLower(stationName);
   for(ClimateStation* cs : _stations)
   {
-    if(boost::to_lower_copy(cs->name()).find(lowerStationName) != string::npos)
+    if(toLower(cs->name()).find(lowerStationName) != string::npos)
       return *cs;
 	}
 	return ClimateStation();
@@ -471,7 +459,7 @@ YearRange DDClimateDataServerSimulation::availableYearRange()
 {
   if(!_yearRange.isValid())
   {
-    Lock lock(this);
+    lock_guard<mutex> lock(_lockable);
 
 		if(!_yearRange.isValid() &&
 			 !_setupData.realizationIds().empty() &&
@@ -653,7 +641,7 @@ YearRange CLMSimulation::availableYearRange()
 {
   if(!_yearRange.isValid())
   {
-    Lock lock(this);
+    lock_guard<mutex> lock(_lockable);
 
     if(!_yearRange.isValid())
     {
@@ -689,7 +677,7 @@ void ClimateRealization::fillCacheFor(const vector<AvailableClimateData>& acds,
                                       const Date& startDate,
                                       const Date& endDate)
 {
-	Lock lock(this);
+  lock_guard<mutex> lock(_lockable);
 
 	const LatLngCoord& cgc = simulation()->getClosestClimateDataGeoCoord(gc);
 	vector<Cache>& cs = _geoCoord2cache[cgc];
@@ -759,7 +747,7 @@ dataAccessorFor(const ACDV& acds, const LatLngCoord& gc,
   {
     fillCacheFor(acds, gc, startDate, endDate);
 
-		Lock lock(this);
+    lock_guard<mutex> lock(_lockable);
 
     const LatLngCoord& cgc = simulation()->getClosestClimateDataGeoCoord(gc);
     vector<Cache>& cs = _geoCoord2cache[cgc];
@@ -895,12 +883,12 @@ namespace
 		if(month < 0 || month > 12)
 			return 0.0;
 
-		static L lockable;
+    static mutex lockable;
 		static map<SL, map<int, double> > m;
 		static bool initialized = false;
 		if(!initialized)
 		{
-			L::Lock lock(lockable);
+      lock_guard<mutex> lock(lockable);
 
 			if(!initialized)
 			{
@@ -970,12 +958,12 @@ namespace
 	//! b koefficient
   double bKoeff(SL sl, PArtPlus pap)
   {
-		static L lockable;
+    static mutex lockable;
 		static map<SL, map<PArtPlus, double> > m;
 		static bool initialized = false;
 		if(!initialized)
 		{
-			L::Lock lock(lockable);
+      lock_guard<mutex> lock(lockable);
 
 			if(!initialized)
 			{
@@ -1724,11 +1712,11 @@ CLMRealization::executeQuery(const ACDV& acds,
 ClimateDataManager& Climate::climateDataManager()
 {
 	static ClimateDataManager cdm;
-  static L lockable;
+  static mutex lockable;
   static bool initialized = false;
   if(!initialized)
   {
-    L::Lock lock(lockable);
+    lock_guard<mutex> lock(lockable);
 
     if(!initialized)
     {

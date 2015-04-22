@@ -6,37 +6,17 @@
 #include <vector>
 #include <set>
 #include <list>
+#include <memory>
+#include <mutex>
 
-#ifndef Q_MOC_RUN
-#include <boost/shared_ptr.hpp>
-#endif //Q_MOC_RUN
-
-//#include "tools/date.h"
 #include "tools/auto-deleter.h"
 #include "db/abstract-db-connections.h"
 #include "tools/algorithms.h"
 #include "tools/helper.h"
 #include "orm--typedefs.h"
-//#include "tools/datastructures.h"
-
-#include "tools/stl-algo-boost-lambda.h"
-
-#define LOKI_OBJECT_LEVEL_THREADING
-#include "loki/Threads.h"
-#include "loki/TypeTraits.h"
-
 
 namespace Db
 {
-
-  namespace Private
-  {
-		//! helper object for locking and thread-safety
-		struct L : public Loki::ObjectLevelLockable<L> {};
-	}
-
-	//----------------------------------------------------------------------------
-
 	//! interface for objects which are displayable
   struct Printable
   {
@@ -113,14 +93,13 @@ namespace Db
 	template<class T>
   T* t4id(int id)
   {
-		static Private::L lockable;
+    static std::mutex lockable;
 		static bool mapInitialized = false;
 		typedef std::map<int, T*> Id2T;
 		static Id2T m;
     if(!mapInitialized)
     {
-			Private::L::Lock lock(lockable);
-
+      std::lock_guard<std::mutex> lock(lockable);
       if(!mapInitialized)
       {
 				typedef typename T::Collection::const_iterator CI;
@@ -143,70 +122,121 @@ namespace Db
                                     const std::string& indent = std::string())
   {
 		std::ostringstream s;
-		if(!intro.empty()) s << intro << std::endl;
-		for(typename T::const_iterator ci = coll.begin(); ci != coll.end(); ci++)
-			s << indent << (*ci)->toString(indent+"\t", detailed) << std::endl;
+    if(!intro.empty())
+      s << intro << std::endl;
+    for(auto tptr : coll)
+      s << indent << tptr->toString(indent+"\t", detailed) << std::endl;
+    //		for(typename T::const_iterator ci = coll.begin(); ci != coll.end(); ci++)
+    //			s << indent << (*ci)->toString(indent+"\t", detailed) << std::endl;
 		return s.str();
 	}
 
 	//----------------------------------------------------------------------------
 
-	//! functor to call toString on class types (general template)
-	template<class T, bool isStdFundamental>
-  struct ToString
-  {
-		//! the call operator
-		std::string operator()(const T& t, const std::string& indent = std::string(),
-                           bool detailed = false){
-			return t.toString(indent, detailed);
-		}
-	};
+//	//! functor to call toString on class types (general template)
+//	template<class T, bool isStdFundamental>
+//  struct ToString
+//  {
+//		//! the call operator
+//		std::string operator()(const T& t, const std::string& indent = std::string(),
+//                           bool detailed = false){
+//			return t.toString(indent, detailed);
+//		}
+//	};
 
 	//----------------------------------------------------------------------------
 
-	//! functor to call toString on a pair (full template specialization)
-	template<typename F, typename S>
-  struct ToString<std::pair<F, S>, false>
-  {
-		//! call operator
-		std::string operator()(std::pair<F, S> t,
-                           const std::string& /*indent*/ = std::string(),
-                           bool /*detailed*/ = false)
-    {
-			const bool firstIsStdF = Loki::TypeTraits<F>::isStdFundamental;
-			const bool secondIsStdF = Loki::TypeTraits<S>::isStdFundamental;
-			std::ostringstream s;
-			s << "(" << ToString<F, firstIsStdF>()(t.first) << ", "
-          << ToString<S, secondIsStdF>()(t.second) << ")";
-			return s.str();
-		}
-	};
+//	//! functor to call toString on a pair (full template specialization)
+//	template<typename F, typename S>
+//  struct ToString<std::pair<F, S>, false>
+//  {
+//		//! call operator
+//		std::string operator()(std::pair<F, S> t,
+//                           const std::string& /*indent*/ = std::string(),
+//                           bool /*detailed*/ = false)
+//    {
+//			const bool firstIsStdF = Loki::TypeTraits<F>::isStdFundamental;
+//			const bool secondIsStdF = Loki::TypeTraits<S>::isStdFundamental;
+//			std::ostringstream s;
+//			s << "(" << ToString<F, firstIsStdF>()(t.first) << ", "
+//          << ToString<S, secondIsStdF>()(t.second) << ")";
+//			return s.str();
+//		}
+//	};
 
 	//----------------------------------------------------------------------------
 
 	//! functor to call toString on Pointer types (full template specialization)
-	template<class T>
-  struct ToString<T*, false>
-  {
-		//! call operator
-		std::string operator()(T* t, const std::string& indent = std::string(),
-                           bool detailed = false)
-    {
-			return t->toString(indent, detailed);
-		}
-	};
+//	template<class T>
+//  struct ToString<T*, false>
+//  {
+//		//! call operator
+//		std::string operator()(T* t, const std::string& indent = std::string(),
+//                           bool detailed = false)
+//    {
+//			return t->toString(indent, detailed);
+//		}
+//	};
 
 	//----------------------------------------------------------------------------
 
 	//! functor to output to string primitive types (partial specialization)
-	template<class T>
-	struct ToString<T, true> {
-		//! call operator
-		std::string operator()(T t, const std::string& = std::string(),
-                           bool = false){
-			std::ostringstream s; s << t; return s.str();
-		}
-	};
+//	template<class T>
+//	struct ToString<T, true> {
+//		//! call operator
+//		std::string operator()(T t, const std::string& = std::string(),
+//                           bool = false){
+//			std::ostringstream s; s << t; return s.str();
+//		}
+//	};
+
+  template<typename T>
+  std::string toString(T t, const std::string& indent = std::string(), bool detailed = false)
+  {
+    return t.toString(indent, detailed);
+  }
+
+  inline std::string toString(int i, const std::string& = std::string(), bool = false)
+  {
+    std::ostringstream s; s << i; return s.str();
+  }
+
+  inline std::string toString(double d, const std::string& = std::string(), bool = false)
+  {
+    std::ostringstream s; s << d; return s.str();
+  }
+
+  inline std::string toString(float f, const std::string& = std::string(), bool = false)
+  {
+    std::ostringstream s; s << f; return s.str();
+  }
+
+  inline std::string toString(bool b, const std::string& = std::string(), bool = false)
+  {
+    std::ostringstream s; s << b; return s.str();
+  }
+
+  template<typename T, bool isStdFundamental = true>
+  std::string toString(T t, const std::string& = std::string(), bool = false)
+  {
+    std::ostringstream s; s << t; return s.str();
+  }
+
+  template<typename T>
+  std::string toString(T* t, const std::string& indent = std::string(), bool detailed = false)
+  {
+    return t->toString(indent, detailed);
+  }
+
+  template<typename F, typename S>
+  std::string toString(std::pair<F, S> t,
+                       const std::string& /*indent*/ = std::string(),
+                       bool /*detailed*/ = false)
+  {
+    std::ostringstream s;
+    s << "(" << toString(t.first) << ", " << toString(t.second) << ")";
+    return s.str();
+  }
 
 	//----------------------------------------------------------------------------
 
@@ -214,50 +244,92 @@ namespace Db
 	 * create a string representation of a toString():able pointer map
 	 * (general template)
 	 */
-	template<class Map, int recDepth>
+//	template<class Map, int recDepth>
+//  struct PtrMapToString
+//  {
+//		//! call operator
+//		std::string operator()(const Map& map,
+//                           const std::string& intro = std::string(), bool detailed = false,
+//                           const std::string& indent = std::string()) const
+//    {
+//			std::ostringstream s;
+//      if(!intro.empty())
+//        s << intro << std::endl;
+//      else
+//        s << std::endl;
+//			typedef typename Map::const_iterator CI;
+//			typedef typename Map::key_type KT;
+//			typedef typename Map::mapped_type MT;
+//			const bool isStdF = Loki::TypeTraits<KT>::isStdFundamental;
+//      for(CI ci = map.begin(); ci != map.end(); ci++)
+//      {
+//				s << indent << ToString<KT, isStdF>()(ci->first, indent+"\t")
+//            << " ---> "
+//            << PtrMapToString<MT, recDepth-1>()
+//            (ci->second, "", detailed, indent+"\t") << std::endl;
+//			}
+//			return s.str();
+//		}
+//	};
+
+  template<class Map, int recDepth>
   struct PtrMapToString
   {
-		//! call operator
-		std::string operator()(const Map& map,
+    //! call operator
+    std::string operator()(const Map& map,
                            const std::string& intro = std::string(), bool detailed = false,
                            const std::string& indent = std::string()) const
     {
-			std::ostringstream s;
+      std::ostringstream s;
       if(!intro.empty())
         s << intro << std::endl;
       else
         s << std::endl;
-			typedef typename Map::const_iterator CI;
-			typedef typename Map::key_type KT;
-			typedef typename Map::mapped_type MT;
-			const bool isStdF = Loki::TypeTraits<KT>::isStdFundamental;
+      typedef typename Map::const_iterator CI;
+      typedef typename Map::key_type KT;
+      typedef typename Map::mapped_type MT;
+//			const bool isStdF = Loki::TypeTraits<KT>::isStdFundamental;
       for(CI ci = map.begin(); ci != map.end(); ci++)
       {
-				s << indent << ToString<KT, isStdF>()(ci->first, indent+"\t")
+        s << indent << toString(ci->first, indent+"\t")
             << " ---> "
             << PtrMapToString<MT, recDepth-1>()
             (ci->second, "", detailed, indent+"\t") << std::endl;
-			}
-			return s.str();
-		}
-	};
+      }
+      return s.str();
+    }
+  };
 
 	//----------------------------------------------------------------------------
 
 	//! specialization for base case (recursion depth = 0)
-	template<class T>
+//	template<class T>
+//  struct PtrMapToString<T, 0>
+//  {
+//		//! call operator
+//		std::string operator()(T t, const std::string&, bool,
+//                           const std::string& indent) const
+//    {
+//			const bool isStdF = Loki::TypeTraits<T>::isStdFundamental;
+//			std::ostringstream s;
+//			s << ToString<T, isStdF>()(t, indent+"\t");
+//			return s.str();
+//		}
+//	};
+
+  template<class T>
   struct PtrMapToString<T, 0>
   {
-		//! call operator
-		std::string operator()(T t, const std::string&, bool,
+    //! call operator
+    std::string operator()(T t, const std::string&, bool,
                            const std::string& indent) const
     {
-			const bool isStdF = Loki::TypeTraits<T>::isStdFundamental;
-			std::ostringstream s;
-			s << ToString<T, isStdF>()(t, indent+"\t");
-			return s.str();
-		}
-	};
+//      const bool isStdF = Loki::TypeTraits<T>::isStdFundamental;
+      std::ostringstream s;
+      s << toString(t, indent+"\t");
+      return s.str();
+    }
+  };
 
 	//----------------------------------------------------------------------------
 
@@ -279,25 +351,22 @@ namespace Db
     {
 			list.sort([](Identifiable* left, const Identifiable* right){
 				return left->name < right->name; });
-//				boost::lambda::bind(&Identifiable::name, boost::lambda::_1)
-//								< boost::lambda::bind(&Identifiable::name, boost::lambda::_2));
 		}
 	};
 
 	//----------------------------------------------------------------------------
 
-	//! functor to sort the lists elements by its orderNo (if there)
-  struct SortListByOrderNo
-  {
-		//! call operator
-		template<class T>
-    void operator()(T& list)
-    {
-			using namespace boost::lambda;
-			typedef typename Loki::TypeTraits<typename T::value_type>::PointeeType VT;
-			list.sort(bind(&VT::orderNo, _1) < bind(&VT::orderNo, _2));
-		}
-	};
+//	//! functor to sort the lists elements by its orderNo (if there)
+//  struct SortListByOrderNo
+//  {
+//		//! call operator
+//		template<class T>
+//    void operator()(T& list)
+//    {
+//			typedef typename Loki::TypeTraits<typename T::value_type>::PointeeType VT;
+//      list.sort([](VT vt1, VT vt2){ return vt1->orderNo < vt2->orderNo; });
+//		}
+//	};
 
 	//----------------------------------------------------------------------------
 
@@ -322,14 +391,13 @@ namespace Db
 		//! call operator
     typename T::Collection& operator()(const std::string& query)
     {
-			static Private::L lockable;
+      static std::mutex lockable;
 			static bool initialized = false;
 			static Tools::AutoDeleter<typename T::Collection> ad;
 			static typename T::Collection& ts = ad.collection;
       if(!initialized)
       {
-				Private::L::Lock lock(lockable);
-
+        std::lock_guard<std::mutex> lock(lockable);
         if(!initialized)
         {
 					Db::DBPtr con(Db::newConnection(abstractConnection));

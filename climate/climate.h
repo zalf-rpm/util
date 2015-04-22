@@ -36,10 +36,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <utility>
 #include <sstream>
 #include <iostream>
-#ifndef Q_MOC_RUN
-#include <boost/shared_ptr.hpp>
-#include <boost/function.hpp>
-#endif //Q_MOC_RUN
+#include <functional>
+#include <mutex>
 
 #include "tools/date.h"
 #include "db/db.h"
@@ -48,9 +46,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "tools/helper.h"
 
 #include "climate/climate-common.h"
-
-#define LOKI_OBJECT_LEVEL_THREADING
-#include "loki/Threads.h"
 
 //! All climate data related classes.
 namespace Climate
@@ -224,7 +219,7 @@ namespace Climate
 	 * a particular time range with a requested amount of different climate data
 	 * elements.
 	 */
-  class ClimateSimulation : public Loki::ObjectLevelLockable<ClimateSimulation>
+  class ClimateSimulation
   {
 	public:
 		//! takes ownerwhip of connection
@@ -305,6 +300,7 @@ namespace Climate
 
     YearRange _yearRange;
 
+    std::mutex _lockable;
 	private: //state
 		//! the simulations name
 		std::string _name;
@@ -505,7 +501,7 @@ namespace Climate
 
   private: //state
     typedef std::map<const ClimateStation*, std::set<const ClimateStation*>,
-		std::function<bool(const ClimateStation*, const ClimateStation*)> > M;
+    std::function<bool(const ClimateStation*, const ClimateStation*)>> M;
     M _avgClimateStationsSet;
 	};
 
@@ -621,7 +617,6 @@ namespace Climate
 
 	//! encapsulates efficient access to climate database
 	class ClimateRealization
-  : public Loki::ObjectLevelLockable<ClimateRealization>
   {
   public:
 		ClimateRealization(const std::string& id, ClimateSimulation* simulation,
@@ -661,6 +656,7 @@ namespace Climate
 										 const Tools::Date& startDate,
 										 const Tools::Date& endDate) const = 0;
 
+    std::mutex _lockable;
   private: //methods
     //! create list of acds not completely in cache
     ACDV notInCache(const std::vector<Cache>& cs, const ACDV& acds,

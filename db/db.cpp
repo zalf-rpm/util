@@ -338,8 +338,25 @@ DBRow SqliteDB::getRow()
 		int colCount = sqlite3_column_count(_ppStmt);
 		for(int i = 0; i < colCount; i++)
 		{
-			const char* col = (const char*)sqlite3_column_text(_ppStmt, i);
-			row.push_back(col ? col : string());
+      int type = sqlite3_column_type(_ppStmt, i);
+      switch(type)
+      {
+      case SQLITE_INTEGER:
+        row.push_back(to_string(sqlite3_column_int(_ppStmt, i)));
+        break;
+      case SQLITE_FLOAT:
+        row.push_back(to_string(sqlite3_column_double(_ppStmt, i)));
+        break;
+      case SQLITE_TEXT:
+      case SQLITE_BLOB:
+        row.push_back((const char*)sqlite3_column_text(_ppStmt, i));
+        break;
+      case SQLITE_NULL:
+        row.push_back(string());
+        break;
+      }
+//      const char* col = (const char*)sqlite3_column_text(_ppStmt, i);
+//			row.push_back(col ? col : string());
 		}
 	}
 	break;

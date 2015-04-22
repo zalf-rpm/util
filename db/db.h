@@ -42,10 +42,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <list>
 #include <vector>
 #include <string>
-
-#ifndef Q_MOC_RUN
-#include <boost/shared_ptr.hpp>
-#endif //Q_MOC_RUN
+#include <memory>
 
 #include "tools/date.h"
 
@@ -244,13 +241,13 @@ namespace Db
 
 	//----------------------------------------------------------------------------
 
-	typedef boost::shared_ptr<DB> DBPtr;
+  typedef std::shared_ptr<DB> DBPtr;
 
 	//! user takes ownership
 	DB* newConnection(const DBConData& connectionData);
 
 #ifndef NO_MYSQL
-	typedef boost::shared_ptr<MysqlDB> MysqlDBPtr;
+  typedef std::shared_ptr<MysqlDB> MysqlDBPtr;
 	inline MysqlDB* toMysqlDB(DB* db){ return dynamic_cast<MysqlDB*>(db); }
 #endif
 

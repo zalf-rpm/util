@@ -3,8 +3,8 @@
 
 #include "tools/helper.h"
 
-namespace Tools {
-
+namespace Tools
+{
 	/*!
 	 * functions deletes all elements in collection after possibly
 	 * extracting elements from the collection entries (e.g. from the pairs

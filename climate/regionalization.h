@@ -33,11 +33,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef __REGIONALIZATION__
 #define __REGIONALIZATION__
 
+#pragma warning(disable:4503)
+
 #include <vector>
 #include <string>
 #include <map>
-
-#include <boost/function.hpp>
 
 #include "grid/grid+.h"
 #include "climate.h"
