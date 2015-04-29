@@ -64,7 +64,7 @@ int Tools::createRandomNumber()
 	{
 		time_t t = time(NULL);
 		if(lastTime != t)
-			srand(t);
+			srand(unsigned int(t));
 		id = rand();
 		lastTime = t;
 	}
@@ -79,7 +79,7 @@ int Tools::createRandomNumber(int max)
 	{
 		time_t t = time(NULL);
 		if(lastTime != t)
-			srand(t);
+      srand(unsigned int(t));
 		id = rand() % max;
 		lastTime = t;
 	}
@@ -598,6 +598,7 @@ int Tools::integerRound1stDigit(int value)
 	case -1: case -2: case -3: case -4: return v.quot*10;
 	case 5: case 6: case 7: case 8: case 9: return v.quot*10 + 10;
 	case -5: case -6: case -7: case -8: case -9: return v.quot*10 - 10;
+  default: return value;
 	}
 }
 
@@ -614,7 +615,7 @@ int Tools::roundShiftedInt(double value, int roundToDigits)
 		return integerRound1stDigit(shiftDecimalPointLeft<int>(value, -shiftDigits)) / 10;
 
 	//round to full 10s
-	return integerRound1stDigit(value);
+	return integerRound1stDigit(int(value));
 }
 
 double Tools::floor(double value, int digits, bool trailingDigits)
