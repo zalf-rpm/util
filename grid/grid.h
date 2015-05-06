@@ -250,7 +250,7 @@ namespace Grids
 		grid* delta_diff(grid *g1); // fabs(gx-g1)/gx
 		point *sample(int number, int flag); // generates a sample
 		// altes Grid=combine_grid(grid,selector,flag)
-		int ncols,nrows;        // Zeilen,Spalten
+    size_t ncols,nrows;        // Zeilen,Spalten
 		float min,max;          // Min und Maximum der Feldelemente
 		float gridmax, gridmin, gridmean, gridstd; // Ergebnisse stat
 		int count_data, count_nodata;

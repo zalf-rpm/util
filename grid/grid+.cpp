@@ -117,10 +117,10 @@ grid* Grids::loadGrid(const string& gridName, const std::string& pathToHdf)
 
 void Grids::printGridFields(const grid& g, bool onlyDataFields)
 {
-  for(int i = 0; i < g.nrows; i++)
+  for(size_t i = 0; i < g.nrows; i++)
   {
 		cout << "row: " << i << endl;
-    for(int k = 0; k < g.ncols; k++)
+    for(size_t k = 0; k < g.ncols; k++)
     {
 			if(g.feld[i][k] != g.nodata || !onlyDataFields)
 				cout << g.feld[i][k] << " ";
@@ -131,8 +131,8 @@ void Grids::printGridFields(const grid& g, bool onlyDataFields)
 
 void Grids::setAllGridFieldsTo(grid* g, double newValue, bool keepNoData)
 {
-  for(int i = 0; i < g->nrows; i++)
-    for(int k = 0; k < g->ncols; k++)
+  for(size_t i = 0; i < g->nrows; i++)
+    for(size_t k = 0; k < g->ncols; k++)
 			if(g->feld[i][k] != g->nodata || !keepNoData)
 				g->feld[i][k] = newValue;
 }
@@ -379,7 +379,7 @@ GridP::GridP(CoordinateSystem cs)
 
 //! new grid with given size and initialized to no data
 GridP::GridP(const std::string& datasetName,
-						 int nrows, int ncols,
+             size_t nrows, size_t ncols,
 						 float cellSize, double llx, double lly, float noDataValue,
 						 CoordinateSystem cs)
 	: _datasetName(datasetName),
@@ -483,8 +483,8 @@ bool GridP::operator==(const GridP& other) const
 	if(coordinateSystem() != other.coordinateSystem())
 		return false;
 
-  for(int i = 0; i < rows(); i++)
-    for(int j = 0; j < cols(); j++)
+  for(size_t i = 0; i < rows(); i++)
+    for(size_t j = 0; j < cols(); j++)
 			if(dataAt(i, j) != other.dataAt(i, j))
 				return false;
 
@@ -528,8 +528,8 @@ int GridP::readHdf(const string& pathToHdfFile, const string& datasetName)
     }
   }
   // read_in
-  for(int i=0; i<nrows; i++){
-    for(int j=0; j<ncols; j++){
+  for(size_t i=0; i<nrows; i++){
+    for(size_t j=0; j<ncols; j++){
       _grid->feld[i][j]=hd->f1[i*ncols+j];
     }
   }
@@ -544,8 +544,8 @@ bool GridP::writeHdf(const string& pathToHdfFile, const string& datasetName,
   if(!ensureDirExists(pathToHdfFile.substr(0, pathToHdfFile.find_last_of('/'))))
     return false;
 
-	int ncols = _grid->ncols;
-	int nrows = _grid->nrows;
+  size_t ncols = _grid->ncols;
+  size_t nrows = _grid->nrows;
 	float** feld = _grid->feld;
 
   //cerr << "hdf " << fname << " " << datasetn << endl;
@@ -555,8 +555,8 @@ bool GridP::writeHdf(const string& pathToHdfFile, const string& datasetName,
 		cerr << "error (write_hdf): no space on device\n";
 		exit(2);
 	}
-	for(int i = 0; i < nrows; i++)
-		for(int j = 0; j < ncols; j++)
+  for(size_t i = 0; i < nrows; i++)
+    for(size_t j = 0; j < ncols; j++)
 			f1[i * ncols + j] = feld[i][j];
 	hdf5* hd = new hdf5;
   if(hd->open_f(pathToHdfFile.c_str()) != 0)
@@ -590,8 +590,8 @@ bool GridP::writeHdf(const string& pathToHdfFile, const string& datasetName,
 vector<double> GridP::allDataAsLinearVector() const
 {
 	vector<double> linear;
-	for(int i = 0; i < rows(); i++)
-		for(int j = 0; j < cols(); j++)
+  for(size_t i = 0; i < rows(); i++)
+    for(size_t j = 0; j < cols(); j++)
 			if(isDataField(i, j))
 				linear.push_back(dataAt(i, j));
 
@@ -604,10 +604,10 @@ HistogramData GridP::histogram(int noOfClasses)
 
 	vector<double> linear(rows()*cols());
 	int k = -1;
-	int nop = 0; // number of pixels
-  for(int i = 0; i < rows(); i++)
+  size_t nop = 0; // number of pixels
+  for(size_t i = 0; i < rows(); i++)
   {
-    for(int j = 0; j < cols(); j++)
+    for(size_t j = 0; j < cols(); j++)
     {
       if(isDataField(i, j))
       {
@@ -625,7 +625,7 @@ HistogramData GridP::histogram(int noOfClasses)
 	double ceiledStepSize = stepSize == 0 ? 1 : std::ceil(stepSize);
 
   res = histogramDataByStepSize(vector<double>(linear.begin(), linear.begin() + k + 1), ceiledStepSize);
-  for(int i = 0, size = res.classes.size(); i < size; i++)
+  for(size_t i = 0, size = res.classes.size(); i < size; i++)
     //store percent of pixels in a certain class
     res.classes[i] = (res.classes[i] / nop) * 100;
 
@@ -681,8 +681,8 @@ multimap<double, double, greater<double> >
 
 GridP* GridP::setAllFieldsTo(double newValue, bool keepNoData)
 {
-  for(int i = 0; i < rows(); i++)
-    for(int k = 0; k < cols(); k++)
+  for(size_t i = 0; i < rows(); i++)
+    for(size_t k = 0; k < cols(); k++)
 			if(!isNoDataField(i, k) || !keepNoData)
 				setDataAt(i, k, newValue);
 	return this;
@@ -690,8 +690,8 @@ GridP* GridP::setAllFieldsTo(double newValue, bool keepNoData)
 
 GridP* GridP::setAllFieldsWithoutTo(float withoutValue, float toNewValue, bool includeNoData)
 {
-	for(int r = 0, rs = rows(); r < rs; r++)
-		for(int c = 0, cs = cols(); c < cs; c++)
+  for(size_t r = 0, rs = rows(); r < rs; r++)
+    for(size_t c = 0, cs = cols(); c < cs; c++)
 			if((includeNoData || isDataField(r, c)) && !fuzzyCompare(dataAt(r, c), withoutValue))
 				setDataAt(r, c, toNewValue);
 	return this;
@@ -700,12 +700,12 @@ GridP* GridP::setAllFieldsWithoutTo(float withoutValue, float toNewValue, bool i
 GridP::Rc2RowColRes GridP::rc2rowCol(Tools::RectCoord rc) const
 {
 	grid& g = gridRef();
-	int row = -1, col = -1;
+  size_t row = -1, col = -1;
 
   bool rowsInside = g.xcorner <= rc.r && rc.r <= (g.xcorner + cellSize()*cols());
   bool colsInside = g.ycorner <= rc.h && rc.h <= (g.ycorner + cellSize()*rows());
 
-  col = int(std::floor((rc.r - g.xcorner)/cellSize()));
+  col = size_t(std::floor((rc.r - g.xcorner)/cellSize()));
   if(col == cols())
     --col;
   row = rows() - int(std::ceil((rc.h - g.ycorner)/cellSize()));
@@ -733,9 +733,9 @@ GridP* GridP::setDataAt(Tools::RectCoord rcc, float value)
 string GridP::toString() const
 {
 	ostringstream s;
-  for(int i = 0; i < rows(); i++)
+  for(size_t i = 0; i < rows(); i++)
   {
-    for(int k = 0; k < cols(); k++)
+    for(size_t k = 0; k < cols(); k++)
     {
 			s << dataAt(i, k) << " ";
 		}
@@ -749,7 +749,7 @@ RCRect GridP::rcRect() const
 	return GridMetaData(this).rcRect();
 }
 
-RCRect GridP::cellRCRectAt(int row, int col) const
+RCRect GridP::cellRCRectAt(size_t row, size_t col) const
 {
 	grid& g = gridRef();
 	RectCoord tl(coordinateSystem(),
@@ -762,7 +762,7 @@ RCRect GridP::cellRCRectAt(int row, int col) const
 	return RCRect(tl, br);
 }
 
-RectCoord GridP::rcCoordAt(int row, int col) const
+RectCoord GridP::rcCoordAt(size_t row, size_t col) const
 {
 	grid& g = gridRef();
 	return RectCoord(coordinateSystem(),
@@ -770,7 +770,7 @@ RectCoord GridP::rcCoordAt(int row, int col) const
 									 g.ycorner + (rows() - row - 1)*cellSize());
 }
 
-RectCoord GridP::rcCoordAtCenter(int row, int col) const
+RectCoord GridP::rcCoordAtCenter(size_t row, size_t col) const
 {
 	grid& g = gridRef();
 	return RectCoord(coordinateSystem(),
@@ -789,7 +789,7 @@ RectCoord GridP::lowerLeftCenter() const
 	return lowerLeftCorner() + cellSize()/2.0;
 }
 
-GridP* GridP::subGridClone(int top, int left, int nrows, int ncols) const
+GridP* GridP::subGridClone(size_t top, size_t left, size_t nrows, size_t ncols) const
 {
 	GridP* subGrid = new GridP(datasetName(), nrows, ncols, cellSize(),
 														 _grid->xcorner + left*cellSize(),
@@ -797,9 +797,9 @@ GridP* GridP::subGridClone(int top, int left, int nrows, int ncols) const
 														 noDataValue(),
 														 coordinateSystem());
 
-  for(int i = top, j = 0; i < top + nrows; i++, j++)
+  for(size_t i = top, j = 0; i < top + nrows; i++, j++)
   {
-    for(int k = left, l = 0; k < left + ncols; k++, l++)
+    for(size_t k = left, l = 0; k < left + ncols; k++, l++)
     {
 			float data = dataAt(i, k);
 			if(data == noDataValue())
@@ -831,9 +831,9 @@ std::pair<double, double> GridP::minMax() const
 		return make_pair(0.0, 0.0);
 
 	double min = 0;
-	for(int i = 0; i < rows(); i++)
+  for(size_t i = 0; i < rows(); i++)
   {
-		for(int j = 0; j < cols(); j++)
+    for(size_t j = 0; j < cols(); j++)
     {
       if(isDataField(i, j))
       {
@@ -845,9 +845,9 @@ std::pair<double, double> GridP::minMax() const
   foundValidValue:
 	double max = min;
 
-  for(int i = 0; i < rows(); i++)
+  for(size_t i = 0; i < rows(); i++)
   {
-    for(int j = 0; j < cols(); j++)
+    for(size_t j = 0; j < cols(); j++)
     {
       if(isDataField(i, j))
       {
@@ -887,9 +887,9 @@ double GridP::average() const
 {
 	double sum = 0;
 	int count = 0;
-  for(int r = 0, rs = rows(); r < rs; r++)
+  for(size_t r = 0, rs = rows(); r < rs; r++)
   {
-    for(int c = 0, cs = cols(); c < cs; c++)
+    for(size_t c = 0, cs = cols(); c < cs; c++)
     {
       if(isDataField(r, c))
       {
@@ -903,8 +903,8 @@ double GridP::average() const
 
 GridP* GridP::transformInPlace(std::function<float(float)> transformFunction)
 {
-  for(int r = 0, rs = rows(); r < rs; r++)
-    for(int c = 0, cs = cols(); c < cs; c++)
+  for(size_t r = 0, rs = rows(); r < rs; r++)
+    for(size_t c = 0, cs = cols(); c < cs; c++)
       if(isDataField(r, c))
         setDataAt(r, c, transformFunction(dataAt(r, c)));
 	return this;
@@ -919,9 +919,9 @@ GridP* GridP::transformP(std::function<float(float)> transformFunction) const
 
 GridP* GridP::invert(float value)
 {
-  for(int r = 0, rs = rows(); r < rs; r++)
+  for(size_t r = 0, rs = rows(); r < rs; r++)
   {
-    for(int c = 0, cs = cols(); c < cs; c++)
+    for(size_t c = 0, cs = cols(); c < cs; c++)
     {
       if(isNoDataField(r, c))
         setDataAt(r, c, value);
@@ -937,9 +937,9 @@ GridP* GridP::setFieldsTo(const GridP* other, bool keepNoData)
   if(!isCompatible(other))
 		return this;
 
-  for(int r = 0, rs = other->rows(); r < rs; r++)
+  for(size_t r = 0, rs = other->rows(); r < rs; r++)
   {
-    for(int c = 0, cs = other->cols(); c < cs; c++)
+    for(size_t c = 0, cs = other->cols(); c < cs; c++)
     {
       if(isNoDataField(r, c) && keepNoData)
         continue;
@@ -957,9 +957,9 @@ GridP* GridP::maskOut(const GridP* maskGrid, float byValueInMaskGrid, bool keep)
   if(!isCompatible(maskGrid))
 		return this;
 
-  for(int r = 0, rs = maskGrid->rows(); r < rs; r++)
+  for(size_t r = 0, rs = maskGrid->rows(); r < rs; r++)
   {
-    for(int c = 0, cs = maskGrid->cols(); c < cs; c++)
+    for(size_t c = 0, cs = maskGrid->cols(); c < cs; c++)
     {
       bool found = fuzzyCompare(maskGrid->dataAt(r, c), byValueInMaskGrid);
       if((found && discard) || (keep && !found))
@@ -978,8 +978,8 @@ GridP* GridP::maskTo(const GridP* maskGrid, float matchMaskValueTo,
 	if(!isCompatible(maskGrid))
 		return this;
 
-	for(int r = 0, rs = maskGrid->rows(); r < rs; r++)
-		for(int c = 0, cs = maskGrid->cols(); c < cs; c++)
+  for(size_t r = 0, rs = maskGrid->rows(); r < rs; r++)
+    for(size_t c = 0, cs = maskGrid->cols(); c < cs; c++)
 			if((isDataField(r, c) || replaceNoData)
 					&& fuzzyCompare(maskGrid->dataAt(r, c), matchMaskValueTo))
 				setDataAt(r, c, newValue);
@@ -1026,9 +1026,9 @@ GridP* GridP::adjustToP(GridMetaData gmd) const
       return NULL;
   }
 
-  for(int h = ir.tl.h, hs = ir.br.h; h > hs; h -= mcs)
+  for(size_t h = ir.tl.h, hs = ir.br.h; h > hs; h -= mcs)
   {
-    for(int r = ir.tl.r, rs = ir.br.r; r < rs; r += mcs)
+    for(size_t r = ir.tl.r, rs = ir.br.r; r < rs; r += mcs)
     {
 			RectCoord rcc(coordinateSystem(), r, h);
 			res->setDataAt(rcc, dataAt(rcc));

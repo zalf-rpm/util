@@ -169,10 +169,10 @@ namespace Grids
 
 	//----------------------------------------------------------------------------
 
-	typedef unsigned int Row;
-	typedef unsigned int Col;
-	typedef unsigned int Rows;
-	typedef unsigned int Cols;
+  typedef std::size_t Row;
+  typedef std::size_t Col;
+  typedef std::size_t Rows;
+  typedef std::size_t Cols;
 
 	//! holds data needed to know where and how large the subgrid is
 	struct SubData
@@ -218,7 +218,7 @@ namespace Grids
 
 		//! new grid with given size and initialized to no data
 		GridP(const std::string& datasetName,
-			int nrows, int ncols, float cellSize,
+      std::size_t nrows, std::size_t ncols, float cellSize,
 			double llx, double lly, float noDataValue,
       Tools::CoordinateSystem cs);// = Tools::GK5_EPSG31469);
 
@@ -274,7 +274,7 @@ namespace Grids
 		void writeAscii(const std::string& pathToAsciiFile) const;
 
 		//! create clone of part of the grid
-		GridP* subGridClone(int top, int left, int rows, int cols) const;
+    GridP* subGridClone(std::size_t top, std::size_t left, std::size_t rows, std::size_t cols) const;
 
 		//! create exact copy of the grid
 		GridP* clone() const { return new GridP(*this); }
@@ -295,10 +295,10 @@ namespace Grids
 		std::string descriptiveLabel() const;
 
 		//! number of rows
-		int rows() const { return _grid->nrows; }
+    std::size_t rows() const { return _grid->nrows; }
 
 		//! number of columns
-		int cols() const { return _grid->ncols; }
+    std::size_t cols() const { return _grid->ncols; }
 
 		//! size of gridcells
 		double cellSize() const { return _grid->csize; }
@@ -327,8 +327,8 @@ namespace Grids
 		GridP* setAllFieldsWithinTo(Collection matchValues, float toNewValue, bool includeNoData = false)
 		{
 			for(auto cit = matchValues.begin(); cit != matchValues.end(); cit++)
-				for(int r = 0, rs = rows(); r < rs; r++)
-					for(int c = 0, cs = cols(); c < cs; c++)
+        for(std::size_t r = 0, rs = rows(); r < rs; r++)
+          for(std::size_t c = 0, cs = cols(); c < cs; c++)
 						if((includeNoData || isDataField(r, c)) && Tools::fuzzyCompare(dataAt(r, c), *cit))
 							setDataAt(r, c, toNewValue);
 			return this;
@@ -344,26 +344,26 @@ namespace Grids
 		GridP* setFieldsTo(const GridP* other, bool keepNoData = true);
 
 		template<typename ReturnType>
-		ReturnType dataAtRT(int row, int col) const
+    ReturnType dataAtRT(std::size_t row, std::size_t col) const
 		{
 			return ReturnType(_grid->feld[row][col]);
 		}
 
-		float dataAt(int row, int col) const { return _grid->feld[row][col]; }
+    float dataAt(std::size_t row, std::size_t col) const { return _grid->feld[row][col]; }
 
 		float dataAt(Tools::RectCoord rcc) const;
 
-		GridP* setDataAt(int row, int col, float value)
+    GridP* setDataAt(std::size_t row, std::size_t col, float value)
 		{
 			_grid->feld[row][col] = value;
 			return this;
 		}
 
-		float* operator[](int row){ return _grid->feld[row]; }
+    float* operator[](std::size_t row){ return _grid->feld[row]; }
 
 		GridP* setDataAt(Tools::RectCoord rcc, float value);
 
-		GridP* setNoDataValueAt(int row, int col)
+    GridP* setNoDataValueAt(std::size_t row, std::size_t col)
 		{
 			return setDataAt(row, col, float(noDataValue()));
 		}
@@ -373,7 +373,7 @@ namespace Grids
 			return setDataAt(rcc, float(noDataValue()));
 		}
 
-		bool isNoDataField(int row, int col) const
+    bool isNoDataField(std::size_t row, std::size_t col) const
 		{
 			return int(dataAt(row, col)) == noDataValue();
 		}
@@ -383,7 +383,7 @@ namespace Grids
 			return int(dataAt(rcc)) == noDataValue();
 		}
 
-		bool isDataField(int row, int col) const
+    bool isDataField(std::size_t row, std::size_t col) const
 		{
 			return !isNoDataField(row, col);
 		}
@@ -425,15 +425,15 @@ namespace Grids
 
 		RCRect rcRect() const;
 
-		RCRect cellRCRectAt(int row, int col) const;
+    RCRect cellRCRectAt(std::size_t row, std::size_t col) const;
 
-		Tools::RectCoord rcCoordAt(int row, int col) const;
+    Tools::RectCoord rcCoordAt(std::size_t row, std::size_t col) const;
 
-		Tools::RectCoord rcCoordAtCenter(int row, int col) const;
+    Tools::RectCoord rcCoordAtCenter(std::size_t row, std::size_t col) const;
 
 		Tools::RectCoord rcCoordAtCenter() const
 		{
-			return rcCoordAt(int(double(rows()) / 2.0), int(double(cols()) / 2.0));
+      return rcCoordAt(std::size_t(double(rows()) / 2.0), std::size_t(double(cols()) / 2.0));
 		}
 
 		Tools::RectCoord lowerLeftCorner() const;
@@ -466,9 +466,9 @@ namespace Grids
     struct Rc2RowColRes
     {
       Rc2RowColRes() : row(-1), col(-1), isRowOutside(true), isColOutside(true) {}
-      Rc2RowColRes(int row, int col, bool isRowOutside = false, bool isColOutside = false)
+      Rc2RowColRes(std::size_t row, std::size_t col, bool isRowOutside = false, bool isColOutside = false)
         : row(row), col(col), isRowOutside(isRowOutside), isColOutside(isColOutside) {}
-      int row, col;
+      std::size_t row, col;
       bool isRowOutside, isColOutside;
     };
     Rc2RowColRes rc2rowCol(Tools::RectCoord rcc) const;
@@ -502,9 +502,9 @@ namespace Grids
 									 bool ignoreNoDataValues = true) const
 		{
 			Container cont;
-			for(int r = 0, rs = rows(); r < rs; r++)
+      for(std::size_t r = 0, rs = rows(); r < rs; r++)
 			{
-				for(int c = 0, cs = cols(); c < cs; c++)
+        for(std::size_t c = 0, cs = cols(); c < cs; c++)
 				{
 					if(isNoDataField(r, c) && ignoreNoDataValues)
 						continue;
@@ -515,13 +515,13 @@ namespace Grids
 		}
 
     template<class Container>
-    Container mapIndexedF(std::function<typename Container::value_type(int, int, float)> rowColTransformFunc,
+    Container mapIndexedF(std::function<typename Container::value_type(std::size_t, std::size_t, float)> rowColTransformFunc,
                           bool ignoreNoDataValues = true) const
     {
       Container cont;
-      for(int r = 0, rs = rows(); r < rs; r++)
+      for(std::size_t r = 0, rs = rows(); r < rs; r++)
       {
-        for(int c = 0, cs = cols(); c < cs; c++)
+        for(std::size_t c = 0, cs = cols(); c < cs; c++)
         {
           if(isNoDataField(r, c) && ignoreNoDataValues)
             continue;
@@ -535,8 +535,8 @@ namespace Grids
 		T foldF(T init, std::function<T(T, float)> foldFunc) const
 		{
 			T res = init;
-			for(int r = 0, rs = rows(); r < rs; r++)
-				for(int c = 0, cs = cols(); c < cs; c++)
+      for(std::size_t r = 0, rs = rows(); r < rs; r++)
+        for(std::size_t c = 0, cs = cols(); c < cs; c++)
 					res = foldFunc(res, dataAt(r, c));
 			return res;
 		}
@@ -566,11 +566,11 @@ namespace Grids
 		if (gridps.empty())
 			return new GridP();
 
-		double size = gridps.size();
+    std::size_t size = gridps.size();
 		GridP* res = (*(gridps.begin()))->fillClone(0.0);
-		for(int r = 0, rs = res->rows(); r < rs; r++)
+    for(std::size_t r = 0, rs = res->rows(); r < rs; r++)
 		{
-			for(int c = 0, cs = res->cols(); c < cs; c++)
+      for(std::size_t c = 0, cs = res->cols(); c < cs; c++)
 			{
 				if(res->isDataField(r, c))
 				{
@@ -581,7 +581,7 @@ namespace Grids
 							res->setNoDataValueAt(r, c);
 							break;
 						}
-						res->setDataAt(r, c, float(res->dataAt(r, c) + (g->dataAt(r, c) / size)));
+            res->setDataAt(r, c, float(res->dataAt(r, c) + (g->dataAt(r, c) / float(size))));
 					}
 				}
 			}
@@ -599,8 +599,8 @@ namespace Grids
 	template<class OP>
 	GridP& inPlaceScalarMatrixOp(GridP& left, float value, OP op)
 	{
-		for (int r = 0, rs = left.rows(); r < rs; r++)
-			for (int c = 0, cs = left.cols(); c < cs; c++)
+    for (std::size_t r = 0, rs = left.rows(); r < rs; r++)
+      for (std::size_t c = 0, cs = left.cols(); c < cs; c++)
 				if (left.isDataField(r, c))
 					left.setDataAt(r, c, op(left.dataAt(r, c), value));
 		return left;
@@ -615,9 +615,9 @@ namespace Grids
 	GridP& inPlaceScalarMatrixOp(GridP& left, const GridP& right, OP op)
 	{
 		assert(left.isCompatible(&right));
-		for (int r = 0, rs = left.rows(); r < rs; r++)
+    for (std::size_t r = 0, rs = left.rows(); r < rs; r++)
 		{
-			for (int c = 0, cs = left.cols(); c < cs; c++)
+      for (std::size_t c = 0, cs = left.cols(); c < cs; c++)
 			{
 				if (left.isDataField(r, c) && right.isDataField(r, c))
 					left.setDataAt(r, c, op(left.dataAt(r, c), right.dataAt(r, c)));
@@ -643,9 +643,9 @@ namespace Grids
 	{
 		assert(left.isCompatible(&right));
 		GridP* res = left.clone();
-		for (int r = 0, rs = res->rows(); r < rs; r++)
+    for (std::size_t r = 0, rs = res->rows(); r < rs; r++)
 		{
-			for (int c = 0, cs = res->cols(); c < cs; c++)
+      for (std::size_t c = 0, cs = res->cols(); c < cs; c++)
 			{
 				if(left.isNoDataField(r, c))
 				{
@@ -671,9 +671,9 @@ namespace Grids
 	{
 		assert(left.isCompatible(&right));
 		GridP* res = left.clone();
-		for (int r = 0, rs = res->rows(); r < rs; r++)
+    for (std::size_t r = 0, rs = res->rows(); r < rs; r++)
 		{
-			for (int c = 0, cs = res->cols(); c < cs; c++)
+      for (std::size_t c = 0, cs = res->cols(); c < cs; c++)
 			{
 				if (left.isDataField(r, c) && right.isDataField(r, c))
 					res->setDataAt(r, c, op(left.dataAt(r, c), right.dataAt(r, c)));
@@ -720,17 +720,17 @@ namespace Grids
 		SubGridWrapper(const GridP* grid, SubData subData)
 			: _grid(grid), _subData(subData) {}
 
-		float dataAt(int row, int col) const
+    float dataAt(std::size_t row, std::size_t col) const
 		{
 			return _grid->dataAt(_subData.row + row, _subData.col + col);
 		}
 
-		bool isNoDataField(int row, int col) const
+    bool isNoDataField(std::size_t row, std::size_t col) const
 		{
 			return dataAt(row, col) == noDataValue();
 		}
 
-		bool isDataField(int row, int col) const
+    bool isDataField(std::size_t row, std::size_t col) const
 		{
 			return !isNoDataField(row, col);
 		}
@@ -829,9 +829,9 @@ namespace Grids
 			"cellsize      " << static_cast<VT>(cellSize()) << endl <<
 			"NODATA_value  " << static_cast<VT>(noDataValue()) << endl;
 
-		for(int r = 0, rs = rows(); r < rs; r++)
+    for(std::size_t r = 0, rs = rows(); r < rs; r++)
 		{
-			for(int c = 0, cs = cols(); c < cs; c++)
+      for(std::size_t c = 0, cs = cols(); c < cs; c++)
 				fout << static_cast<VT>(dataAt(r, c)) << " ";
 			fout << endl;
 		}
@@ -846,9 +846,9 @@ namespace Grids
 		typedef std::map<int, int> Map;
 		Map m;
 		int nops = 0; //number of pixels
-		for(int i = 0; i < rows(); i++)
+    for(std::size_t i = 0; i < rows(); i++)
 		{
-			for(int j = 0; j < cols(); j++)
+      for(std::size_t j = 0; j < cols(); j++)
 			{
 				if(isDataField(i, j))
 				{
@@ -894,9 +894,9 @@ namespace Grids
 		typedef std::map<GridValueType, PercentageType> Map;
 		Map m;
 		int nops = 0; //number of pixels
-		for(int i = 0; i < rows(); i++) 
+    for(std::size_t i = 0; i < rows(); i++)
 		{
-			for(int j = 0; j < cols(); j++) 
+      for(std::size_t j = 0; j < cols(); j++)
 			{
 				if(isDataField(i, j))	
 				{

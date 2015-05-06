@@ -81,6 +81,11 @@ void IniParameterMap::parseAndInsert(const string& line)
       name = trim(line.substr(0, sepPos));
       value = trim(line.substr(sepPos + 1));
     }
+
+
+
+
+
     //cout << "name: |" << name << "| = value: |" << value << "|" << endl;
 
 		(*this)[_currentSection].insert(make_pair(name, value));
