@@ -58,23 +58,13 @@ namespace Tools
 		operator()(const Pair& p) const { return p.second; }
 	};
 
-	inline double atof_comma(const char* c)
-	{
-		std::string s(c);
-    size_t pos = s.find_first_of(',');
-		if(pos != std::string::npos)
-			return std::atof(s.replace(pos, 1, ".").c_str());
-
-		return 0.0;
-	}
-
-	inline double atof_comma(std::string s)
+  inline double stod_comma(std::string s)
   {
     size_t pos = s.find_first_of(',');
     if(pos != std::string::npos)
-      return std::atof(s.replace(pos, 1, ".").c_str());
+      return std::stod(s.replace(pos, 1, "."));
 
-    return 0.0;
+    return std::stod(s);
   }
 
   inline bool fuzzyIsNull(double d)

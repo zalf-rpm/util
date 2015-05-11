@@ -33,6 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <map>
 #include <list>
 #include <mutex>
+#include <string>
 
 #include "climate/climate.h"
 #include "db/abstract-db-connections.h"
@@ -399,55 +400,78 @@ void DDClimateDataServerSimulation::setScenariosAndRealizations()
 void DDClimateDataServerSimulation::setClimateStations()
 {
 	ostringstream ss;
-	ss << "SELECT h.stat_id, h.stat_name, h.rwert5, h.hwert5, h.breite_dez, "
-				"h.laenge_dez, h.nn, sl.dat_id, h.sl "
-				"FROM "
-		 << _setupData.headerDbName() << "." << _setupData.headerTableName() << " as h "
-				"inner join "
-		 <<  _setupData.stolistDbName() << "." << _setupData.stolistTableName() << " as sl "
-				 "on h.stat_id = sl.stat_id "
-				 "where sl.stat_ke = 'Klim' ";
-	if(_setupData.useErrorTable())
-		ss << "and sl.dat_id not in "
-					"(SELECT distinct dat_id "
-			 << "FROM " << _setupData.errorDbName() << "." << _setupData.errorTableName() << ") ";
-	//excluded original wettreg 2006 stations with missing data or wrong data
-	if(_setupData.simulationId() == "wettreg2006")
-		ss << "and sl.dat_id not in (283, 385, 1120, 1623, 1861)";
+  ss << "SELECT h.stat_id, h.stat_name, h.rwert5, h.hwert5, h.breite_dez, "
+        "h.laenge_dez, h.nn, sl.dat_id, h.sl, sl.stat_ke "
+        "FROM ";
+  ss << _setupData.headerDbName() << "." << _setupData.headerTableName() << " as h "
+     <<  "inner join ";
+  ss << _setupData.stolistDbName() << "." << _setupData.stolistTableName() << " as sl "
+     << "on h.stat_id = sl.stat_id "
+        "where true ";
+  //				 "where sl.stat_ke = 'Klim' ";
+  if(_setupData.useErrorTable())
+    ss << "and sl.dat_id not in "
+          "(SELECT distinct dat_id "
+       << "FROM " << _setupData.errorDbName() << "." << _setupData.errorTableName() << ") ";
+  //excluded original wettreg 2006 stations with missing data or wrong data
+  if(_setupData.simulationId() == "wettreg2006")
+    ss << "and sl.dat_id not in (283, 385, 1120, 1623, 1861)";
 
 	connection().select(ss.str().c_str());
 
 	bool commaDotConversionChecked = false;
 	bool convertCommaToDot = false;
+  bool purePrecipStationsFound = false;
 
-	Db::MysqlDB* con = Db::toMysqlDB(&connection());
-	MYSQL_ROW row;
-	while((row = con->getMysqlRow()) != 0)
+  auto& con = connection();
+  Db::DBRow row;
+  while(!(row = con.getRow()).empty())
   {
-		string name(row[1]);
-		for_each(name.begin(), name.end(), ToLower());
-		capitalizeInPlace(name);
+    string name = toLower(row[1]);
+    capitalizeInPlace(name);
 
     if(!commaDotConversionChecked)
     {
-			convertCommaToDot = strchr(row[4], ',') != NULL;
+      convertCommaToDot = row[4].find(',') != string::npos;
 			commaDotConversionChecked = true;
 		}
 
-		ClimateStation* cs =
-			new ClimateStation(atoi(row[0]),
-			                   convertCommaToDot
-												 ? LatLngCoord(Tools::atof_comma(row[4]), Tools::atof_comma(row[5]))
-												 : LatLngCoord(atof(row[4]), atof(row[5])),
-													 (row[6] ? atof(row[6]) : 0.0), name, this);
-		cs->setDbName(row[7]);
-		cs->setSL(ClimateStation::SL(row[8] ? atoi(row[8]) : 1));
-		_stations.push_back(cs);
+    auto llc = convertCommaToDot ? LatLngCoord(Tools::stod_comma(row[4]), Tools::stod_comma(row[5]))
+      : LatLngCoord(stod(row[4]), stod(row[5]));
+
+    ClimateStation* cs = new ClimateStation(stoi(row[0]), llc, row[6].empty() ? 0.0 : stod(row[6]), name, this);
+    cs->setDbName(row[7]);
+    cs->setSL(ClimateStation::SL(row[8].empty() ? 1: stoi(row[8])));
+
+    cs->setIsPrecipStation(toLower(row[9]) == "nied");
+    purePrecipStationsFound = purePrecipStationsFound || cs->isPrecipStation();
+
+    _stations.push_back(cs);
 		//cout << "wrname: " << name << " : " << _stations.back()->toString() << endl;
 	}
+  con.freeResultSet();
+
+  //assign the precipitation stations the closest full climate station where it gets the missing data from
+  vector<ClimateStation*> fullClimateStations, precipStations;
+  partition_copy(begin(_stations), end(_stations),
+                 begin(precipStations), begin(fullClimateStations),
+                 [](ClimateStation* cs){ return cs->isPrecipStation(); });
+
+  for_each(begin(precipStations), end(precipStations),
+           [&fullClimateStations](ClimateStation* cs)
+  {
+    pair<ClimateStation*, double> closestCSAndDist =
+        accumulate(begin(fullClimateStations), end(fullClimateStations),
+                   make_pair(static_cast<ClimateStation*>(nullptr), 999999999.9),
+                   [cs](pair<ClimateStation*, double> closestCSAndDist, ClimateStation* fcs)
+    {
+        double dist = cs->geoCoord().distanceTo(fcs->geoCoord());
+        return dist < closestCSAndDist.second ? make_pair(fcs, dist) : closestCSAndDist;
+  });
+    cs->setFullClimateReferenceStation(closestCSAndDist.first);
+  });
 
 	sort(_stations.begin(), _stations.end(), cmpClimateStationPtrs);
-	connection().freeResultSet();
 }
 
 ClimateScenario* DDClimateDataServerSimulation::defaultScenario() const
@@ -536,9 +560,8 @@ void CLMSimulation::setClimateStations()
 	Db::DBRow row;
 	while(!(row = connection().getRow()).empty())
   {
-		ClimateStation* cs =
-			new ClimateStation(satoi(row[0]), LatLngCoord(satof(row[4]), satof(row[5])),
-												 satof(row[6]), row[1], this);
+    ClimateStation* cs = new ClimateStation(stoi(row[0]), LatLngCoord(stod(row[4]), stod(row[5])),
+        stod(row[6]), row[1], this);
 		cs->setDbName(row[7]);
 		_stations.push_back(cs);
 
@@ -1497,9 +1520,9 @@ DDClimateDataServerRealization::executeQuery(const ACDV& acds,
 	const ClimateStation& cs = simulation()->geoCoord2climateStation(gc);
 
 	string dbDate =
-			"concat(jahr, \'-\', "
-			"if(monat<10,concat(\'0\',monat),monat), \'-\', "
-			"if(tag<10,concat(\'0\',tag),tag))";
+      "concat(f.jahr, \'-\', "
+      "if(f.monat<10,concat(\'0\',f.monat),f.monat), \'-\', "
+      "if(f.tag<10,concat(\'0\',f.tag),f.tag))";
 
 	ostringstream query; query << "select ";
 	int c = 0;
@@ -1513,14 +1536,14 @@ DDClimateDataServerRealization::executeQuery(const ACDV& acds,
 		{
 			if(_setupData.simulationId() == "remo")
 			{
-				query << "nn, dayofyear(" << dbDate << ") as dy";
+        query << "f.nn, dayofyear(" << dbDate << ") as dy";
 				int posCloudAmount = c++; int posDoy = c++;
 				fs.push_back(new CalcRemoGlobrad(posCloudAmount, posDoy,
 																				 cs.geoCoord().lat, cs.nn()));
 			}
 			else
 			{
-				query << "sd, dayofyear(" << dbDate << ") as dy";
+        query << "f.sd, dayofyear(" << dbDate << ") as dy";
 				int posSun = c++; int posYd = c++;
 				fs.push_back(new CalcWettRegGlobrad(posSun, posYd, cs.geoCoord().lat));
 			}
@@ -1530,12 +1553,14 @@ DDClimateDataServerRealization::executeQuery(const ACDV& acds,
 		{
 			if(_setupData.simulationId() == "remo")
 			{
-				query << "rr_drift";
+        query << "f.rr_drift";
 				fs.push_back(new ParseAsDouble(c++));
 			}
 			else
 			{
-				query << "rr, tm, monat";
+        string csPrefix = cs.isPrecipStation() && cs.fullClimateReferenceStation()
+                          ? "p" : "f";
+        query << csPrefix << ".rr, " << csPrefix << ".tm, " << csPrefix << ".monat";
 				int posPrecip = c++; int posTavg = c++; int posMonat = c++;
 				fs.push_back(new CalcCorrWRAndCLMPrecip(posPrecip, posTavg, posMonat,
 																								cs.sl()));
@@ -1547,28 +1572,42 @@ DDClimateDataServerRealization::executeQuery(const ACDV& acds,
 			if(_setupData.simulationId() == "remo")
 				query << "0 as sd";
 			else
-				query << availableClimateData2CLMDBColName(acd);
+        query << "f." << availableClimateData2CLMDBColName(acd);
 			fs.push_back(new ParseAsDouble(c++));
 			break;
 		}
 		default:
-			query << availableClimateData2CLMDBColName(acd);
+      query << "f." << availableClimateData2CLMDBColName(acd);
 			fs.push_back(new ParseAsDouble(c++));
 			break;
 		}
 		query << (acdi+1 != acds.end() ? ", " : " ");
 	}
-	query << "from "
-				<< _setupData.dataDbName() << "." << _setupData.dataTableName() << " "
-					 "where szenario = '" << _scenario->name() << "' "
-					 "and realisierung = '" << id() << "' "
-					 "and dat_id = " << cs.dbName() << " "
-					 "and " << dbDate << " >= '" << connection().toDBDate(startDate) << "' "
-					 "and " << dbDate << " <= '" << connection().toDBDate(endDate) << "' "
-					 "and not (monat = 2 and tag = 29) "
-					 "order by jahr, monat, tag";
+  query << "from "
+        << _setupData.dataDbName() << "." << _setupData.dataTableName() << " as f ";
+  if(cs.isPrecipStation() && cs.fullClimateReferenceStation())
+  {
+    query << "inner join " << _setupData.dataDbName()
+          << "." << _setupData.dataTableName() << " as p ";
+    query << "on f.szenario = p.szenario "
+             "and f.realisierung = p.realisierung "
+             "and f.tag = p.tag "
+             "and f.monat = p.monat "
+             "and f.jahr = p.jahr ";
+  }
+  query << "where f.szenario = '" << _scenario->name() << "' "
+        << "and f.realisierung = '" << id() << "' ";
+  if(cs.isPrecipStation() && cs.fullClimateReferenceStation())
+    query << "and f.dat_id = " << cs.fullClimateReferenceStation()->dbName() << " "
+          << "and p.dat_id = " << cs.dbName() << " ";
+  else
+    query << "and f.dat_id = " << cs.dbName() << " ";
+  query << "and " << dbDate << " >= '" << connection().toDBDate(startDate) << "' "
+        << "and " << dbDate << " <= '" << connection().toDBDate(endDate) << "' "
+        << "and not (f.monat = 2 and f.tag = 29) "
+           "order by f.jahr, f.monat, f.tag";
 
-	//cout << "select: " << query.str() << endl;
+  cout << "select: " << query.str() << endl;
 	connection().select(query.str().c_str());
 
 	int rowCount = connection().getNumberOfRows();

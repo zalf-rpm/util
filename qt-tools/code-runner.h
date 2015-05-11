@@ -23,14 +23,14 @@ namespace Tools
   //! implement this interface to execute some code by CodeRunner via signals
 	struct Code
 	{
-    Code() : _hasBeenInvokedAgain(false) {}
+//    Code() : _hasBeenInvokedAgain(false) {}
     virtual void exec(QVariantList /*params*/) {}
     virtual void exec() {}
     void runAgain(double seconds);//{ _cr->runAgain(seconds); }
     bool hasBeenInvokedAgain() const { return _hasBeenInvokedAgain; }
   private:
-    bool _hasBeenInvokedAgain;
-    CodeRunner* _cr;
+    bool _hasBeenInvokedAgain{false};
+    CodeRunner* _cr{NULL};
     friend struct CodeRunner;
   };
 

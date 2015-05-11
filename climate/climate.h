@@ -64,19 +64,11 @@ namespace Climate
   class ClimateStation
   {
 	public:
-		//! location of climate station
-		/*!
-		* needed for precipitation correction of WettReg and CLM
-		*/
+    //! location of climate station, needed for precipitation correction of WettReg and CLM
 		enum SL { f = 1, lg = 2, mg = 3, sg = 4 };
 
 	public:
-		/*!
-		 * create empty ClimateStation
-		 * necessary to be able to use the ClimateStation as value object in
-		 * containers
-		 */
-		ClimateStation() : _simulation(0) {}
+    ClimateStation() {}
 
 		/*!
 		 * create ClimateStation
@@ -88,91 +80,48 @@ namespace Climate
 		 * @return
 		 */
 		ClimateStation(int id, const Tools::LatLngCoord& geoPos, double nn,
-                   const std::string& name, ClimateSimulation* simulation = 0) :
-    _id(id), _name(name), _sl(mg), _geoCoord(geoPos), _nn(nn),
-		_simulation(simulation) {}
+                   const std::string& name, ClimateSimulation* simulation = 0)
+      : _id(id),
+        _name(name),
+        _sl(mg),
+        _geoCoord(geoPos),
+        _nn(nn),
+        _simulation(simulation)
+    {}
 
-		/*!
-		 * compare two climate stations
-		 * @param other
-		 * @return
-		 */
-    bool operator==(const ClimateStation& other) const
-    {
-			return _id == other._id;
-		}
+    bool operator==(const ClimateStation& other) const { return _id == other._id; }
 
-		/*!
-		 * needed for use in maps
-		 * @param other
-		 * @return
-		 */
-    bool operator<(const ClimateStation& other) const
-    {
-			return _name < other._name;
-		}
+    bool operator<(const ClimateStation& other) const { return _name < other._name; }
 
-		/*!
-		 * @return pretty printed name
-		 */
 		std::string name() const { return _name; }
 
-		/*!
-		 * @return unique id of this station
-		 */
 		int id() const { return _id; }
 
-		/*!
-		 * @return location of climate station
-		 */
 		SL sl() const { return _sl; }
 
-		/*!
-		 * set location of climate station
-		 * @param sl new location
-		 */
 		void setSL(SL sl){ _sl = sl; }
 
-		/*!
-		 * @return name used in db representation
-		 */
 		std::string dbName() const { return _dbName; }
 
-		//! set db name
-		/*!
-		 * set db name
-		 * @param dbn new name
-		 */
 		void setDbName(const std::string& dbn){ _dbName = dbn; }
 
-		/*!
-		 * @return string representation
-		 */
 		std::string toString() const;
 
-		/*!
-		 * @return height over NN
-		 */
-		double nn() const { return _nn; }
+    //! height over NN
+    double nn() const { return _nn; }
 
-/*!
-		 * @return the stations geo location
-		 */
-		Tools::LatLngCoord geoCoord() const {
-			return _geoCoord;
-		}
+    bool isPrecipStation() const { return _isPrecipStation; }
+    void setIsPrecipStation(bool isPS) { _isPrecipStation = isPS; }
 
-		/*!
-		 * @return the stations Gauss-Krüger 5. Meridian coordinate
-		 */
-    Tools::RectCoord rcCoord(Tools::CoordinateSystem cs) const// = Tools::GK5_EPSG31469) const
-		{ return Tools::latLng2RC(geoCoord(), cs); }
+    Tools::LatLngCoord geoCoord() const { return _geoCoord; }
 
-		/*!
-		* @return the climate simulation this station belongs to
-		*/
+    //! rectangular coord in a give coordinate system
+    Tools::RectCoord rcCoord(Tools::CoordinateSystem cs) const { return Tools::latLng2RC(geoCoord(), cs); }
+
 		ClimateSimulation* simulation() const { return _simulation; }
 
+    ClimateStation* fullClimateReferenceStation() const { return _fullClimateReferenceStation; }
+    void setFullClimateReferenceStation(ClimateStation* fullClimateStation){ _fullClimateReferenceStation = fullClimateStation; }
 	private: //state
 		int _id;
 		std::string _name;
@@ -180,8 +129,9 @@ namespace Climate
 		SL _sl;
 		Tools::LatLngCoord _geoCoord;
 		double _nn;
-		//! climate station belongs to that simulation
-		ClimateSimulation* _simulation;
+    ClimateSimulation* _simulation{NULL};
+    bool _isPrecipStation{false};
+    ClimateStation* _fullClimateReferenceStation{NULL};
 	};
 
 	//----------------------------------------------------------------------------
