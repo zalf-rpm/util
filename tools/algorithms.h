@@ -292,6 +292,8 @@ namespace Tools
                               bool orderedData = false,
                               int roundToDigits = 1);
 
+	double round(double, int);
+															
   /*!
   * calculate median of given vector of values
   * @param orderedData an ordered vector of input values

@@ -64,7 +64,7 @@ int Tools::createRandomNumber()
 	{
 		time_t t = time(NULL);
 		if(lastTime != t)
-			srand(unsigned int(t));
+			srand(static_cast<unsigned int>(t));
 		id = rand();
 		lastTime = t;
 	}
@@ -79,7 +79,7 @@ int Tools::createRandomNumber(int max)
 	{
 		time_t t = time(NULL);
 		if(lastTime != t)
-      srand(unsigned int(t));
+      srand(static_cast<unsigned int>(t));
 		id = rand() % max;
 		lastTime = t;
 	}

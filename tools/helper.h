@@ -251,10 +251,10 @@ namespace Tools
 //  }
 
   template<typename T>
-  std::string toString(T t) { return t.toString(indent, detailed); }
+  std::string toString(T t, std::string indent = std::string(), bool detailed = false) { return t.toString(indent, detailed); }
 
   template<typename T>
-  std::string toString(T* t){ return t->toString(indent, detailed); }
+  std::string toString(T* t, std::string indent = std::string(), bool detailed = false){ return t->toString(indent, detailed); }
 
 //  template<typename Container>
 //  std::string toString(const Container& c)
