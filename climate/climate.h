@@ -93,7 +93,12 @@ namespace Climate
 
     bool operator<(const ClimateStation& other) const { return _name < other._name; }
 
-		std::string name() const { return _name; }
+    std::string name() const
+    {
+      return isPrecipStation() && _fullClimateReferenceStation
+          ? _name + " (" + _fullClimateReferenceStation->name() + ")"
+          : _name;
+    }
 
 		int id() const { return _id; }
 

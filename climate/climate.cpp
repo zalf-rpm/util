@@ -34,6 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <list>
 #include <mutex>
 #include <string>
+#include <limits>
 
 #include "climate/climate.h"
 #include "db/abstract-db-connections.h"
@@ -454,22 +455,47 @@ void DDClimateDataServerSimulation::setClimateStations()
   //assign the precipitation stations the closest full climate station where it gets the missing data from
   vector<ClimateStation*> fullClimateStations, precipStations;
   partition_copy(begin(_stations), end(_stations),
-                 begin(precipStations), begin(fullClimateStations),
+                 back_inserter(precipStations), back_inserter(fullClimateStations),
                  [](ClimateStation* cs){ return cs->isPrecipStation(); });
 
-  for_each(begin(precipStations), end(precipStations),
-           [&fullClimateStations](ClimateStation* cs)
+  map<ClimateStation*, ClimateStation*> pCS2fullCS;
+  auto manualMappingByNames = Db::dbConnectionParameters().values
+                              (_setupData.simulationId() + ".precip-to-climate-station-mapping");
+  for(auto pn2fn : manualMappingByNames)
   {
-    pair<ClimateStation*, double> closestCSAndDist =
-        accumulate(begin(fullClimateStations), end(fullClimateStations),
-                   make_pair(static_cast<ClimateStation*>(nullptr), 999999999.9),
-                   [cs](pair<ClimateStation*, double> closestCSAndDist, ClimateStation* fcs)
+    auto find = [&](string name) -> ClimateStation*
     {
-        double dist = cs->geoCoord().distanceTo(fcs->geoCoord());
-        return dist < closestCSAndDist.second ? make_pair(fcs, dist) : closestCSAndDist;
-  });
-    cs->setFullClimateReferenceStation(closestCSAndDist.first);
-  });
+      for(auto cs : _stations)
+      {
+        if(toLower(cs->name()).find(toLower(name)) != string::npos)
+          return cs;
+      }
+      return nullptr;
+    };
+    pCS2fullCS[find(pn2fn.first)] = find(pn2fn.second);
+  }
+
+  for(auto pcs : precipStations)
+  {
+    ClimateStation* fullCS = nullptr;
+    auto pCSIt = pCS2fullCS.find(pcs);
+    if(pCSIt != pCS2fullCS.end())
+      fullCS = pCSIt->second;
+    else
+    {
+      double shortestDist = numeric_limits<double>::max();
+      for(auto fcs : fullClimateStations)
+      {
+        double dist = pcs->geoCoord().distanceTo(fcs->geoCoord());
+        if(dist < shortestDist)
+        {
+          fullCS = fcs;
+          shortestDist = dist;
+        }
+      }
+    }
+    pcs->setFullClimateReferenceStation(fullCS);
+  }
 
 	sort(_stations.begin(), _stations.end(), cmpClimateStationPtrs);
 }
@@ -1607,7 +1633,7 @@ DDClimateDataServerRealization::executeQuery(const ACDV& acds,
         << "and not (f.monat = 2 and f.tag = 29) "
            "order by f.jahr, f.monat, f.tag";
 
-  cout << "select: " << query.str() << endl;
+//  cout << "select: " << query.str() << endl;
 	connection().select(query.str().c_str());
 
 	int rowCount = connection().getNumberOfRows();
