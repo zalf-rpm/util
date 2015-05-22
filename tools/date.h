@@ -63,10 +63,16 @@ namespace Tools
          bool useLeapYears = false, bool isRelativeDate = false,
          unsigned int relativeBaseYear = defaultRelativeBaseYear);
 
-
     static Date relativeDate(unsigned int day, unsigned int month,
                              int deltaYears = 0, bool useLeapYears = false,
                              unsigned int relativeYear = defaultRelativeBaseYear);
+
+    static inline Date julianDate(unsigned int julianDay, unsigned int year,
+                                  bool useLeapYears = false, bool isRelativeDate = false,
+                                  unsigned int relativeBaseYear = defaultRelativeBaseYear)
+    {
+      return Date(1,1,year, useLeapYears, isRelativeDate, relativeBaseYear) + (julianDay - 1);
+    }
 
     Date(const Date& other);
 
