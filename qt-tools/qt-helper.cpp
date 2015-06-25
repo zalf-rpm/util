@@ -18,7 +18,12 @@ Tools::gridValueTransformFunction4datasetName(string datasetName, string regionN
   if(datasetName == "slope")
     return [](double v){ return QString("%1%").arg(v).toStdString(); };
   if(datasetName == "soil-profile-id")
-    return [=](double v) -> string { return Soil::soilProfileId2KA5Layers(QString("soil-profiles-%1").arg(regionName.c_str()).toStdString(), v); };
+  {
+    if(regionName.empty())
+      return [](double){ return ""; };
+    else
+      return [=](double v) -> string { return Soil::soilProfileId2KA5Layers(QString("soil-profiles-%1").arg(regionName.c_str()).toStdString(), v); };
+  }
 
 	return std::function<string(double)>();
 }

@@ -148,20 +148,22 @@ namespace Climate
 
     bool isValid() const { return noOfStepsPossible() > 0; }
 
-    double dataForTimestep(AvailableClimateData acd, unsigned int stepNo) const;
+    double dataForTimestep(AvailableClimateData acd, std::size_t stepNo) const;
 
 		std::vector<double> dataAsVector(AvailableClimateData acd) const;
 
-		DataAccessor cloneForRange(unsigned int fromStep,
-		                           unsigned int numberOfSteps) const;
+    DataAccessor cloneForRange(std::size_t fromStep,
+                               std::size_t numberOfSteps) const;
 
-    unsigned int noOfStepsPossible() const { return _numberOfSteps; }
+    std::size_t noOfStepsPossible() const { return _numberOfSteps; }
 
 		Tools::Date startDate() const { return _startDate; }
 
 		Tools::Date endDate() const { return _endDate; }
 
-		unsigned int julianDayForStep(int stepNo) const;
+    Tools::Date dateForStep(std::size_t stepNo) const { return _startDate + stepNo; }
+
+    unsigned int julianDayForStep(std::size_t stepNo) const { return dateForStep(stepNo).julianDay(); }
 
 		void addClimateData(AvailableClimateData acd,
 		                    const std::vector<double>& data);
@@ -178,14 +180,14 @@ namespace Climate
 		Tools::Date _startDate;
 		Tools::Date _endDate;
 
-		typedef std::vector<std::vector<double> > VVD;
+    typedef std::vector<std::vector<double>> VVD;
     std::shared_ptr<VVD> _data;
 
 		//! offsets to actual available climate data enum numbers
 		std::vector<short> _acd2dataIndex;
 
-		unsigned int _fromStep;
-		int _numberOfSteps;
+    std::size_t _fromStep;
+    std::size_t _numberOfSteps;
 	};
 
 }

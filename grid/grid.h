@@ -41,11 +41,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _GRID_H_
 #define _GRID_H_
 
-#include <stdio.h>
-#include <math.h>
-#include <float.h>
-#include <stdlib.h>
-#include <time.h>
+#include <cstdio>
+#include <cmath>
+#include <cfloat>
+#include <cstdlib>
+#include <ctime>
 #include <string>
 #include <list>
 #include <iterator>
@@ -53,7 +53,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <fstream>
 #include <map>
 #include <vector>
-#include <cmath>
 
 #ifndef NO_HDF5
 #include "hdf5.h"
