@@ -116,7 +116,7 @@ Date Date::relativeDate(unsigned int day, unsigned int month,
 							true, relativeYear);
 }
 
-Date Date::fromMysqlString(const std::string& isoDateString)
+Date Date::fromIsoDateString(const std::string& isoDateString)
 {
   if(isoDateString.size() == 10)
   {

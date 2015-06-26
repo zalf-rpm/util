@@ -74,7 +74,7 @@ namespace Tools
       return Date(1,1,year, useLeapYears, isRelativeDate, relativeBaseYear) + (julianDay - 1);
     }
 
-    Date fromIsoDateString(const std::string& isoDateString);
+    static Date fromIsoDateString(const std::string& isoDateString);
 
     Date(const Date& other);
 

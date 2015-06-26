@@ -198,12 +198,12 @@ protected:
 };
 
 
-template<class Collection, class T, class = decltype(&T::to_json)>
-std::vector<Json> to_json_array(const Collection<T>& ts)
+template<class Collection>
+std::vector<Json> to_json_array(const Collection& col)
 {
   std::vector<Json> js;
-  for(T t : ts)
-    js.push_back(t);
+  for(Collection::value_type t : col)
+    js.push_back(t.to_json());
   return js;
 }
 
