@@ -183,9 +183,9 @@ namespace Tools
      * @param month
      * @return how many days has the argument month
      */
-    unsigned int daysInMonth(unsigned int month) const
+    unsigned int daysInMonth(unsigned int month = 0) const
     {
-      return _daysInMonth[month];
+      return _daysInMonth[month == 0 ? this->month() : month];
     }
 
     /*!
