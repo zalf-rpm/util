@@ -92,7 +92,7 @@ namespace Tools
   T bound(T lower, T value, T upper);
 
   //! returns by default MJ/m²/d (or if set to false J/cm²)
-  double sunshine2globalRadiation(int dayInYear, double sunshineHours,
+  double sunshine2globalRadiation(int julianDay, double sunHours,
     double latitude, bool asMJpm2pd = true);
 
 	double cloudAmount2globalRadiation(int dayOfYear,
