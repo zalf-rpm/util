@@ -1070,7 +1070,7 @@ namespace
 
 		double operator()(const Db::DBRow& row) const
     {
-			return satof(row.at(_pos));
+      return stof(row.at(_pos));
 		}
 	};
 
@@ -1859,6 +1859,8 @@ void ClimateDataManager::loadAvailableSimulations(set<string> ass)
 	}
 	if(ass.find("cru") != ass.end())
 		_simulations.push_back(newDDCru());
+  if(ass.find("dwd-nrw") != ass.end())
+    _simulations.push_back(newDDDwdNrw());
 
 	if(!isMexicoMode)
 		if(ass.find("carbiocial-climate") != ass.end())
@@ -2129,6 +2131,19 @@ DDClimateDataServerSimulation* Climate::newDDCru(string userRs)
   for(string s : vsr) { setup._realizationIds.push_back(s); }
 
 	return new DDClimateDataServerSimulation(setup, Db::newConnection("cru"));
+}
+
+DDClimateDataServerSimulation* Climate::newDDDwdNrw(string userRs)
+{
+  DDServerSetup setup("dwd-nrw", "DWD-NRW", "header", "dwd_nrw_stolist",
+                      "landcare", "dwd_nrw_data", string(), "landcare");
+  setup._scenarioIds.push_back("OBS");
+
+  string rs = userRs.empty() ? Db::dbConnectionParameters().value("used-realizations", "dwd-nrw", "00") : userRs;
+  vector<string> vsr = Tools::splitString(rs, ", ");
+  for(string s : vsr) { setup._realizationIds.push_back(s); }
+
+  return new DDClimateDataServerSimulation(setup, Db::newConnection("dwd-nrw"));
 }
 
 

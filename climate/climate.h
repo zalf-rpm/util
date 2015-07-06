@@ -836,6 +836,7 @@ namespace Climate
 	DDClimateDataServerSimulation* newDDEcham6(std::string userRs = std::string());
 	DDClimateDataServerSimulation* newDDHrm3(YearRange yr, std::string userRs = std::string());
 	DDClimateDataServerSimulation* newDDCru(std::string userRs = std::string());
+  DDClimateDataServerSimulation* newDDDwdNrw(std::string userRs = std::string());
 
 
 	//----------------------------------------------------------------------------
