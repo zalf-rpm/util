@@ -197,15 +197,4 @@ protected:
     virtual ~JsonValue() {}
 };
 
-
-template<class Collection>
-std::vector<Json> to_json_array(const Collection& col)
-{
-  std::vector<Json> js;
-  for(Collection::value_type t : col)
-    js.push_back(t.to_json());
-  return js;
-}
-
-
 } // namespace json11

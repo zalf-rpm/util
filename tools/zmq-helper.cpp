@@ -4,6 +4,24 @@
 
 using namespace Tools;
 using namespace std;
+using namespace json11;
+
+Msg Tools::receiveMsg(zmq::socket_t& pullSocket, bool nonBlockingMode = false)
+{
+  zmq::message_t message;
+  if(pullSocket.recv(&message, nonBlockingMode ? ZMQ_NOBLOCK : 0))
+  {
+    std::string strMsg(static_cast<char*>(message.data()), message.size());
+
+    cout << "receiveMsg: " << strMsg << endl;
+
+    //    string strMsg = s_recv(pullSocket);
+    string err;
+    const Json& jsonMsg = Json::parse(strMsg, err);
+    return Msg{jsonMsg, err, true};
+  }
+  return Msg{Json(), "", false};
+}
 
 
 //QJsonValue Tools::cljsonUuid(const QUuid& uuid)

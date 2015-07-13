@@ -161,7 +161,7 @@ namespace Climate
 
 		Tools::Date endDate() const { return _endDate; }
 
-    Tools::Date dateForStep(std::size_t stepNo) const { return _startDate + stepNo; }
+    Tools::Date dateForStep(std::size_t stepNo) const { return _startDate + int(stepNo); }
 
     unsigned int julianDayForStep(std::size_t stepNo) const { return dateForStep(stepNo).julianDay(); }
 
