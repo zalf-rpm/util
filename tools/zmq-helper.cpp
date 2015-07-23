@@ -6,14 +6,14 @@ using namespace Tools;
 using namespace std;
 using namespace json11;
 
-Msg Tools::receiveMsg(zmq::socket_t& pullSocket, bool nonBlockingMode = false)
+Msg Tools::receiveMsg(zmq::socket_t& pullSocket, bool nonBlockingMode)
 {
   zmq::message_t message;
   if(pullSocket.recv(&message, nonBlockingMode ? ZMQ_NOBLOCK : 0))
   {
     std::string strMsg(static_cast<char*>(message.data()), message.size());
 
-    cout << "receiveMsg: " << strMsg << endl;
+//    cout << "receiveMsg: " << strMsg << endl;
 
     //    string strMsg = s_recv(pullSocket);
     string err;

@@ -83,7 +83,7 @@ namespace Soil
 
     bool isValid();
 
-    json11::Json json() const
+    json11::Json to_json() const
     {
       return json11::Json::object {
         {"type", "SoilParameters"},
@@ -103,8 +103,6 @@ namespace Soil
         {"SoilOrganicCarbon", _vs_SoilOrganicCarbon},
         {"SoilOrganicMatter", _vs_SoilOrganicMatter}};
     }
-
-    json11::Json to_json() const { return json(); }
 
     // members
     double vs_SoilSandContent{0.4};
