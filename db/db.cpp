@@ -68,6 +68,8 @@ void MysqlDB::lazyInit()
 void MysqlDB::init()
 {
   _connection = mysql_init(NULL);
+  my_bool reconnect(1);
+  mysql_options(_connection, MYSQL_OPT_RECONNECT, &reconnect);
   if(_connection)
   {
     _isConnected = true;
