@@ -199,7 +199,7 @@ namespace Tools
   */
   template<class Collection>
   double standardDeviation(const Collection& xs, bool calcAvg = true,
-    double xavg = 0);
+                           double xavg = 0);
 
   /*!
   * calculate the standard deviation and average of the collection of values
@@ -686,18 +686,28 @@ T Tools::bound(T lower, T value, T upper)
 template<class Collection>
 double Tools::average(const Collection& xs)
 {
-  return std::accumulate(xs.begin(), xs.end(), double(0)) / double(xs.size());
+  return xs.size() > 0
+      ? std::accumulate(xs.begin(), xs.end(), double(0)) / double(xs.size())
+      : 0.0;
 }
 
 template<class Collection>
 double Tools::standardDeviation(const Collection& xs, bool calcAvg,
                                 double xavg)
 {
-  if(calcAvg) xavg = average(xs);
-  double sum = 0;
   int n = xs.size();
-  for(typename Collection::const_iterator ci = xs.begin(); ci != xs.end(); ci++)
-    sum += (double(*ci) - xavg) * (double(*ci) - xavg);
+
+  if(n < 2)
+    return 0.0;
+
+  if(calcAvg)
+    xavg = average(xs);
+
+  double sum = 0;
+//  for(typename Collection::const_iterator ci = xs.begin(); ci != xs.end(); ci++)
+//    sum += (double(*ci) - xavg) * (double(*ci) - xavg);
+  for(auto x : xs)
+    sum += (double(x) - xavg)*(double(x) - xavg);
 
   return std::sqrt(sum / double(n-1));
 }
