@@ -74,7 +74,7 @@ namespace Tools
       return Date(1,1,year, useLeapYears, isRelativeDate, relativeBaseYear) + (julianDay - 1);
     }
 
-    static Date fromIsoDateString(const std::string& isoDateString);
+    static Date fromIsoDateString(const std::string& isoDateString, bool useLeapYears = true);
 
     Date(const Date& other);
 
@@ -376,9 +376,15 @@ namespace Tools
     bool _isRelativeDate;
   };
 
-  inline Date fromMysqlString(const char* mysqlDateString){ return Date::fromIsoDateString(mysqlDateString); }
+  inline Date fromMysqlString(const char* mysqlDateString, bool useLeapYears = true)
+  {
+    return Date::fromIsoDateString(mysqlDateString, useLeapYears);
+  }
 
-  inline Date fromMysqlString(const std::string& mysqlDateString){ return Date::fromIsoDateString(mysqlDateString); }
+  inline Date fromMysqlString(const std::string& mysqlDateString, bool useLeapYears = true)
+  {
+    return Date::fromIsoDateString(mysqlDateString, useLeapYears);
+  }
 
 	void testDate();
 }

@@ -116,7 +116,7 @@ Date Date::relativeDate(unsigned int day, unsigned int month,
 							true, relativeYear);
 }
 
-Date Date::fromIsoDateString(const std::string& isoDateString)
+Date Date::fromIsoDateString(const std::string& isoDateString, bool useLeapYears)
 {
   if(isoDateString.size() == 10)
   {
@@ -124,7 +124,7 @@ Date Date::fromIsoDateString(const std::string& isoDateString)
     int month = stoi(isoDateString.substr(5, 2));
     int day = stoi(isoDateString.substr(8, 2));
     //cout << day << "." << month << "." << year << endl;
-    return Date(day, month, year, true);
+    return Date(day, month, year, useLeapYears);
   }
   return Date();
 }
