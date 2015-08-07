@@ -92,6 +92,9 @@ namespace Climate
 	std::pair<std::string, int>
 	availableClimateData2CarbiocialDBColNameAndScaleFactor(AvailableClimateData col);
 
+  std::string
+  availableClimateData2UserSqliteDBColNameAndScaleFactor(AvailableClimateData col);
+
 	/*!
 	 * helper function
 	 * @param col available climate data element

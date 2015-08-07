@@ -45,6 +45,7 @@ DBConData Db::dbConData(const IniParameterMap& dbParams,
 	DBConData d;
 	//if not empty is a sqlite db and we're done
 	d.filename = dbParams.value(dbSection, "filename");
+  d.abstractSchemaName = abstractSchema;
 	//else threat it as mysql db with all the connection parameters
 	if(d.filename.empty())
 	{

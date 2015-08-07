@@ -214,43 +214,53 @@ ClimateScenario* StarSimulation::defaultScenario() const
 
 //------------------------------------------------------------------------------
 
-CarbiocialSimulation::CarbiocialSimulation(Db::DB* con)
-: ClimateSimulation("carbiocial", "Carbiocial", con)
+UserSqliteDBSimulation::UserSqliteDBSimulation(Db::DB* con)
+: ClimateSimulation(toLower(con->abstractSchemaName()), capitalize(con->abstractSchemaName()), con)
 {
 	setClimateStations();
 
 	ClimateScenario* cs = new ClimateScenario("---", this);
-	_realizations.push_back(new CarbiocialRealization(this, cs, connection().clone()));
+  _realizations.push_back(new UserSqliteDBRealization(this, cs, connection().clone()));
 	cs->setRealizations(_realizations);
 	_scenarios.push_back(cs);
 }
 
-void CarbiocialSimulation::setClimateStations()
+void UserSqliteDBSimulation::setClimateStations()
 {
-	connection().select("select id, wgs84_lat, wgs84_lng, utm21s_r, utm21s_h "
+  connection().select("select id, wgs84_lat, wgs84_lng, coordinate_system_short_name, "
+                      "rect_coordinate_system_r, rect_coordinate_system_h "
 											"from raster_point");
 
 	Db::DBRow row;
 	while(!(row = connection().getRow()).empty())
 	{
-    LatLngCoord llc = RC2latLng(RectCoord(shortStringToCoordinateSystem("UTM21S"), satoi(row[3]), satoi(row[4])));
+    LatLngCoord llc;
+    if(!row[1].empty() && !row[2].empty())
+    {
+      llc.lat = stod(row[1]);
+      llc.lng = stod(row[2]);
+    }
+    else if(!row[3].empty() && !row[4].empty() && !row[5].empty())
+      llc = RC2latLng(RectCoord(shortStringToCoordinateSystem(row[3]), stoi(row[4]), stoi(row[5])));
+
+    if(!llc.isValid())
+      continue;
 
 		ostringstream ss;
 		ss << "LatLng(" << llc.lat << "," << llc.lng << ")";
 		string name(ss.str());
 		//cout << "name: " << name << endl;
-		ClimateStation* cs =
-				new ClimateStation(satoi(row[0]), LatLngCoord(llc.lat, llc.lng),
-													 0.0, name, this);
-		cs->setDbName("");
-		_stations.push_back(cs);
+    ClimateStation* cs = new ClimateStation(satoi(row[0]), LatLngCoord(llc.lat, llc.lng),
+        0.0, name, this);
+    cs->setDbName("");
+    _stations.push_back(cs);
 	}
 
 	sort(_stations.begin(), _stations.end(), cmpClimateStationPtrs);
 	connection().freeResultSet();
 }
 
-ClimateScenario* CarbiocialSimulation::defaultScenario() const
+ClimateScenario* UserSqliteDBSimulation::defaultScenario() const
 {
 	return _scenarios.back();
 }
@@ -1258,7 +1268,7 @@ StarRealization::executeQuery(const ACDV& acds,
 
 //------------------------------------------------------------------------------
 
-DataAccessor CarbiocialRealization::
+DataAccessor UserSqliteDBRealization::
 dataAccessorFor(const vector<AvailableClimateData>& acds,
 												const string& stationName,
 												const Date& startDate,
@@ -1270,7 +1280,7 @@ dataAccessorFor(const vector<AvailableClimateData>& acds,
 }
 
 map<ACD, vector<double>*>
-CarbiocialRealization::executeQuery(const ACDV& acds,
+UserSqliteDBRealization::executeQuery(const ACDV& acds,
 																		const LatLngCoord& gc, const Date& startDate,
 																		const Date& endDate) const
 {
@@ -1283,7 +1293,7 @@ CarbiocialRealization::executeQuery(const ACDV& acds,
 	for(ACDV::const_iterator acdi = acds.begin(); acdi != acds.end(); acdi++)
 	{
 		ACD acd = *acdi;
-		auto colname = availableClimateData2CarbiocialDBColNameAndScaleFactor(acd).first;
+    auto colname = availableClimateData2UserSqliteDBColNameAndScaleFactor(acd);
 		switch(acd)
 		{
 		case Climate::globrad:
@@ -1330,10 +1340,7 @@ CarbiocialRealization::executeQuery(const ACDV& acds,
 	{
 		int c = 0;
     for(ACD acd : acds)
-		{
-			auto scaleFactor = availableClimateData2CarbiocialDBColNameAndScaleFactor(acd).second;
-			(*(acd2ds[acd]))[count] = (*(fs.at(c++)))(row) / double(scaleFactor);
-		}
+      (*(acd2ds[acd]))[count] = (*(fs.at(c++)))(row);
 
 //		cout << "stored row: " << count << endl;
 
@@ -1345,7 +1352,7 @@ CarbiocialRealization::executeQuery(const ACDV& acds,
 	for(unsigned int i = 0; i < fs.size(); i++)
 		delete fs.at(i);
 
-	cout << "leaving CarbiocialRealization::executeQuery" << endl;
+  cout << "leaving UserSqliteDBRealization::executeQuery" << endl;
 
 	return acd2ds;
 }
@@ -1864,7 +1871,7 @@ void ClimateDataManager::loadAvailableSimulations(set<string> ass)
 
 	if(!isMexicoMode)
 		if(ass.find("carbiocial-climate") != ass.end())
-			_simulations.push_back(new CarbiocialSimulation(newConnection("carbiocial-climate")));
+      _simulations.push_back(new UserSqliteDBSimulation(newConnection("carbiocial-climate")));
 }
 
 ClimateDataManager::~ClimateDataManager()

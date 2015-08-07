@@ -133,6 +133,31 @@ Climate::availableClimateData2CarbiocialDBColNameAndScaleFactor(AvailableClimate
 	return make_pair("error", 0);
 }
 
+string
+Climate::availableClimateData2UserSqliteDBColNameAndScaleFactor(AvailableClimateData col)
+{
+  switch(col)
+  {
+  case day: return "day";
+  case month: return "month";
+  case year: return "year";
+  case tmin: return "t_min";
+  case tavg: return "t_avg";
+  case tmax: return "t_max";
+  case precip: return "precipitation_mm";
+  case precipOrig: return "precipitation_mm";
+  case globrad: return "global_radiation_mj_per_m2";
+  case relhumid: return "relative_humidity_percent";
+  //case airpress: return "ludr";
+  //case sunhours: return "sonn";
+  //case cloudamount: return "bewo";
+  //case vaporpress: return "dadr";
+  case wind: return "windspeed_m_per_s";
+  default: ;
+  }
+  return "error";
+}
+
 std::string Climate::availableClimateData2Name(AvailableClimateData col)
 {
 	switch(col)

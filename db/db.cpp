@@ -450,7 +450,7 @@ bool SqliteDB::attachDB(std::string pathToDB, std::string alias)
 DB* Db::newConnection(const DBConData& cd)
 {
   DB* db = NULL;
-	
+
 #ifndef NO_SQLITE
 	if(cd.isSqliteDB())
 		db = new SqliteDB(cd.filename);
@@ -460,6 +460,9 @@ DB* Db::newConnection(const DBConData& cd)
   if(cd.isMysqlDB())
 		db = new MysqlDB(cd.host, cd.user, cd.pwd, cd.schema, cd.port);
 #endif
+
+  if(db)
+    db->setAbstractSchemaName(cd.abstractSchemaName);
 
 	return db;
 }

@@ -57,7 +57,7 @@ namespace Db
 	class DB
 	{
 	public:
-		virtual ~DB() {}
+    virtual ~DB() {}
 		
 		virtual bool exec(const char* sqlStatement) = 0;
 		virtual bool exec(const std::string& sqlStatement) { return exec(sqlStatement.c_str()); }
@@ -76,7 +76,6 @@ namespace Db
 
 		virtual bool del(const char* deleteStatement){ return exec(deleteStatement); }
 		virtual bool del(const std::string& deleteStatement){ return del(deleteStatement.c_str()); }
-
 
 		virtual unsigned int getNumberOfFields() = 0;
 		//MYSQL_FIELD* getFields();
@@ -102,6 +101,11 @@ namespace Db
 
 		//! if supported by database, attach another db to the current one
 		virtual bool attachDB(std::string /*pathToDB*/, std::string /*alias*/){ return false; }
+
+    std::string abstractSchemaName() const { return _abstractSchemaName; }
+    void setAbstractSchemaName(const std::string& asn){ _abstractSchemaName = asn; }
+  private:
+    std::string _abstractSchemaName;
 	};
 
 #ifndef NO_MYSQL
@@ -227,6 +231,7 @@ namespace Db
 		std::string pwd;
 		std::string schema;
 		std::string filename;
+    std::string abstractSchemaName;
 		int maxNoOfConnections;
 		unsigned int port;
 		bool isValid() const
