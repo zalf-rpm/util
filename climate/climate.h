@@ -44,6 +44,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "tools/coord-trans.h"
 #include "tools/algorithms.h"
 #include "tools/helper.h"
+#include "tools/read-ini.h"
 
 #include "climate/climate-common.h"
 
@@ -269,12 +270,14 @@ namespace Climate
 
 	//----------------------------------------------------------------------------
 
+  ClimateSimulation* createSimulationFromSetupData(const Tools::IniParameterMap& dbParams,
+                                              const std::string& abstractSchema);
+
 	struct DDServerSetup
 	{
-		DDServerSetup()
-			: _headerDbName("project_landcare"),
-				_useErrorTable(false)
-		{}
+    DDServerSetup() {}
+
+    DDServerSetup(std::map<std::string, std::string> setupSectionMap);
 
 		DDServerSetup(std::string simulationId, std::string simulationName,
 									std::string headerTableName, std::string stolistTableName,
@@ -288,51 +291,61 @@ namespace Climate
 				_stolistTableName(stolistTableName),
 				_dataDbName(dataDbName),
 				_dataTableName(dataTableName),
-				_useErrorTable(!errorTableName.empty()),
 				_errorTableName(errorTableName)
 		{}
 
 		std::string simulationId() const { return _simulationId; }
 		std::string simulationName() const { return _simulationName; }
 
-		std::string headerDbName() const { return _headerDbName; }
+    std::string headerDbName() const
+    {
+      return _headerDbName.empty() ? dataDbName() : _headerDbName;
+    }
 		std::string headerTableName() const { return _headerTableName; }
+
 		std::string stolistDbName() const
 		{
 			return _stolistDbName.empty() ? headerDbName() : _stolistDbName;
 		}
 		std::string stolistTableName() const { return _stolistTableName; }
+
 		std::string dataDbName() const { return _dataDbName; }
 		std::string dataTableName() const { return _dataTableName;  }
 
-		std::list<std::string> scenarioIds() const { return _scenarioIds; }
-		std::list<std::string> realizationIds() const { return _realizationIds; }
+    std::vector<std::string> scenarioIds() const { return _scenarioIds; }
+    std::vector<std::string> realizationIds() const { return _realizationIds; }
 
-		bool useErrorTable() const { return _useErrorTable; }
+    bool useErrorTable() const { return !errorTableName().empty(); }
 		std::string errorDbName() const
 		{
 			return _errorDbName.empty() ? dataDbName() : _errorDbName;
 		}
 		std::string errorTableName() const { return _errorTableName; }
 
+    YearRange yearRange;
+
+    bool setupComplete() const { return _setupComplete; }
+
+  private:
 		std::string _simulationId;
 		std::string _simulationName;
 
 		std::string _headerDbName;
 		std::string _headerTableName;
-		std::string _stolistDbName;
+
+    std::string _stolistDbName;
 		std::string _stolistTableName;
-		std::string _dataDbName;
+
+    std::string _dataDbName;
 		std::string _dataTableName;
 
-		std::list<std::string> _scenarioIds;
-		std::list<std::string> _realizationIds;
+    std::string _errorDbName;
+    std::string _errorTableName;
 
-		bool _useErrorTable;
-		std::string _errorDbName;
-		std::string _errorTableName;
+    std::vector<std::string> _scenarioIds;
+    std::vector<std::string> _realizationIds;
 
-		YearRange yearRange;
+    bool _setupComplete{false};
 	};
 
 	class DDClimateDataServerSimulation : public ClimateSimulation
@@ -361,10 +374,10 @@ namespace Climate
 
 	//----------------------------------------------------------------------------
 
-	class CarbiocialSimulation : public ClimateSimulation
+  class UserSqliteDBSimulation : public ClimateSimulation
 	{
 	public:
-		CarbiocialSimulation(Db::DB* connection);
+    UserSqliteDBSimulation(Db::DB* connection);
 
 		virtual ClimateScenario* defaultScenario() const;
 
@@ -669,14 +682,14 @@ namespace Climate
 
   //----------------------------------------------------------------------------
 
-	class CarbiocialRealization : public ClimateRealization
+  class UserSqliteDBRealization : public ClimateRealization
 	{
 	public:
-		CarbiocialRealization(CarbiocialSimulation* simulation, ClimateScenario* s,
+    UserSqliteDBRealization(UserSqliteDBSimulation* simulation, ClimateScenario* s,
 													Db::DB* connection) :
 			ClimateRealization("1", simulation, s, connection) {}
 
-		virtual ~CarbiocialRealization(){}
+    virtual ~UserSqliteDBRealization(){}
 
 		DataAccessor dataAccessorFor(const std::vector<AvailableClimateData>& acds,
 																 const std::string& stationName,
@@ -818,25 +831,25 @@ namespace Climate
 	//! has to be called the first time with valid db initparameters
 	ClimateDataManager& climateDataManager();
 
-	DDClimateDataServerSimulation* newDDWettReg2006(std::string userRs = std::string());
-	DDClimateDataServerSimulation* newDDWettReg2010(std::string userRs = std::string());
-	DDClimateDataServerSimulation* newDDRemo();
-	DDClimateDataServerSimulation* newDDWerex4(std::string userRs = std::string());
-	DDClimateDataServerSimulation* newDDWerex5_eh5_l1(std::string userRs = std::string());
-	DDClimateDataServerSimulation* newDDWerex5_eh5_l1_clm(std::string userRs = std::string());
-	DDClimateDataServerSimulation* newDDWerex5_eh5_l2(std::string userRs = std::string());
-	DDClimateDataServerSimulation* newDDWerex5_eh5_l2_clm(std::string userRs = std::string());
-	DDClimateDataServerSimulation* newDDWerex5_eh5_l3(std::string userRs = std::string());
-	DDClimateDataServerSimulation* newDDWerex5_eh5_l3_racmo(std::string userRs = std::string());
-	DDClimateDataServerSimulation* newDDWerex5_eh5_l3_remo(std::string userRs = std::string());
-	DDClimateDataServerSimulation* newDDWerex5_hc3c_l1_a1b(std::string userRs = std::string());
-	DDClimateDataServerSimulation* newDDWerex5_hc3c_l1_e1(std::string userRs = std::string());
-	DDClimateDataServerSimulation* newDDClm20(std::string userRs = std::string());
-	DDClimateDataServerSimulation* newDDEcham5(std::string userRs = std::string());
-	DDClimateDataServerSimulation* newDDEcham6(std::string userRs = std::string());
-	DDClimateDataServerSimulation* newDDHrm3(YearRange yr, std::string userRs = std::string());
-	DDClimateDataServerSimulation* newDDCru(std::string userRs = std::string());
-  DDClimateDataServerSimulation* newDDDwdNrw(std::string userRs = std::string());
+//	DDClimateDataServerSimulation* newDDWettReg2006(std::string userRs = std::string());
+//	DDClimateDataServerSimulation* newDDWettReg2010(std::string userRs = std::string());
+//	DDClimateDataServerSimulation* newDDRemo();
+//	DDClimateDataServerSimulation* newDDWerex4(std::string userRs = std::string());
+//	DDClimateDataServerSimulation* newDDWerex5_eh5_l1(std::string userRs = std::string());
+//	DDClimateDataServerSimulation* newDDWerex5_eh5_l1_clm(std::string userRs = std::string());
+//	DDClimateDataServerSimulation* newDDWerex5_eh5_l2(std::string userRs = std::string());
+//	DDClimateDataServerSimulation* newDDWerex5_eh5_l2_clm(std::string userRs = std::string());
+//	DDClimateDataServerSimulation* newDDWerex5_eh5_l3(std::string userRs = std::string());
+//	DDClimateDataServerSimulation* newDDWerex5_eh5_l3_racmo(std::string userRs = std::string());
+//	DDClimateDataServerSimulation* newDDWerex5_eh5_l3_remo(std::string userRs = std::string());
+//	DDClimateDataServerSimulation* newDDWerex5_hc3c_l1_a1b(std::string userRs = std::string());
+//	DDClimateDataServerSimulation* newDDWerex5_hc3c_l1_e1(std::string userRs = std::string());
+//	DDClimateDataServerSimulation* newDDClm20(std::string userRs = std::string());
+//	DDClimateDataServerSimulation* newDDEcham5(std::string userRs = std::string());
+//	DDClimateDataServerSimulation* newDDEcham6(std::string userRs = std::string());
+//	DDClimateDataServerSimulation* newDDHrm3(YearRange yr, std::string userRs = std::string());
+//	DDClimateDataServerSimulation* newDDCru(std::string userRs = std::string());
+//  DDClimateDataServerSimulation* newDDDwdNrw(std::string userRs = std::string());
 
 
 	//----------------------------------------------------------------------------

@@ -232,6 +232,7 @@ namespace Db
 		std::string schema;
 		std::string filename;
     std::string abstractSchemaName;
+
 		int maxNoOfConnections;
 		unsigned int port;
 		bool isValid() const
