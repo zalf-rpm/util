@@ -230,7 +230,7 @@ struct LatLngCoord : public Coord2D<double>
 
   bool isZero() const { return int(lat) == 0 && int(lng) == 0; }
 
-  bool isValid() const { return int(lat) == -9999 && int(lng) == -9999; }
+  bool isValid() const { return int(lat) != -9999 && int(lng) != -9999; }
 
   double lat{-9999.0};
   double lng{-9999.0};
