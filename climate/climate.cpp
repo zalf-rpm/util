@@ -1308,22 +1308,19 @@ UserSqliteDBRealization::executeQuery(const ACDV& acds,
 	}
 
 	string dbDate =
-			"year || \'-\' || "
+      "date(year || \'-\' || "
 			"case when month<10 then \'0\' || month else month end || \'-\' || "
-			"case when day<10 then \'0\' || day  else day end";
+      "case when day<10 then \'0\' || day  else day end)";
 
-	query <<
-					 "from data "
-					 "where " << dbDate << " >= '" << connection().toDBDate(startDate) << "' "
-					 "and " << dbDate << " <= '" << connection().toDBDate(endDate) << "' "
-					 "and not (month = 2 and day = 29) "
-					 "order by year, month, day "
-					 "and raster_point_id = " << cs.id();
+  query << "from data "
+        << "where " << dbDate << " between date('" << connection().toDBDate(startDate) << "') "
+        << "and date('" << connection().toDBDate(endDate) << "') "
+        << "and not (month = 2 and day = 29) "
+        << "and raster_point_id = " << cs.id() << " "
+        << "order by year, month, day";
 
-	cout << "query: " << query.str() << endl;
+//	cout << "query: " << query.str() << endl;
 	connection().select(query.str().c_str());
-
-	cout << "after query" << endl;
 
 	int rowCount = connection().getNumberOfRows();
 	map<ACD, vector<double>*> acd2ds;
@@ -1331,8 +1328,6 @@ UserSqliteDBRealization::executeQuery(const ACDV& acds,
 	{
 		acd2ds[acd] = new vector<double>(rowCount);
 	}
-
-	cout << "after acd2ds[acd] = new vector<double>(rowCount);" << endl;
 
 	Db::DBRow row;
 	int count = 0;
@@ -1342,17 +1337,11 @@ UserSqliteDBRealization::executeQuery(const ACDV& acds,
     for(ACD acd : acds)
       (*(acd2ds[acd]))[count] = (*(fs.at(c++)))(row);
 
-//		cout << "stored row: " << count << endl;
-
 		count++;
 	}
 
-//	cout << "after storing acds" << endl;
-
 	for(unsigned int i = 0; i < fs.size(); i++)
 		delete fs.at(i);
-
-  cout << "leaving UserSqliteDBRealization::executeQuery" << endl;
 
 	return acd2ds;
 }
