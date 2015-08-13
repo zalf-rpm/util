@@ -109,20 +109,25 @@ geoCoord2climateStation(const LatLngCoord& gc) const
 LatLngCoord ClimateSimulation::
 getClosestClimateDataGeoCoord(const LatLngCoord& gc) const
 {
-	ClimateStation* closestCS = _stations.front();
-	double minDist = gc.distanceTo(closestCS->geoCoord());
-  for(ClimateStation* cs : _stations)
+  LatLngCoord llc;
+  if(!_stations.empty())
   {
-    double dist = gc.distanceTo(cs->geoCoord());
-    if(dist < minDist)
+    ClimateStation* closestCS = _stations.front();
+    double minDist = gc.distanceTo(closestCS->geoCoord());
+    for(ClimateStation* cs : _stations)
     {
-			minDist = dist;
-      closestCS = cs;
-		}
-	}
+      double dist = gc.distanceTo(cs->geoCoord());
+      if(dist < minDist)
+      {
+        minDist = dist;
+        closestCS = cs;
+      }
+    }
 
-	//cout << "closestCS: " << closestCS->toString() << endl;
-	return closestCS->geoCoord();
+    //cout << "closestCS: " << closestCS->toString() << endl;
+    llc = closestCS->geoCoord();
+  }
+  return llc;
 }
 
 ClimateStation ClimateSimulation::climateStation(const string& stationName) const
@@ -1846,10 +1851,10 @@ DDServerSetup::DDServerSetup(std::map<string, string> setupSectionMap)
      _scenarioIds.empty() ||
      _realizationIds.empty())
   {
-    cerr << "Setup of climate simulation data for DD climate data server failed! Ignoring this simulation!" << endl;
-    cerr << "Setup section map was: ";
+    cout << "Setup of climate simulation data for DD climate data server failed! Ignoring this simulation!" << endl;
+    cout << "Setup section map was: ";
     for(auto p : setupSectionMap)
-      cerr << p.first << " -> " << p.second << endl;
+      cout << p.first << " -> " << p.second << endl;
   }
   else
     _setupComplete = true;

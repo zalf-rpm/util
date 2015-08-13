@@ -31,6 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <cstring>
 #include <locale>
+#include <vector>
 #include <algorithm>
 
 namespace Tools
@@ -310,11 +311,7 @@ namespace Tools
     return s.empty() ? def : std::stof(s);
 	}
 
-  inline bool satob(const std::string& s, bool def = false)
-  {
-    return s.empty() ? def : std::stoi(s) != 0;
-  }
-
+  bool satob(const std::string& s, bool def = false);
 }
 
 
