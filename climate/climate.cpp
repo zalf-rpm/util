@@ -116,6 +116,9 @@ getClosestClimateDataGeoCoord(const LatLngCoord& gc) const
     double minDist = gc.distanceTo(closestCS->geoCoord());
     for(ClimateStation* cs : _stations)
     {
+      if(cs == closestCS)
+        continue;
+
       double dist = gc.distanceTo(cs->geoCoord());
       if(dist < minDist)
       {
@@ -268,6 +271,34 @@ void UserSqliteDBSimulation::setClimateStations()
 ClimateScenario* UserSqliteDBSimulation::defaultScenario() const
 {
 	return _scenarios.back();
+}
+
+YearRange UserSqliteDBSimulation::availableYearRange()
+{
+  if(!_yearRange.isValid())
+  {
+    lock_guard<mutex> lock(_lockable);
+
+    if(!_yearRange.isValid() &&
+       !climateStations().empty())
+    {
+      ClimateStation* firstCS = climateStations().front();
+
+      ostringstream ss;
+      ss << "SELECT min(year), max(year) "
+         << "FROM data "
+         << "WHERE raster_point_id = "
+         << firstCS->id();
+
+      connection().select(ss.str().c_str());
+
+      Db::DBRow row;
+      if(!(row = connection().getRow()).empty())
+        _yearRange = snapToRaster(YearRange(satoi(row[0]), satoi(row[1])));
+    }
+  }
+
+  return _yearRange;
 }
 
 //------------------------------------------------------------------------------

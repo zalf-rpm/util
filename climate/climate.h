@@ -381,7 +381,7 @@ namespace Climate
 
 		virtual ClimateScenario* defaultScenario() const;
 
-		virtual YearRange availableYearRange() { return YearRange(1996, 2025); }
+    virtual YearRange availableYearRange();
 
 	private:
 		//! loads all climate stations
