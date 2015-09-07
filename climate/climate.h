@@ -80,8 +80,11 @@ namespace Climate
 		 * @param simulation the climate simulation this station belongs to
 		 * @return
 		 */
-		ClimateStation(int id, const Tools::LatLngCoord& geoPos, double nn,
-                   const std::string& name, ClimateSimulation* simulation = 0)
+    ClimateStation(int id,
+                   const Tools::LatLngCoord& geoPos,
+                   double nn,
+                   const std::string& name,
+                   ClimateSimulation* simulation = 0)
       : _id(id),
         _name(name),
         _sl(mg),
@@ -126,6 +129,8 @@ namespace Climate
 
 		ClimateSimulation* simulation() const { return _simulation; }
 
+    void setSimulation(ClimateSimulation* cs){ _simulation = cs; }
+
     ClimateStation* fullClimateReferenceStation() const { return _fullClimateReferenceStation; }
     void setFullClimateReferenceStation(ClimateStation* fullClimateStation){ _fullClimateReferenceStation = fullClimateStation; }
 	private: //state
@@ -135,9 +140,9 @@ namespace Climate
 		SL _sl;
 		Tools::LatLngCoord _geoCoord;
 		double _nn;
-    ClimateSimulation* _simulation{NULL};
+    ClimateSimulation* _simulation{nullptr};
     bool _isPrecipStation{false};
-    ClimateStation* _fullClimateReferenceStation{NULL};
+    ClimateStation* _fullClimateReferenceStation{nullptr};
 	};
 
 	//----------------------------------------------------------------------------
@@ -178,21 +183,31 @@ namespace Climate
   class ClimateSimulation
   {
 	public:
+    ClimateSimulation() {}
+
 		//! takes ownerwhip of connection
-    ClimateSimulation(const std::string& id, const std::string& name,
-											Db::DB* connection) :
-    _name(name), _id(id), _connection(connection) {}
+    ClimateSimulation(const std::string& id,
+                      const std::string& name,
+                      Db::DB* connection)
+      : _name(name),
+        _id(id),
+        _connection(connection)
+    {}
 
 		virtual ~ClimateSimulation();
 
 		//! name of this particular climate simulation
 		std::string name() const { return _name; }
+    void setName(std::string name){ _name = name; }
 
     //! id of this particular climate simulation
     std::string id() const { return _id; }
+    void setId(std::string id){ _id = id; }
 
 		//! all scenarios available for this climate simulation
 		const Scenarios& scenarios(){ return _scenarios; }
+
+    void addScenario(ClimateScenario* scen){ _scenarios.push_back(scen); }
 
 		/*!
 		 * get a climate scenario by name
@@ -208,10 +223,17 @@ namespace Climate
 		 * UI usage, eg. first selected element in a Combobox with all
 		 * ClimateScenarios of a some particular ClimateSimulation)
 		 */
-		virtual ClimateScenario* defaultScenario() const = 0;
+    virtual ClimateScenario* defaultScenario() const
+    {
+      if(_scenarios.empty())
+        return nullptr;
+      return _scenarios.front();
+    }
 
 		//! all climate stations available for this simulation
     const Stations& climateStations() const { return _stations; }
+
+    void setClimateStations(const Stations& stations){ _stations = stations; }
 
 		//! get a station via its id
     ClimateStation climateStation(const std::string& stationName) const;
@@ -223,7 +245,7 @@ namespace Climate
 		Tools::LatLngCoord
     climateStation2geoCoord(const std::string& stationName) const;
 
-		//! get climatestation by a given geocoord
+    //! get climatestation by a given geocoord, if not found find the closest one, or none
 		ClimateStation geoCoord2climateStation(const Tools::LatLngCoord& gc) const;
 
 		/*!
@@ -242,7 +264,7 @@ namespace Climate
 		 */
 		Db::DB& connection() const { return *(_connection.get()); }
 
-    virtual YearRange availableYearRange() { return _yearRange; }
+    virtual YearRange availableYearRange();
 
 	protected: //state
 		//! all climate stations available for this simulation
@@ -251,8 +273,8 @@ namespace Climate
 		//! the list of scenarios for this simulation
 		Scenarios _scenarios;
 
-		//! the list of realizations for this simulation (for different scenarios)
-		Realizations _realizations;
+//		! the list of realizations for this simulation (for different scenarios)
+//		Realizations _realizations;
 
     YearRange _yearRange;
 
@@ -491,7 +513,11 @@ namespace Climate
     _realizations(realizations), _name(name), _id(id),
     _simulation(simulation) {}
 
-		virtual ~ClimateScenario(){}
+    virtual ~ClimateScenario()
+    {
+      for(ClimateRealization* r : _realizations)
+        delete r;
+    }
 
 		//! get the name of this scenario
 		std::string name() const { return _name; }
@@ -504,10 +530,10 @@ namespace Climate
 
     ClimateRealization* realization(const std::string& name) const;
 
-    void setRealizations(Realizations rs)
-    {
-			_realizations.insert(_realizations.end(), rs.begin(), rs.end());
-		}
+    void setRealizations(Realizations rs){ _realizations = rs; }
+//    {
+//			_realizations.insert(_realizations.end(), rs.begin(), rs.end());
+//		}
 
 		//! return the simulation this scenario belongs to
 		ClimateSimulation* simulation() const { return _simulation; }
@@ -818,6 +844,8 @@ namespace Climate
 	public:
 		~ClimateDataManager();
 
+    std::vector<ClimateSimulation*> loadSimulation(std::string abstractSchema);
+
     void loadAvailableSimulations(std::set<std::string> availableSimulations =
                                   std::set<std::string>());
 
@@ -825,7 +853,8 @@ namespace Climate
 
 		ClimateSimulation* defaultSimulation() const;
 	private:
-		std::vector<ClimateSimulation*> _simulations;
+    std::map<std::string, ClimateSimulation*> _abstractSchema2simulation;
+//		std::vector<ClimateSimulation*> _simulations;
 	};
 
 	//! has to be called the first time with valid db initparameters
