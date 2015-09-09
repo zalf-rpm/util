@@ -52,6 +52,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace Climate
 {
 	class ClimateSimulation;
+  typedef std::shared_ptr<ClimateSimulation> ClimateSimulationPtr;
+  class ClimateScenario;
+  typedef std::shared_ptr<ClimateScenario> ClimateScenarioPtr;
+  class ClimateRealization;
+  typedef std::shared_ptr<ClimateRealization> ClimateRealizationPtr;
 
 	/*!
 	 * ClimateStation represents an abstract climate station. This means
@@ -145,22 +150,21 @@ namespace Climate
     ClimateStation* _fullClimateReferenceStation{nullptr};
 	};
 
+  typedef std::shared_ptr<ClimateStation> ClimateStationPtr;
+
 	//----------------------------------------------------------------------------
   	
-	class ClimateRealization;
-	class ZalfWettRegRealization;
+  class ZalfWettRegRealization;
 	class StarRealization;
 
-	class ClimateScenario;
-
 	//! other name for std::vector of ClimateStation pointers
-	typedef std::vector<ClimateStation*> Stations;
+  typedef std::vector<ClimateStationPtr> Stations;
 
 	//! other name for std::vector of ClimateScenario pointers
-	typedef std::vector<ClimateScenario*> Scenarios;
+  typedef std::vector<ClimateScenarioPtr> Scenarios;
 
 	//! other name for std::vector of ClimateRealization pointers
-	typedef std::vector<ClimateRealization*> Realizations;
+  typedef std::vector<ClimateRealizationPtr> Realizations;
 
 	//! represents a climatesimulation as WettReg, CLM or Star
 	/*!
@@ -194,7 +198,7 @@ namespace Climate
         _connection(connection)
     {}
 
-		virtual ~ClimateSimulation();
+    virtual ~ClimateSimulation() {}
 
 		//! name of this particular climate simulation
 		std::string name() const { return _name; }
@@ -207,7 +211,7 @@ namespace Climate
 		//! all scenarios available for this climate simulation
 		const Scenarios& scenarios(){ return _scenarios; }
 
-    void addScenario(ClimateScenario* scen){ _scenarios.push_back(scen); }
+    void addScenario(ClimateScenarioPtr scen){ _scenarios.push_back(scen); }
 
 		/*!
 		 * get a climate scenario by name
@@ -227,7 +231,7 @@ namespace Climate
     {
       if(_scenarios.empty())
         return nullptr;
-      return _scenarios.front();
+      return _scenarios.front().get();
     }
 
 		//! all climate stations available for this simulation
@@ -292,8 +296,8 @@ namespace Climate
 
 	//----------------------------------------------------------------------------
 
-  ClimateSimulation* createSimulationFromSetupData(const Tools::IniParameterMap& dbParams,
-                                              const std::string& abstractSchema);
+  ClimateSimulationPtr createSimulationFromSetupData(const Tools::IniParameterMap& dbParams,
+                                                     const std::string& abstractSchema);
 
 	struct DDServerSetup
 	{
@@ -502,22 +506,32 @@ namespace Climate
   {
 	public:
 		ClimateScenario()
-    : _realizations(Realizations()), _name("---"), _id(_name), _simulation(0) {}
-		ClimateScenario(const std::string& name, ClimateSimulation* simulation,
-                    const Realizations& realizations = Realizations()) :
-    _realizations(realizations), _name(name), _id(_name),
-    _simulation(simulation) {}
-    ClimateScenario(const std::string& id, const std::string& name,
-                    ClimateSimulation* simulation,
-                    const Realizations& realizations = Realizations()) :
-    _realizations(realizations), _name(name), _id(id),
-    _simulation(simulation) {}
+    : _realizations(Realizations()),
+      _name("---"),
+      _id(_name),
+      _simulation(0)
+    {}
 
-    virtual ~ClimateScenario()
-    {
-      for(ClimateRealization* r : _realizations)
-        delete r;
-    }
+    ClimateScenario(const std::string& name,
+                    ClimateSimulation* simulation,
+                    const Realizations& realizations = Realizations())
+      : _realizations(realizations),
+        _name(name),
+        _id(_name),
+        _simulation(simulation)
+    {}
+
+    ClimateScenario(const std::string& id,
+                    const std::string& name,
+                    ClimateSimulation* simulation,
+                    const Realizations& realizations = Realizations())
+      : _realizations(realizations),
+        _name(name),
+        _id(id),
+        _simulation(simulation)
+    {}
+
+    virtual ~ClimateScenario() {}
 
 		//! get the name of this scenario
 		std::string name() const { return _name; }
@@ -528,19 +542,17 @@ namespace Climate
 		//! return the realizations available for this scenario
     Realizations realizations() const { return _realizations; }
 
-    ClimateRealization* realization(const std::string& name) const;
+    ClimateRealizationPtr realizationPtr(const std::string& name) const;
+    ClimateRealization* realization(const std::string& name) const { return realizationPtr(name).get(); }
 
     void setRealizations(Realizations rs){ _realizations = rs; }
-//    {
-//			_realizations.insert(_realizations.end(), rs.begin(), rs.end());
-//		}
 
 		//! return the simulation this scenario belongs to
 		ClimateSimulation* simulation() const { return _simulation; }
 
 	private: //state
 		//! the list of realizations
-		Realizations _realizations;
+    Realizations _realizations;
 
 		//! the scenarios name
 		std::string _name;
@@ -842,9 +854,9 @@ namespace Climate
   class ClimateDataManager
   {
 	public:
-		~ClimateDataManager();
+    ~ClimateDataManager(){}
 
-    std::vector<ClimateSimulation*> loadSimulation(std::string abstractSchema);
+    std::vector<ClimateSimulationPtr> loadSimulation(std::string abstractSchema);
 
     void loadAvailableSimulations(std::set<std::string> availableSimulations =
                                   std::set<std::string>());
@@ -853,8 +865,7 @@ namespace Climate
 
 		ClimateSimulation* defaultSimulation() const;
 	private:
-    std::map<std::string, ClimateSimulation*> _abstractSchema2simulation;
-//		std::vector<ClimateSimulation*> _simulations;
+    std::map<std::string, ClimateSimulationPtr> _abstractSchema2simulation;
 	};
 
 	//! has to be called the first time with valid db initparameters

@@ -57,23 +57,7 @@ string ClimateStation::toString() const
 
 //------------------------------------------------------------------------------
 
-ClimateSimulation::~ClimateSimulation()
-{
-  for(ClimateStation* cs : _stations)
-  {
-    delete cs;
-  }
 
-  for(ClimateScenario* s : _scenarios)
-  {
-    delete s;
-  }
-
-//  for(ClimateRealization* r : _realizations)
-//  {
-//    delete r;
-//  }
-}
 
 std::vector<LatLngCoord> ClimateSimulation::geoCoords() const
 {
@@ -87,7 +71,7 @@ LatLngCoord ClimateSimulation::
 climateStation2geoCoord(const string& stationName) const
 {
   string lowerStationName = toLower(stationName);
-  for(ClimateStation* cs : _stations)
+  for(auto cs : _stations)
   {
     if(toLower(cs->name()).find(lowerStationName) != string::npos)
       return cs->geoCoord();
@@ -99,10 +83,10 @@ ClimateStation ClimateSimulation::
 geoCoord2climateStation(const LatLngCoord& gc) const
 {
   auto findStation = [&](const LatLngCoord& gc) -> pair<ClimateStation, bool> {
-    for(ClimateStation* cs : _stations)
+    for(auto s : _stations)
     {
-      if(cs->geoCoord() == gc)
-        return make_pair(*cs, true);
+      if(s->geoCoord() == gc)
+        return make_pair(*s, true);
     }
     return make_pair(ClimateStation(), false);
   };
@@ -112,8 +96,8 @@ geoCoord2climateStation(const LatLngCoord& gc) const
     return p.first;
 
   auto p2 = findStation(getClosestClimateDataGeoCoord(gc));
-  if(p.second)
-    return p.first;
+  if(p2.second)
+    return p2.first;
 
 	return ClimateStation();
 }
@@ -124,9 +108,9 @@ getClosestClimateDataGeoCoord(const LatLngCoord& gc) const
   LatLngCoord llc;
   if(!_stations.empty())
   {
-    ClimateStation* closestCS = _stations.front();
+    auto closestCS = _stations.front();
     double minDist = gc.distanceTo(closestCS->geoCoord());
-    for(ClimateStation* cs : _stations)
+    for(auto cs : _stations)
     {
       if(cs == closestCS)
         continue;
@@ -163,13 +147,13 @@ YearRange ClimateSimulation::availableYearRange()
       toYear = min(toYear, ayr.toYear);
     }
   }
-  return YearRange(fromYear, toYear);
+  return snapToRaster(YearRange(fromYear, toYear));
 }
 
 ClimateStation ClimateSimulation::climateStation(const string& stationName) const
 {
   string lowerStationName = toLower(stationName);
-  for(ClimateStation* cs : _stations)
+  for(auto cs : _stations)
   {
     if(toLower(cs->name()).find(lowerStationName) != string::npos)
       return *cs;
@@ -179,22 +163,22 @@ ClimateStation ClimateSimulation::climateStation(const string& stationName) cons
 
 ClimateScenario* ClimateSimulation::scenario(const string& name) const
 {
-  for(ClimateScenario* s : _scenarios)
+  for(auto s : _scenarios)
   {
     if(s->name() == name)
-      return s;
+      return s.get();
 	}
-	return NULL;
+  return nullptr;
 }
 
 ClimateScenario* ClimateSimulation::scenarioById(const string& id) const
 {
-  for(ClimateScenario* s : _scenarios)
+  for(auto s : _scenarios)
   {
     if(s->id() == id)
-      return s;
+      return s.get();
   }
-  return NULL;
+  return nullptr;
 }
 
 
@@ -202,7 +186,7 @@ ClimateScenario* ClimateSimulation::scenarioById(const string& id) const
 
 namespace
 {
-  bool cmpClimateStationPtrs(ClimateStation* left, ClimateStation* right)
+  bool cmpClimateStationPtrs(ClimateStationPtr left, ClimateStationPtr right)
   {
 		return (*left) < (*right);
 	}
@@ -218,9 +202,9 @@ StarSimulation::StarSimulation(Db::DB* con)
 {
   setClimateStations();
 
-  ClimateScenario* cs = new ClimateScenario("---", this);
+  auto cs = make_shared<ClimateScenario>("---", this);
 //  _realizations.push_back(new StarRealization(this, cs, connection().clone()));
-  cs->setRealizations({new StarRealization(this, cs, connection().clone())});
+  cs->setRealizations({make_shared<StarRealization>(this, cs.get(), connection().clone())});
   _scenarios.push_back(cs);
 }
 
@@ -236,10 +220,9 @@ void StarSimulation::setClimateStations()
     string name(row[3]);
     capitalizeInPlace(name);
     //cout << "name: " << name << endl;
-		ClimateStation* cs =
-				new ClimateStation(atoi(row[5]),
-				LatLngCoord(atof(row[0]), atof(row[1])),
-				atof(row[4]), name, this);
+    auto cs = make_shared<ClimateStation>(atoi(row[5]),
+        LatLngCoord(atof(row[0]), atof(row[1])),
+        atof(row[4]), name, this);
     cs->setDbName(row[2]);
     _stations.push_back(cs);
   }
@@ -250,7 +233,7 @@ void StarSimulation::setClimateStations()
 
 ClimateScenario* StarSimulation::defaultScenario() const
 {
-  return _scenarios.back();
+  return _scenarios.back().get();
 }
 
 //------------------------------------------------------------------------------
@@ -260,9 +243,9 @@ UserSqliteDBSimulation::UserSqliteDBSimulation(Db::DB* con)
 {
 	setClimateStations();
 
-	ClimateScenario* cs = new ClimateScenario("---", this);
+  auto cs = make_shared<ClimateScenario>("---", this);
 //  _realizations.push_back(new UserSqliteDBRealization(this, cs, connection().clone()));
-  cs->setRealizations({new UserSqliteDBRealization(this, cs, connection().clone())});
+  cs->setRealizations({make_shared<UserSqliteDBRealization>(this, cs.get(), connection().clone())});
 	_scenarios.push_back(cs);
 }
 
@@ -291,7 +274,8 @@ void UserSqliteDBSimulation::setClimateStations()
 		ss << "LatLng(" << llc.lat << "," << llc.lng << ")";
 		string name(ss.str());
 		//cout << "name: " << name << endl;
-    ClimateStation* cs = new ClimateStation(satoi(row[0]), LatLngCoord(llc.lat, llc.lng),
+    auto cs = make_shared<ClimateStation>(satoi(row[0]),
+        LatLngCoord(llc.lat, llc.lng),
         0.0, name, this);
     cs->setDbName("");
     _stations.push_back(cs);
@@ -303,7 +287,7 @@ void UserSqliteDBSimulation::setClimateStations()
 
 ClimateScenario* UserSqliteDBSimulation::defaultScenario() const
 {
-	return _scenarios.back();
+  return _scenarios.back().get();
 }
 
 YearRange UserSqliteDBSimulation::availableYearRange()
@@ -315,7 +299,7 @@ YearRange UserSqliteDBSimulation::availableYearRange()
     if(!_yearRange.isValid() &&
        !climateStations().empty())
     {
-      ClimateStation* firstCS = climateStations().front();
+      auto firstCS = climateStations().front();
 
       ostringstream ss;
       ss << "SELECT min(year), max(year) "
@@ -350,23 +334,23 @@ void Star2Simulation::setScenariosAndRealizations()
 	vector<int> realizationNumbers;
   for(string s : vsr) { realizationNumbers.push_back(atoi(s.c_str())); }
 
-  Star2Scenario* s2s = new Star2Scenario("2k","2K", "2k_", this);
+  auto s2s = make_shared<Star2Scenario>("2k","2K", "2k_", this);
   Realizations rs;
   for(int realizationNo : realizationNumbers)
   {
-    rs.push_back(new Star2Realization(this, s2s, connection().clone(),
-                                      realizationNo));
+    rs.push_back(make_shared<Star2Realization>(this, s2s.get(), connection().clone(),
+                                               realizationNo));
   }
   s2s->setRealizations(rs);
 //  _realizations.insert(_realizations.end(), rs.begin(), rs.end());
   _scenarios.push_back(s2s);
 
   rs.clear();
-  s2s = new Star2Scenario("0k","0K", "0k_", this);
+  s2s = make_shared<Star2Scenario>("0k","0K", "0k_", this);
   for(int realizationNo : realizationNumbers)
   {
-    rs.push_back(new Star2Realization(this, s2s, connection().clone(),
-                                      realizationNo));
+    rs.push_back(make_shared<Star2Realization>(this, s2s.get(), connection().clone(),
+                                               realizationNo));
   }
   s2s->setRealizations(rs);
 //  _realizations.insert(_realizations.end(), rs.begin(), rs.end());
@@ -385,10 +369,9 @@ void Star2Simulation::setClimateStations()
     for_each(name.begin(), name.end(), ToLower());
     capitalizeInPlace(name);
     //cout << "name: " << name << endl;
-    ClimateStation* cs =
-			new ClimateStation(atoi(row[3]),
-												 LatLngCoord(atof(row[0]), atof(row[1])),
-                         0.0, name, this);
+    auto cs = make_shared<ClimateStation>(atoi(row[3]),
+        LatLngCoord(atof(row[0]), atof(row[1])),
+        0.0, name, this);
     cs->setDbName("");
     _stations.push_back(cs);
   }
@@ -409,10 +392,10 @@ Star2MeasuredDataSimulation::Star2MeasuredDataSimulation(Db::DB* con)
 {
   setClimateStations();
 
-  ClimateScenario* cs = new ClimateScenario("---", this);
+  auto cs = make_shared<ClimateScenario>("---", this);
 //  _realizations.push_back(new Star2MeasuredDataRealization
 //                          (this, cs, connection().clone()));
-  cs->setRealizations({new Star2MeasuredDataRealization(this, cs, connection().clone())});
+  cs->setRealizations({make_shared<Star2MeasuredDataRealization>(this, cs.get(), connection().clone())});
   _scenarios.push_back(cs);
 }
 
@@ -428,10 +411,9 @@ void Star2MeasuredDataSimulation::setClimateStations()
     for_each(name.begin(), name.end(), ToLower());
     capitalizeInPlace(name);
     //cout << "name: " << name << endl;
-    ClimateStation* cs =
-			new ClimateStation(atoi(row[3]),
-												 LatLngCoord(atof(row[0]), atof(row[1])),
-                         0.0, name, this);
+    auto cs = make_shared<ClimateStation>(atoi(row[3]),
+        LatLngCoord(atof(row[0]), atof(row[1])),
+        0.0, name, this);
     cs->setDbName("refzen");
     _stations.push_back(cs);
   }
@@ -442,7 +424,7 @@ void Star2MeasuredDataSimulation::setClimateStations()
 
 ClimateScenario* Star2MeasuredDataSimulation::defaultScenario() const
 {
-  return _scenarios.back();
+  return _scenarios.back().get();
 }
 
 //------------------------------------------------------------------------------
@@ -463,13 +445,13 @@ void DDClimateDataServerSimulation::setScenariosAndRealizations()
 {
   for(string sid : _setupData.scenarioIds())
 	{
-		ClimateScenario* sc = new ClimateScenario(sid, this);
+    auto sc = make_shared<ClimateScenario>(sid, this);
 		Realizations rs;
     for(string rid : _setupData.realizationIds())
 		{
-			rs.push_back(new DDClimateDataServerRealization(rid, this, sc,
-																											connection().clone(),
-																											_setupData));
+      rs.push_back(make_shared<DDClimateDataServerRealization>(rid, this, sc.get(),
+                                                               connection().clone(),
+                                                               _setupData));
 		}
 		sc->setRealizations(rs);
 //		_realizations.insert(_realizations.end(), rs.begin(), rs.end());
@@ -519,7 +501,7 @@ void DDClimateDataServerSimulation::setClimateStations()
     auto llc = convertCommaToDot ? LatLngCoord(Tools::stod_comma(row[4]), Tools::stod_comma(row[5]))
       : LatLngCoord(stod(row[4]), stod(row[5]));
 
-    ClimateStation* cs = new ClimateStation(stoi(row[0]), llc, row[6].empty() ? 0.0 : stod(row[6]), name, this);
+    auto cs = make_shared<ClimateStation>(stoi(row[0]), llc, row[6].empty() ? 0.0 : stod(row[6]), name, this);
     cs->setDbName(row[7]);
     cs->setSL(ClimateStation::SL(row[8].empty() ? 1: stoi(row[8])));
 
@@ -532,17 +514,17 @@ void DDClimateDataServerSimulation::setClimateStations()
   con.freeResultSet();
 
   //assign the precipitation stations the closest full climate station where it gets the missing data from
-  vector<ClimateStation*> fullClimateStations, precipStations;
+  vector<ClimateStationPtr> fullClimateStations, precipStations;
   partition_copy(begin(_stations), end(_stations),
                  back_inserter(precipStations), back_inserter(fullClimateStations),
-                 [](ClimateStation* cs){ return cs->isPrecipStation(); });
+                 [](ClimateStationPtr cs){ return cs->isPrecipStation(); });
 
-  map<ClimateStation*, ClimateStation*> pCS2fullCS;
+  map<ClimateStationPtr, ClimateStationPtr> pCS2fullCS;
   auto manualMappingByNames = Db::dbConnectionParameters().values
                               (_setupData.simulationId() + ".precip-to-climate-station-mapping");
   for(auto pn2fn : manualMappingByNames)
   {
-    auto find = [&](string name) -> ClimateStation*
+    auto find = [&](string name) -> ClimateStationPtr
     {
       for(auto cs : _stations)
       {
@@ -559,7 +541,7 @@ void DDClimateDataServerSimulation::setClimateStations()
     ClimateStation* fullCS = nullptr;
     auto pCSIt = pCS2fullCS.find(pcs);
     if(pCSIt != pCS2fullCS.end())
-      fullCS = pCSIt->second;
+      fullCS = pCSIt->second.get();
     else
     {
       double shortestDist = numeric_limits<double>::max();
@@ -568,7 +550,7 @@ void DDClimateDataServerSimulation::setClimateStations()
         double dist = pcs->geoCoord().distanceTo(fcs->geoCoord());
         if(dist < shortestDist)
         {
-          fullCS = fcs;
+          fullCS = fcs.get();
           shortestDist = dist;
         }
       }
@@ -595,7 +577,7 @@ YearRange DDClimateDataServerSimulation::availableYearRange()
 			 !climateStations().empty())
     {
 			string firstRId = _setupData.realizationIds().front();
-			ClimateStation* firstCS = climateStations().front();
+      auto firstCS = climateStations().front();
 
 			ostringstream ss;
 			ss << "SELECT min(jahr), max(jahr) "
@@ -631,21 +613,21 @@ void CLMSimulation::setScenariosAndRealizations()
 	string reals = Db::dbConnectionParameters().value("used-realizations", "clm20-9", "1, 2");
 	vector<string> vsr = Tools::splitString(reals, ", ");
 
-	ClimateScenario* sc = new ClimateScenario("A1B", this);
+  auto sc = make_shared<ClimateScenario>("A1B", this);
 	Realizations rs;
   for(string s : vsr)
 	{
-		rs.push_back(new CLMRealization(this, sc, s, connection().clone()));
+    rs.push_back(make_shared<CLMRealization>(this, sc.get(), s, connection().clone()));
 	}
 	sc->setRealizations(rs);
 //	_realizations.insert(_realizations.end(), rs.begin(), rs.end());
 	_scenarios.push_back(sc);
 
 	rs.clear();
-	sc = new ClimateScenario("B1", this);
+  sc = make_shared<ClimateScenario>("B1", this);
   for(string s : vsr)
 	{
-		rs.push_back(new CLMRealization(this, sc, s, connection().clone()));
+    rs.push_back(make_shared<CLMRealization>(this, sc.get(), s, connection().clone()));
 	}
 	sc->setRealizations(rs);
 //	_realizations.insert(_realizations.end(), rs.begin(), rs.end());
@@ -665,7 +647,7 @@ void CLMSimulation::setClimateStations()
 	Db::DBRow row;
 	while(!(row = connection().getRow()).empty())
   {
-    ClimateStation* cs = new ClimateStation(stoi(row[0]), LatLngCoord(stod(row[4]), stod(row[5])),
+    auto cs = make_shared<ClimateStation>(stoi(row[0]), LatLngCoord(stod(row[4]), stod(row[5])),
         stod(row[6]), row[1], this);
 		cs->setDbName(row[7]);
 		_stations.push_back(cs);
@@ -678,20 +660,20 @@ void CLMSimulation::setClimateStations()
   //define position matrix which should be sparse (but isn't)
   //bearable in this case
   typedef SparseMatrix<ClimateStation*> LatLngPos;
-  LatLngPos posMatrix(static_cast<ClimateStation*>(NULL));
+  LatLngPos posMatrix(static_cast<ClimateStation*>(nullptr));
 
   //put climatestations into position matrix
-  for(ClimateStation* cs : climateStations())
+  for(auto cs : climateStations())
   {
     int lat = int(cs->geoCoord().lat * 100.0);
     int lng = int(cs->geoCoord().lng * 100.0);
-    posMatrix.setValueAt(lat, lng, cs);
+    posMatrix.setValueAt(lat, lng, cs.get());
   }
 
   //reduce "sparse" position matrix to minimal one
   typedef StdMatrix<ClimateStation*> LatLngPos2;
   LatLngPos2 posMatrix2(lats.size(), lngs.size(),
-                        static_cast<ClimateStation*>(NULL));
+                        static_cast<ClimateStation*>(nullptr));
   int lat2 = 0;
   for(int lat : lats)
   {
@@ -699,7 +681,7 @@ void CLMSimulation::setClimateStations()
     for(int lng : lngs)
     {
       if(ClimateStation* cs =
-         posMatrix.valueAt(lat, lng, static_cast<ClimateStation*>(NULL)))
+         posMatrix.valueAt(lat, lng, static_cast<ClimateStation*>(nullptr)))
         posMatrix2[lat2][lng2++] = cs;
     }
     lat2++;
@@ -788,15 +770,16 @@ YearRange CLMSimulation::availableYearRange()
 
 //------------------------------------------------------------------------------
 
-ClimateRealization* ClimateScenario::realization(const string& name) const
+ClimateRealizationPtr ClimateScenario::realizationPtr(const string& name) const
 {
-  for(ClimateRealization* r : realizations())
+  for(auto r : realizations())
   {
     if(r->name() == name)
       return r;
   }
-  return NULL;
+  return ClimateRealizationPtr();
 }
+
 
 //------------------------------------------------------------------------------
 
@@ -1867,23 +1850,23 @@ ClimateDataManager& Climate::climateDataManager()
 	return cdm;
 }
 
-ClimateSimulation* Climate::createSimulationFromSetupData(const IniParameterMap& dbParams,
+ClimateSimulationPtr Climate::createSimulationFromSetupData(const IniParameterMap& dbParams,
                                                      const string& abstractSchema)
 {
   string dbSection = dbParams.value("abstract-schema", abstractSchema);
   string type = dbParams.value(dbSection, "type");
 
-  ClimateSimulation* sim = nullptr;
+  ClimateSimulationPtr sim;
 
   if(type == "landcare-climate-data-server")
   {
     string setupSection = dbSection + "." + abstractSchema;
     DDServerSetup setup(dbParams.values(setupSection));
     if(setup.setupComplete())
-      sim = new DDClimateDataServerSimulation(setup, Db::newConnection(abstractSchema));
+      sim = make_shared<DDClimateDataServerSimulation>(setup, Db::newConnection(abstractSchema));
   }
   else if(type == "user-sqlite-climate-db")
-    sim = new UserSqliteDBSimulation(Db::newConnection(abstractSchema));
+    sim = make_shared<UserSqliteDBSimulation>(Db::newConnection(abstractSchema));
 
   return sim;
 }
@@ -1926,25 +1909,25 @@ DDServerSetup::DDServerSetup(std::map<string, string> setupSectionMap)
     _setupComplete = true;
 }
 
-vector<ClimateSimulation*> ClimateDataManager::loadSimulation(string abstractSchema)
+vector<ClimateSimulationPtr> ClimateDataManager::loadSimulation(string abstractSchema)
 {
   using namespace Db;
 
-  vector<ClimateSimulation*> sims;
+  vector<ClimateSimulationPtr> sims;
 
   //first load hardcoded simulations
   if(abstractSchema == "clm20-9")
-    sims.push_back(new CLMSimulation(newConnection("clm20-9")));
+    sims.push_back(make_shared<CLMSimulation>(newConnection("clm20-9")));
   else if(abstractSchema == "star")
-    sims.push_back(new StarSimulation(newConnection("star")));
+    sims.push_back(make_shared<StarSimulation>(newConnection("star")));
   else if(abstractSchema == "star2")
   {
-    sims.push_back(new Star2Simulation(newConnection("star2")));
-    sims.push_back(new Star2MeasuredDataSimulation(newConnection("star2")));
+    sims.push_back(make_shared<Star2Simulation>(newConnection("star2")));
+    sims.push_back(make_shared<Star2MeasuredDataSimulation>(newConnection("star2")));
   }
   else
   {
-    if(auto* sim = createSimulationFromSetupData(dbConnectionParameters(), abstractSchema))
+    if(auto sim = createSimulationFromSetupData(dbConnectionParameters(), abstractSchema))
       sims.push_back(sim);
   }
 
@@ -1954,7 +1937,7 @@ vector<ClimateSimulation*> ClimateDataManager::loadSimulation(string abstractSch
 
 void ClimateDataManager::loadAvailableSimulations(set<string> ass)
 {
-  auto storeSims = [&](const vector<ClimateSimulation*>& css)
+  auto storeSims = [&](const vector<ClimateSimulationPtr>& css)
   {
     for(auto sim : css)
       _abstractSchema2simulation[sim->id()] = sim;;
@@ -1968,8 +1951,9 @@ void ClimateDataManager::loadAvailableSimulations(set<string> ass)
 
     if(type == "multi-ensemble-simulations")
     {
-      auto ncs = new ClimateSimulation();
-      auto nsc = new ClimateScenario("---", ncs);
+      auto ncs = make_shared<ClimateSimulation>();
+      auto nsc = make_shared<ClimateScenario>("---", ncs.get());
+      ncs->addScenario(nsc);
 
       Stations climateStations;
 
@@ -1988,18 +1972,18 @@ void ClimateDataManager::loadAvailableSimulations(set<string> ass)
           if(!simScenReal.empty() && simScenReal.size() == 3)
           {
             auto sim = simScenReal.at(0);
-            auto addRealizationAndClimateStations = [&](ClimateSimulation* cs)
+            auto addRealizationAndClimateStations = [&](ClimateSimulationPtr cs)
             {
               if(auto sc = cs->scenario(simScenReal.at(1)))
-                if(auto r = sc->realization(simScenReal.at(2)))
+                if(auto r = sc->realizationPtr(simScenReal.at(2)))
                   nsc->setRealizations({r});
 
               for(auto s : cs->climateStations())
               {
                 if(!s->isPrecipStation())
                 {
-                  auto csCopy = new ClimateStation(*s);
-                  csCopy->setSimulation(ncs);
+                  auto csCopy = make_shared<ClimateStation>(*s);
+                  csCopy->setSimulation(ncs.get());
 
                   //                if(csCopy->isPrecipStation())
                   //                {
@@ -2035,9 +2019,7 @@ void ClimateDataManager::loadAvailableSimulations(set<string> ass)
 
       ncs->setClimateStations(climateStations);
 
-      if(nsc->realizations().empty())
-        delete ncs;
-      else
+      if(!nsc->realizations().empty())
         storeSims({ncs});
     }
     else
@@ -2115,26 +2097,18 @@ void ClimateDataManager::loadAvailableSimulations(set<string> ass)
 //}
 
 
-ClimateDataManager::~ClimateDataManager()
-{
-  for(auto p : _abstractSchema2simulation)
-	{
-    delete p.second;
-	}
-}
-
 vector<ClimateSimulation*> ClimateDataManager::allClimateSimulations() const
 {
   vector<ClimateSimulation*> css;
   for(auto p : _abstractSchema2simulation)
-    css.push_back(p.second);
+    css.push_back(p.second.get());
   return css;
 }
 
 ClimateSimulation* ClimateDataManager::defaultSimulation() const
 {
   const auto& css = allClimateSimulations();
-  return css.empty() ? NULL : css.front();
+  return css.empty() ? nullptr : css.front();
 }
 
 //------------------------------------------------------------------------------

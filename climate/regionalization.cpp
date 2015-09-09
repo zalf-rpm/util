@@ -159,12 +159,12 @@ namespace
 				 << " extendedRegion: " << extendedRegion.toString() << endl;
 
 		vector<const ClimateStation*> filteredStations;
-    for(const ClimateStation* cs : sim->climateStations())
+    for(auto cs : sim->climateStations())
     {
       if(extendedRegion.contains(cs->rcCoord(erCS)))
       {
         cout << "----> included: " << cs->name() << " rcc: " << cs->rcCoord(erCS).toString() << endl;
-				filteredStations.push_back(cs);
+        filteredStations.push_back(cs.get());
 			}
 		}
 
@@ -319,7 +319,7 @@ Results Regionalization::regionalize(Env env)
 
 	Results res;
 
-	const Realizations& realizations = env.realizations;
+  const auto& realizations = env.realizations;
 	if(realizations.empty())
 		return res;
 //	cout << "number of realizations used: " << realizations.size() << endl;
@@ -330,7 +330,7 @@ Results Regionalization::regionalize(Env env)
 
 	typedef map<ClimateRealization*, set<Year> > Real2Years;
 	Real2Years realization2years;
-  for(ClimateRealization* r : realizations)
+  for(auto r : realizations)
   {
 		realization2years[r] =  Tools::range<set<Year> >(env.fromYear, env.toYear);
 	}
