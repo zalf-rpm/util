@@ -448,11 +448,9 @@ void DDClimateDataServerSimulation::setScenariosAndRealizations()
     auto sc = make_shared<ClimateScenario>(sid, this);
 		Realizations rs;
     for(string rid : _setupData.realizationIds())
-		{
       rs.push_back(make_shared<DDClimateDataServerRealization>(rid, this, sc.get(),
                                                                connection().clone(),
                                                                _setupData));
-		}
 		sc->setRealizations(rs);
 //		_realizations.insert(_realizations.end(), rs.begin(), rs.end());
 		_scenarios.push_back(sc);
