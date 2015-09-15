@@ -6,6 +6,7 @@ using namespace Tools;
 using namespace std;
 using namespace json11;
 
+#ifndef NO_ZMQ
 Msg Tools::receiveMsg(zmq::socket_t& pullSocket, bool nonBlockingMode)
 {
   zmq::message_t message;
@@ -22,6 +23,7 @@ Msg Tools::receiveMsg(zmq::socket_t& pullSocket, bool nonBlockingMode)
   }
   return Msg{Json(), "", false};
 }
+#endif
 
 
 //QJsonValue Tools::cljsonUuid(const QUuid& uuid)
