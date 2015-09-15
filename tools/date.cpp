@@ -116,6 +116,20 @@ Date Date::relativeDate(unsigned int day, unsigned int month,
 							true, relativeYear);
 }
 
+Date Date::fromIsoDateString(const std::string& isoDateString, bool useLeapYears)
+{
+  if(isoDateString.size() == 10)
+  {
+    int year = stoi(isoDateString.substr(0, 4));
+    int month = stoi(isoDateString.substr(5, 2));
+    int day = stoi(isoDateString.substr(8, 2));
+    //cout << day << "." << month << "." << year << endl;
+    return Date(day, month, year, useLeapYears);
+  }
+  return Date();
+}
+
+
 //! copy constructor
 Date::Date(const Date& other)
 :
@@ -246,17 +260,15 @@ bool Date::operator<(const Date& other) const
 	return false;
 }
 
-/*!
- * @return mysql compatible string representation of 'this' date
- */
-std::string Date::toMysqlString(const std::string& wrapInto) const
+std::string Date::toIsoDateString(const std::string& wrapInto) const
 {
-	ostringstream s;
-	s << wrapInto << year()
-	<< "-" << (month() < 10 ? "0" : "") << month()
-	<< "-" << (day() < 10 ? "0" : "") << day() << wrapInto;
-	return s.str();
+  ostringstream s;
+  s << wrapInto << year()
+  << "-" << (month() < 10 ? "0" : "") << month()
+  << "-" << (day() < 10 ? "0" : "") << day() << wrapInto;
+  return s.str();
 }
+
 
 /*!
  * @param separator to use for delimit days, month, year
@@ -396,25 +408,6 @@ Date Date::toAbsoluteDate(unsigned int absYear, bool ignoreDeltaYears) const
 
 //------------------------------------------------------------------------------
 
-/*!
- * @param mysqlDateString
- * @return date parsed from a mysql date string
- */
-Date Tools::fromMysqlString(const char* mysqlDateString)
-{
-	if (mysqlDateString)
-	{
-		string d(mysqlDateString);
-		int year = atoi(d.substr(0, 4).c_str());
-		int month = atoi(d.substr(5, 2).c_str());
-		int day = atoi(d.substr(8, 2).c_str());
-		//cout << day << "." << month << "." << year << endl;
-		return Date(day, month, year, true);
-	}
-	return Date();
-}
-
-//------------------------------------------------------------------------------
 
 /*!
  * function testing the date class

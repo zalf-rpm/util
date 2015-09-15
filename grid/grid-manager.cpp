@@ -35,6 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cassert>
 #include <set>
 #include <mutex>
+#include <limits>
 
 #include "grid-manager.h"
 #include "tools/algorithms.h"
@@ -830,6 +831,11 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
   }
   /*/
 
+  size_t minRow = numeric_limits<size_t>::max();
+  size_t maxRow = numeric_limits<size_t>::min();
+  size_t minCol = numeric_limits<size_t>::max();
+  size_t maxCol = numeric_limits<size_t>::min();
+
   //*
   for(CS2GMDS::value_type p : cs2gmds)
   {
@@ -854,9 +860,9 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
       GridP* g = agps.front()->gridPtr();
       double gCellSize = g->cellSize();
 
-      for(int r = 0, rows = someGrid->rows(); r < rows; r++)
+      for(size_t r = 0, rows = someGrid->rows(); r < rows; r++)
       {
-        for(int c = 0, cols = someGrid->cols(); c < cols; c++)
+        for(size_t c = 0, cols = someGrid->cols(); c < cols; c++)
         {
           RectCoord cellCenter = someGrid->rcCoordAtCenter(r, c);
           double sgCellSize = someGrid->cellSize();
@@ -897,6 +903,11 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
               tg->setNoDataValueAt(r,c);
             else
               tg->setDataAt(r, c, agp->gridPtr()->dataAt(pos.row, pos.col));
+
+            minRow = min(minRow, pos.row);
+            maxRow = max(maxRow, pos.row);
+            minCol = min(minCol, pos.col);
+            maxCol = max(maxCol, pos.col);
           }
         }
       }
@@ -904,16 +915,17 @@ GridManager::createVirtualGrid(const GMD2GPS& gmd2gridProxies,
   }
   //*/
 
-  cout << "regionName: " << regionName << " noOfRows: " << noOfRows << " noOfCols: " << noOfCols << endl;
+  cout << "regionName: " << regionName << " noOfRows: " << noOfRows << " noOfCols: " << noOfCols
+       << " source [from, to] row: [" << minRow << ", " << maxRow << "] "
+       << " source [from, to] col: [" << minCol << ", " << maxCol << "]" << endl;
 
   auto vg = new VirtualGrid2(usedCS, RCRect(tl, br), minCellSize, noOfRows, noOfCols, dsn2grid);
-  vg->setCustomId(regionName);
+  vg->setRegionName(regionName);
 
   return vg;
 }
 
-VirtualGrid2*
-GridManager::virtualGridForGridMetaData(const GridMetaData& gmd,
+VirtualGrid2* GridManager::virtualGridForGridMetaData(const GridMetaData& gmd,
                                         const Path& userSubPath)
 {
 	Path2GPS::const_iterator ci = _gmdMap.find(userSubPath);
@@ -929,7 +941,7 @@ GridManager::virtualGridForGridMetaData(const GridMetaData& gmd,
                             gmd.nrows, gmd.ncols);
 			//cout << "gmd.regionName: " << gmd.regionName << endl;
 			nvg->setName(gmd.regionName);
-			nvg->setCustomId(gmd.regionName);
+      nvg->setRegionName(gmd.regionName);
 			return nvg;
 		}
 	}

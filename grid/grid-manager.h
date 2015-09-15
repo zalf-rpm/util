@@ -289,9 +289,9 @@ namespace Grids
 
     void setName(std::string name){ _name = name; }
 
-    std::string customId() const { return _customId; }
+    std::string regionName() const { return _regionName; }
 
-    void setCustomId(std::string cid) { _customId = cid; }
+    void setRegionName(std::string cid) { _regionName = cid; }
 
     virtual bool isNoVirtualGrid() const { return false; }
 
@@ -309,7 +309,7 @@ namespace Grids
     LatLngPolygonsMatrix _cellPolygons;
 
     std::string _name;
-    std::string _customId;
+    std::string _regionName;
     Tools::CoordinateSystem _coordinateSystem;
   };
 

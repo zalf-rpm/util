@@ -146,11 +146,11 @@ string Tools::decapitalize(const string& s)
 }
 
 
-double Tools::sunshine2globalRadiation(int yd, double sonn, double lat,
-                                      bool asMJpm2pd)
+double Tools::sunshine2globalRadiation(int julianDay, double sunHours, double lat,
+                                       bool asMJpm2pd)
 {
   double pi=4.0*atan(1.0);
-  double dec=-23.4*cos(2*pi*(yd+10)/365);
+  double dec=-23.4*cos(2*pi*(julianDay+10)/365);
   double sinld=sin(dec*pi/180)*sin(lat*pi/180);
   double cosld=cos(dec*pi/180)*cos(lat*pi/180);
   double dl=12*(pi+2*asin(sinld/cosld))/pi;
@@ -158,7 +158,7 @@ double Tools::sunshine2globalRadiation(int yd, double sonn, double lat,
   double rdn=3600*(sinld*dl+24/pi*cosld*sqrt(1.0-(sinld/cosld)*(sinld/cosld)));
   double drc=1300*rdn*exp(-0.14/(rdn/(dl*3600)));
   double dro=0.2*drc;
-  double dtga=sonn/dle*drc+(1-sonn/dle)*dro;
+  double dtga=sunHours/dle*drc+(1-sunHours/dle)*dro;
   double t = dtga/10000.0;
   //convert J/cm²/d to MJ/m²/d
   //1cm²=1/(100*100)m², 1J = 1/1000000MJ

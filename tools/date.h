@@ -74,6 +74,8 @@ namespace Tools
       return Date(1,1,year, useLeapYears, isRelativeDate, relativeBaseYear) + (julianDay - 1);
     }
 
+    static Date fromIsoDateString(const std::string& isoDateString, bool useLeapYears = true);
+
     Date(const Date& other);
 
     /*!
@@ -181,9 +183,9 @@ namespace Tools
      * @param month
      * @return how many days has the argument month
      */
-    unsigned int daysInMonth(unsigned int month) const
+    unsigned int daysInMonth(unsigned int month = 0) const
     {
-      return _daysInMonth[month];
+      return _daysInMonth[month == 0 ? this->month() : month];
     }
 
     /*!
@@ -243,7 +245,10 @@ namespace Tools
 
     void addYears(int years){  setYear(year() + years); }
 
-    std::string toMysqlString(const std::string& wrapInto = "'") const;
+    //return mysql compatible string representation of 'this' date
+    std::string toMysqlString(const std::string& wrapInto = "'") const { return toIsoDateString(wrapInto); }
+
+    std::string toIsoDateString(const std::string& wrapInto = "") const;
 
     std::string toString(const std::string& separator = ".",
                          bool skipYear = false) const;
@@ -371,12 +376,15 @@ namespace Tools
     bool _isRelativeDate;
   };
 
-	Date fromMysqlString(const char* mysqlDateString);
+  inline Date fromMysqlString(const char* mysqlDateString, bool useLeapYears = true)
+  {
+    return Date::fromIsoDateString(mysqlDateString, useLeapYears);
+  }
 
-	inline Date fromMysqlString(const std::string& mysqlDateString)
-	{
-		return fromMysqlString(mysqlDateString.c_str());
-	}
+  inline Date fromMysqlString(const std::string& mysqlDateString, bool useLeapYears = true)
+  {
+    return Date::fromIsoDateString(mysqlDateString, useLeapYears);
+  }
 
 	void testDate();
 }

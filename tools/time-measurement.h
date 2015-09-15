@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _TIME_MEASUREMENT_H
 #define _TIME_MEASUREMENT_H
 
-#include <time.h> //timeval
+#include <ctime> //timeval
 #include <utility>
 
 namespace Tools
@@ -59,43 +59,43 @@ namespace Tools
 	 * - start the measurement via the OS time of day implementation
 	 * - on linux measures via cycle counting like the functions above
 	 */
-	timeval startMeasurementViaTimeOfDay();
+//	std::timeval startMeasurementViaTimeOfDay();
 	/**
 	 * get the difference between the given start time and the measured
 	 * (via time of day) current time in seconds
 	 */
-	double stopMeasurementViaTimeOfDay(timeval startTime);
+//	double stopMeasurementViaTimeOfDay(timeval startTime);
 	/**
 	 * get the execution time of the given function in milliseconds
 	 */
-	double getExecutionTimeMs(void (*fun)());
+//	double getExecutionTimeMs(void (*fun)());
 	/**
 	 * get the execution tim of the given function in seconds
 	 */
-	double getExecutionTime(void (*fun)());
+//	double getExecutionTime(void (*fun)());
 
-	template<typename Class, typename T>
-	std::pair<T, double> getExecutionTimeMS(Class* self, T (Class::*method)());
+//	template<typename Class, typename T>
+//	std::pair<T, double> getExecutionTimeMS(Class* self, T (Class::*method)());
 
-	template<typename Class, typename T>
-	std::pair<T, double> getExecutionTime(Class* self, T (Class::*method)());
+//	template<typename Class, typename T>
+//	std::pair<T, double> getExecutionTime(Class* self, T (Class::*method)());
 }
 
-template<typename Class, typename T>
-std::pair<T, double> Tools::
-getExecutionTimeMS(Class* self, T (Class::*method)())
-{
-	std::pair<T, double> res = getExecutionTime(self, method);
-	return std::make_pair(res.first, res.second * 1000);
-}
+//template<typename Class, typename T>
+//std::pair<T, double> Tools::
+//getExecutionTimeMS(Class* self, T (Class::*method)())
+//{
+//	std::pair<T, double> res = getExecutionTime(self, method);
+//	return std::make_pair(res.first, res.second * 1000);
+//}
 
-template<typename Class, typename T>
-std::pair<T, double> Tools::
-getExecutionTime(Class* self, T (Class::*method)())
-{
-	timeval before = startMeasurementViaTimeOfDay();
-	T result = (self->*method)();
-	return std::make_pair(result, stopMeasurementViaTimeOfDay(before));
-}
+//template<typename Class, typename T>
+//std::pair<T, double> Tools::
+//getExecutionTime(Class* self, T (Class::*method)())
+//{
+//	timeval before = startMeasurementViaTimeOfDay();
+//	T result = (self->*method)();
+//	return std::make_pair(result, stopMeasurementViaTimeOfDay(before));
+//}
 
 #endif

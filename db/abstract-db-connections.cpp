@@ -45,6 +45,7 @@ DBConData Db::dbConData(const IniParameterMap& dbParams,
 	DBConData d;
 	//if not empty is a sqlite db and we're done
 	d.filename = dbParams.value(dbSection, "filename");
+  d.abstractSchemaName = abstractSchema;
 	//else threat it as mysql db with all the connection parameters
 	if(d.filename.empty())
 	{
@@ -52,7 +53,14 @@ DBConData Db::dbConData(const IniParameterMap& dbParams,
 		d.port = (unsigned int)dbParams.valueAsInt(dbSection, "port", 0);
 		d.user = dbParams.value(dbSection, "user");
 		d.pwd = dbParams.value(dbSection, "pwd");
-		d.schema = dbParams.value(dbSection + ".schema", abstractSchema);
+
+    //get intial schema, first from abstract schema section, then from data-db-name and then from db relative schema section
+    d.schema = dbParams.value(dbSection + "." + abstractSchema, "schema");
+    if(d.schema.empty())
+      d.schema = dbParams.value(dbSection + "." + abstractSchema, "data-db-name");
+    if(d.schema.empty())
+      d.schema = dbParams.value(dbSection + ".schema", abstractSchema);
+
 		d.maxNoOfConnections = dbParams.valueAsInt(dbSection, "maxNoOfConnections", 1);
 	}
 

@@ -37,57 +37,57 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace std;
 
-#ifdef WIN32
-//taken from http://www.cpp-programming.net/c-tidbits/gettimeofday-function-for-windows/
-#include <time.h>
+//#ifdef WIN32
+////taken from http://www.cpp-programming.net/c-tidbits/gettimeofday-function-for-windows/
+//#include <time.h>
  
-#if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
-#define DELTA_EPOCH_IN_MICROSECS  11644473600000000Ui64
-#else
-#define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
-#endif
+//#if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
+//#define DELTA_EPOCH_IN_MICROSECS  11644473600000000Ui64
+//#else
+//#define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
+//#endif
 
-struct timezone
-{
-	int  tz_minuteswest; /* minutes W of Greenwich */
-	int  tz_dsttime;     /* type of dst correction */
-};
+//struct timezone
+//{
+//	int  tz_minuteswest; /* minutes W of Greenwich */
+//	int  tz_dsttime;     /* type of dst correction */
+//};
 
-int gettimeofday(struct timeval *tv, struct timezone *tz)
-{
-	FILETIME ft;
-	unsigned __int64 tmpres = 0;
-	static int tzflag;
+//int gettimeofday(struct timeval *tv, struct timezone *tz)
+//{
+//	FILETIME ft;
+//	unsigned __int64 tmpres = 0;
+//	static int tzflag;
 
-	if (NULL != tv)
-	{
-		GetSystemTimeAsFileTime(&ft);
+//	if (NULL != tv)
+//	{
+//		GetSystemTimeAsFileTime(&ft);
 
-		tmpres |= ft.dwHighDateTime;
-		tmpres <<= 32;
-		tmpres |= ft.dwLowDateTime;
+//		tmpres |= ft.dwHighDateTime;
+//		tmpres <<= 32;
+//		tmpres |= ft.dwLowDateTime;
 
-		/*converting file time to unix epoch*/
-		tmpres /= 10;  /*convert into microseconds*/
-		tmpres -= DELTA_EPOCH_IN_MICROSECS;
-		tv->tv_sec = (long)(tmpres / 1000000UL);
-		tv->tv_usec = (long)(tmpres % 1000000UL);
-	}
+//		/*converting file time to unix epoch*/
+//		tmpres /= 10;  /*convert into microseconds*/
+//		tmpres -= DELTA_EPOCH_IN_MICROSECS;
+//		tv->tv_sec = (long)(tmpres / 1000000UL);
+//		tv->tv_usec = (long)(tmpres % 1000000UL);
+//	}
 
-	if (NULL != tz)
-	{
-		if (!tzflag)
-		{
-			_tzset();
-			tzflag++;
-		}
-		tz->tz_minuteswest = _timezone / 60;
-		tz->tz_dsttime = _daylight;
-	}
+//	if (NULL != tz)
+//	{
+//		if (!tzflag)
+//		{
+//			_tzset();
+//			tzflag++;
+//		}
+//		tz->tz_minuteswest = _timezone / 60;
+//		tz->tz_dsttime = _daylight;
+//	}
 
-	return 0;
-}
-#endif
+//	return 0;
+//}
+//#endif
 
 /*
 namespace {
@@ -164,31 +164,31 @@ double Tools::getExecutionTimeViaMeanCPUCycles(void (*fun)(), int minimumCycles)
 }
 */
 
-timeval Tools::startMeasurementViaTimeOfDay()
-{
-	timeval tstart;
-	gettimeofday(&tstart, NULL);
-	return tstart;
-}
+//timeval Tools::startMeasurementViaTimeOfDay()
+//{
+//	timeval tstart;
+//	gettimeofday(&tstart, NULL);
+//	return tstart;
+//}
 
-double Tools::stopMeasurementViaTimeOfDay(timeval startTime)
-{
-	timeval tfinish;
-	gettimeofday(&tfinish, NULL);
-	return (tfinish.tv_sec - startTime.tv_sec) +
-	((tfinish.tv_usec - startTime.tv_usec) / 1e6);
-}
+//double Tools::stopMeasurementViaTimeOfDay(timeval startTime)
+//{
+//	timeval tfinish;
+//	gettimeofday(&tfinish, NULL);
+//	return (tfinish.tv_sec - startTime.tv_sec) +
+//	((tfinish.tv_usec - startTime.tv_usec) / 1e6);
+//}
 
-double Tools::getExecutionTimeMs(void (*fun)())
-{
-	return getExecutionTime(fun) * 1000;
-}
+//double Tools::getExecutionTimeMs(void (*fun)())
+//{
+//	return getExecutionTime(fun) * 1000;
+//}
 
-double Tools::getExecutionTime(void (*fun)())
-{
-	timeval before = startMeasurementViaTimeOfDay();
-	fun();
-	return stopMeasurementViaTimeOfDay(before);
-}
+//double Tools::getExecutionTime(void (*fun)())
+//{
+//	timeval before = startMeasurementViaTimeOfDay();
+//	fun();
+//	return stopMeasurementViaTimeOfDay(before);
+//}
 
 

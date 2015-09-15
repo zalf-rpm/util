@@ -128,23 +128,6 @@ const CapillaryRiseRates& Soil::readCapillaryRiseRates()
 
 //------------------------------------------------------------------------------
 
-/**
- * @brief Constructor
- *
- * Parameter initialization
- */
-SoilParameters::SoilParameters() :
-    vs_SoilSandContent(0.4),
-    vs_SoilClayContent(0.05),
-    vs_SoilpH(6.9),
-    _vs_SoilRawDensity(-1),
-    _vs_SoilBulkDensity(-1),
-    _vs_SoilOrganicCarbon(-1),
-    _vs_SoilOrganicMatter(-1),
-    vs_SoilAmmonium(-1),
-    vs_SoilNitrate(-1)
-{}
-
 bool SoilParameters::isValid()
 {
   bool is_valid = true;

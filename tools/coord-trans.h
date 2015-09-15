@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cmath>
 #include <cassert>
 #include <memory>
+#include <climits>
 
 #include "proj_api.h"
 
@@ -185,10 +186,10 @@ struct LatLngCoord : public Coord2D<double>
 {
   static CoordinateSystem latLngCoordinateSystem();
 
-  LatLngCoord() : Coord2D(latLngCoordinateSystem()), lat(0), lng(0) {}
+  LatLngCoord() : Coord2D(latLngCoordinateSystem()), lat(-9999.0), lng(-9999.0) {}
 
   LatLngCoord(CoordinateSystem)
-    : Coord2D(latLngCoordinateSystem()), lat(0), lng(0)
+    : Coord2D(latLngCoordinateSystem()), lat(-9999.0), lng(-9999.0)
   {}
 
   LatLngCoord(double lat, double lng)
@@ -229,8 +230,10 @@ struct LatLngCoord : public Coord2D<double>
 
   bool isZero() const { return int(lat) == 0 && int(lng) == 0; }
 
-  double lat;
-  double lng;
+  bool isValid() const { return int(lat) != -9999 && int(lng) != -9999; }
+
+  double lat{-9999.0};
+  double lng{-9999.0};
   static const double eps;
 };
 

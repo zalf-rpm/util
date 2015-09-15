@@ -92,7 +92,7 @@ namespace Climate
 			//! how many years of continous climate data are needed for the given function
 			int yearSlice;
 			int borderSize; //km
-			Climate::Realizations realizations;
+      std::vector<Climate::ClimateRealization*> realizations;
 			int functionId;
 
       CacheInfo cacheInfo;

@@ -68,6 +68,12 @@ void MysqlDB::lazyInit()
 void MysqlDB::init()
 {
   _connection = mysql_init(NULL);
+  my_bool reconnect(1);
+  mysql_options(_connection, MYSQL_OPT_RECONNECT, &reconnect);
+  unsigned int timeout = 10; //seconds
+  mysql_options(_connection, MYSQL_OPT_READ_TIMEOUT, &timeout);
+//  mysql_options(_connection, MYSQL_OPT_CONNECT_TIMEOUT, &timeout);
+
   if(_connection)
   {
     _isConnected = true;
@@ -76,8 +82,8 @@ void MysqlDB::init()
                            _port, NULL, 0))
     {
       _isConnected = false;
-      cerr << "Error connecting to database: " << mysql_error(_connection)
-          << endl;
+      cout << "Error connecting to database: " << mysql_error(_connection)
+           << endl;
     }
     else
     {
@@ -86,7 +92,7 @@ void MysqlDB::init()
   }
   else
   {
-    cerr << "Couldn't even initialize database connection" << endl;
+    cout << "Couldn't even initialize database connection" << endl;
   }
   _initialized = true;
 }
@@ -99,7 +105,7 @@ bool MysqlDB::exec(const char* query)
   int t = mysql_real_query(_connection, query, (unsigned int)strlen(query));
   if(t != 0)
   {
-    cerr << "Error during query: " << query
+    cout << "Error during query: " << query
     << " \nerror: " << mysql_error(_connection) << endl;
     return false;
   }
@@ -448,7 +454,7 @@ bool SqliteDB::attachDB(std::string pathToDB, std::string alias)
 DB* Db::newConnection(const DBConData& cd)
 {
   DB* db = NULL;
-	
+
 #ifndef NO_SQLITE
 	if(cd.isSqliteDB())
 		db = new SqliteDB(cd.filename);
@@ -458,6 +464,9 @@ DB* Db::newConnection(const DBConData& cd)
   if(cd.isMysqlDB())
 		db = new MysqlDB(cd.host, cd.user, cd.pwd, cd.schema, cd.port);
 #endif
+
+  if(db)
+    db->setAbstractSchemaName(cd.abstractSchemaName);
 
 	return db;
 }

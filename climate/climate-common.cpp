@@ -133,6 +133,31 @@ Climate::availableClimateData2CarbiocialDBColNameAndScaleFactor(AvailableClimate
 	return make_pair("error", 0);
 }
 
+string
+Climate::availableClimateData2UserSqliteDBColNameAndScaleFactor(AvailableClimateData col)
+{
+  switch(col)
+  {
+  case day: return "day";
+  case month: return "month";
+  case year: return "year";
+  case tmin: return "t_min";
+  case tavg: return "t_avg";
+  case tmax: return "t_max";
+  case precip: return "precipitation_mm";
+  case precipOrig: return "precipitation_mm";
+  case globrad: return "global_radiation_mj_per_m2";
+  case relhumid: return "relative_humidity_percent";
+  //case airpress: return "ludr";
+  //case sunhours: return "sonn";
+  //case cloudamount: return "bewo";
+  //case vaporpress: return "dadr";
+  case wind: return "windspeed_m_per_s";
+  default: ;
+  }
+  return "error";
+}
+
 std::string Climate::availableClimateData2Name(AvailableClimateData col)
 {
 	switch(col)
@@ -209,22 +234,33 @@ YearRange Climate::snapToRaster(YearRange yr, int raster)
 //------------------------------------------------------------------------------
 
 DataAccessor::DataAccessor()
-: _data(new VVD), _acd2dataIndex(availableClimateDataSize(), -1),
-_fromStep(0), _numberOfSteps(0){}
+  : _data(new VVD),
+    _acd2dataIndex(availableClimateDataSize(), -1),
+    _fromStep(0),
+    _numberOfSteps(0)
+{}
 
 DataAccessor::DataAccessor(const Tools::Date& startDate,
 													 const Tools::Date& endDate)
-: _startDate(startDate), _endDate(endDate),
-_data(new VVD), _acd2dataIndex(availableClimateDataSize(), -1),
-_fromStep(0), _numberOfSteps(0){}
+  : _startDate(startDate),
+    _endDate(endDate),
+    _data(new VVD),
+    _acd2dataIndex(availableClimateDataSize(), -1),
+    _fromStep(0),
+    _numberOfSteps(0)
+{}
 
 DataAccessor::DataAccessor(const DataAccessor& other)
-: _startDate(other._startDate), _endDate(other._endDate),
-_data(other._data), _acd2dataIndex(other._acd2dataIndex),
-_fromStep(other._fromStep), _numberOfSteps(other._numberOfSteps) {}
+  : _startDate(other._startDate),
+    _endDate(other._endDate),
+    _data(other._data),
+    _acd2dataIndex(other._acd2dataIndex),
+    _fromStep(other._fromStep),
+    _numberOfSteps(other._numberOfSteps)
+{}
 
 double DataAccessor::dataForTimestep(AvailableClimateData acd,
-    unsigned int stepNo) const
+                                     size_t stepNo) const
 {
   short cacheIndex = _acd2dataIndex.at(int(acd));
   return cacheIndex < 0 ? 0.0 : _data->at(cacheIndex).at(_fromStep + stepNo);
@@ -234,26 +270,26 @@ vector<double> DataAccessor::dataAsVector(AvailableClimateData acd) const
 {
   short cacheIndex = _acd2dataIndex.at(int(acd));
   return cacheIndex < 0 ? vector<double>()
-    :vector<double>(_data->at(cacheIndex).begin()+_fromStep,
-                    _data->at(cacheIndex).begin()+_fromStep+noOfStepsPossible());
+                        :vector<double>(_data->at(cacheIndex).begin()+_fromStep,
+                                        _data->at(cacheIndex).begin()+_fromStep+noOfStepsPossible());
 }
 
-DataAccessor DataAccessor::cloneForRange(unsigned int fromStep,
-                                         unsigned int numberOfSteps) const
+DataAccessor DataAccessor::cloneForRange(size_t fromStep,
+                                         size_t numberOfSteps) const
 {
 	//cout << "cloneForRange fromStep: " << fromStep <<
 	//" numberOfSteps: " << numberOfSteps << endl;
   if(!isValid()
-    || fromStep > noOfStepsPossible()
-    || (fromStep + numberOfSteps) > noOfStepsPossible())
+     || fromStep > noOfStepsPossible()
+     || (fromStep + numberOfSteps) > noOfStepsPossible())
     return DataAccessor(); //numberOfSteps = fromStep = 0;
 
-	DataAccessor clone(*this);
+  DataAccessor clone(*this);
   clone._fromStep += fromStep;
 	clone._numberOfSteps = numberOfSteps;
   clone._startDate = clone._startDate + clone._fromStep;
   clone._endDate = clone._startDate + numberOfSteps - 1;
-	return clone;
+  return clone;
 }
 
 void DataAccessor::addClimateData(AvailableClimateData acd,
@@ -275,10 +311,5 @@ void DataAccessor::addOrReplaceClimateData(AvailableClimateData acd,
     addClimateData(acd, data);
   else
     (*_data)[index] = data;
-}
-
-unsigned int DataAccessor::julianDayForStep(int stepNo) const
-{
-	return (_startDate + stepNo).julianDay();
 }
 

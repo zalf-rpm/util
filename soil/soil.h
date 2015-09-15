@@ -34,6 +34,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <functional>
 #include <iostream>
 
+#include "json11/json11.hpp"
+
 namespace Soil
 {
   /**
@@ -41,7 +43,25 @@ namespace Soil
    */
   struct SoilParameters
   {
-    SoilParameters();
+    SoilParameters(){}
+
+    SoilParameters(json11::Json j)
+      : vs_SoilSandContent(j["SoilSandContent"].number_value()),
+        vs_SoilClayContent(j["SoilClayContent"].number_value()),
+        vs_SoilpH(j["SoilpH"].number_value()),
+        vs_SoilStoneContent(j["SoilStoneContent"].number_value()),
+        vs_Lambda(j["Lambda"].number_value()),
+        vs_FieldCapacity(j["FieldCapacity"].number_value()),
+        vs_Saturation(j["Saturation"].number_value()),
+        vs_PermanentWiltingPoint(j["PermanentWiltingPoint"].number_value()),
+        vs_SoilTexture(j["SoilTexture"].string_value()),
+        vs_SoilAmmonium(j["SoilAmmonium"].number_value()),
+        vs_SoilNitrate(j["SoilNitrate"].number_value()),
+        _vs_SoilRawDensity(j["SoilRawDensity"].number_value()),
+        _vs_SoilBulkDensity(j["SoilBulkDensity"].number_value()),
+        _vs_SoilOrganicCarbon(j["SoilOrganicCarbon"].number_value()),
+        _vs_SoilOrganicMatter(j["SoilOrganicMatter"].number_value())
+    {}
 
     double vs_SoilRawDensity() const;
     void set_vs_SoilRawDensity(double srd);
@@ -63,24 +83,45 @@ namespace Soil
 
     bool isValid();
 
+    json11::Json to_json() const
+    {
+      return json11::Json::object {
+        {"type", "SoilParameters"},
+        {"SoilSandContent", vs_SoilSandContent},
+        {"SoilClayContent", vs_SoilClayContent},
+        {"SoilpH", vs_SoilpH},
+        {"SoilStoneContent", vs_SoilStoneContent},
+        {"Lambda", vs_Lambda},
+        {"FieldCapacity", vs_FieldCapacity},
+        {"Saturation", vs_Saturation},
+        {"PermanentWiltingPoint", vs_PermanentWiltingPoint},
+        {"SoilTexture", vs_SoilTexture},
+        {"SoilAmmonium", vs_SoilAmmonium},
+        {"SoilNitrate", vs_SoilNitrate},
+        {"SoilRawDensity", _vs_SoilRawDensity},
+        {"SoilBulkDensity", _vs_SoilBulkDensity},
+        {"SoilOrganicCarbon", _vs_SoilOrganicCarbon},
+        {"SoilOrganicMatter", _vs_SoilOrganicMatter}};
+    }
+
     // members
-    double vs_SoilSandContent;
-    double vs_SoilClayContent;
-    double vs_SoilpH;
-    double vs_SoilStoneContent;
-    double vs_Lambda;
-    double vs_FieldCapacity;
-    double vs_Saturation;
-    double vs_PermanentWiltingPoint;
+    double vs_SoilSandContent{0.4};
+    double vs_SoilClayContent{0.05};
+    double vs_SoilpH{6.9};
+    double vs_SoilStoneContent{0.0};
+    double vs_Lambda{0.0};
+    double vs_FieldCapacity{0.0};
+    double vs_Saturation{0.0};
+    double vs_PermanentWiltingPoint{0.0};
     std::string vs_SoilTexture;
-    double vs_SoilAmmonium;
-    double vs_SoilNitrate;
+    double vs_SoilAmmonium{-1.0};
+    double vs_SoilNitrate{-1.0};
 
   private:
-    double _vs_SoilRawDensity;
-    double _vs_SoilBulkDensity;
-    double _vs_SoilOrganicCarbon;
-    double _vs_SoilOrganicMatter;
+    double _vs_SoilRawDensity{-1.0};
+    double _vs_SoilBulkDensity{-1.0};
+    double _vs_SoilOrganicCarbon{-1.0};
+    double _vs_SoilOrganicMatter{-1.0};
   };
 
   /**

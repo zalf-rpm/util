@@ -718,7 +718,7 @@ GridP::Rc2RowColRes GridP::rc2rowCol(Tools::RectCoord rc) const
 float GridP::dataAt(RectCoord rcc) const
 {
   auto p = rc2rowCol(rcc);
-  return p.row < 0 || p.col < 0
+  return p.row < 0 || p.col < 0 || p.isColOutside || p.isRowOutside
     ? noDataValue() : dataAt(p.row, p.col);
 }
 
