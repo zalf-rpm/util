@@ -63,26 +63,6 @@ namespace Soil
         _vs_SoilOrganicMatter(j["SoilOrganicMatter"].number_value())
     {}
 
-    double vs_SoilRawDensity() const;
-    void set_vs_SoilRawDensity(double srd);
-
-    double vs_SoilBulkDensity() const;
-    void set_vs_SoilBulkDensity(double sbd);
-
-    double vs_SoilOrganicCarbon() const;
-    void set_vs_SoilOrganicCarbon(double soc);
-
-    double vs_SoilOrganicMatter() const;
-    void set_vs_SoilOrganicMatter(double som);
-
-    double vs_SoilSiltContent() const;
-
-    std::string toString() const;
-
-    double texture2lambda(double sand, double clay);
-
-    bool isValid();
-
     json11::Json to_json() const
     {
       return json11::Json::object {
@@ -103,6 +83,26 @@ namespace Soil
         {"SoilOrganicCarbon", _vs_SoilOrganicCarbon},
         {"SoilOrganicMatter", _vs_SoilOrganicMatter}};
     }
+
+    double vs_SoilRawDensity() const;
+    void set_vs_SoilRawDensity(double srd);
+
+    double vs_SoilBulkDensity() const;
+    void set_vs_SoilBulkDensity(double sbd);
+
+    double vs_SoilOrganicCarbon() const;
+    void set_vs_SoilOrganicCarbon(double soc);
+
+    double vs_SoilOrganicMatter() const;
+    void set_vs_SoilOrganicMatter(double som);
+
+    double vs_SoilSiltContent() const;
+
+    std::string toString() const;
+
+    double texture2lambda(double sand, double clay);
+
+    bool isValid();
 
     // members
     double vs_SoilSandContent{0.4};
