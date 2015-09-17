@@ -40,29 +40,65 @@ namespace Tools
     return ts;
   }
 
-  inline std::vector<double> toDoubleVector(const json11::Json& arr)
-  {
-    std::vector<double> ds;
-    for(json11::Json j : arr.array_items())
-      ds.push_back(j.number_value());
-    return ds;
-  }
+//  inline std::vector<double> toDoubleVector(const json11::Json& arr)
+//  {
+//    std::vector<double> ds;
+//    for(json11::Json j : arr.array_items())
+//      ds.push_back(j.number_value());
+//    return ds;
+//  }
 
-  inline std::vector<int> toIntVector(const json11::Json& arr)
-  {
-    std::vector<int> is;
-    for(json11::Json j : arr.array_items())
-      is.push_back(j.int_value());
-    return is;
-  }
+//  inline std::vector<int> toIntVector(const json11::Json& arr)
+//  {
+//    std::vector<int> is;
+//    for(json11::Json j : arr.array_items())
+//      is.push_back(j.int_value());
+//    return is;
+//  }
 
-  inline std::vector<std::string> toStringVector(const json11::Json& arr)
-  {
-    std::vector<std::string> ss;
-    for(json11::Json j : arr.array_items())
-      ss.push_back(j.string_value());
-    return ss;
-  }
+//  inline std::vector<std::string> toStringVector(const json11::Json& arr)
+//  {
+//    std::vector<std::string> ss;
+//    for(json11::Json j : arr.array_items())
+//      ss.push_back(j.string_value());
+//    return ss;
+//  }
+
+  //---------------------------------------------------------------------------------------
+
+  std::vector<double> double_vector(const json11::Json& j, double def = 0.0);
+
+  std::vector<double> double_vector(const json11::Json& object, const std::string& key, double def = 0.0);
+
+  std::vector<int> int_vector(const json11::Json& j, int def = 0);
+
+  std::vector<int> int_vector(const json11::Json& object, const std::string& key, int def = 0);
+
+  std::vector<bool> bool_vector(const json11::Json& j, bool def = false);
+
+  std::vector<bool> bool_vector(const json11::Json& object, const std::string& key, bool def = false);
+
+  std::vector<std::string> string_vector(const json11::Json& j, const std::string& def = std::string());
+
+  std::vector<std::string> string_vector(const json11::Json& object, const std::string& key, const std::string& def = std::string());
+
+  //---------------------------------------------------------------------------------------
+
+  void set_int_value(int& var, const json11::Json& j, const std::string& key, int def = 0);
+
+  int int_value(const json11::Json& j, const std::string& key, int def = 0);
+
+  void set_number_value(double& var, const json11::Json& j, const std::string& key, double def = 0.0);
+
+  double number_value(const json11::Json& j, const std::string& key, double def = 0.0);
+
+  void set_bool_value(bool& var, const json11::Json& j, const std::string& key, bool def = false);
+
+  bool bool_value(const json11::Json& j, const std::string& key, bool def = false);
+
+  void set_string_value(std::string& var, const json11::Json& j, const std::string& key, const std::string& def = std::string());
+
+  std::string string_value(const json11::Json& j, const std::string& key, const std::string& def = std::string());
 
   //---------------------------------------------------------------------------------------
 
