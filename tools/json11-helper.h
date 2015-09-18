@@ -13,6 +13,9 @@
 
 namespace Tools
 {
+  typedef json11::Json::array J11Array;
+  typedef json11::Json::object J11Object;
+
   template<class Collection>
   std::vector<json11::Json> toPrimJsonArray(const Collection& col)
   {
