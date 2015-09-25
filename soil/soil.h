@@ -45,44 +45,9 @@ namespace Soil
   {
     SoilParameters(){}
 
-    SoilParameters(json11::Json j)
-      : vs_SoilSandContent(j["SoilSandContent"].number_value()),
-        vs_SoilClayContent(j["SoilClayContent"].number_value()),
-        vs_SoilpH(j["SoilpH"].number_value()),
-        vs_SoilStoneContent(j["SoilStoneContent"].number_value()),
-        vs_Lambda(j["Lambda"].number_value()),
-        vs_FieldCapacity(j["FieldCapacity"].number_value()),
-        vs_Saturation(j["Saturation"].number_value()),
-        vs_PermanentWiltingPoint(j["PermanentWiltingPoint"].number_value()),
-        vs_SoilTexture(j["SoilTexture"].string_value()),
-        vs_SoilAmmonium(j["SoilAmmonium"].number_value()),
-        vs_SoilNitrate(j["SoilNitrate"].number_value()),
-        _vs_SoilRawDensity(j["SoilRawDensity"].number_value()),
-        _vs_SoilBulkDensity(j["SoilBulkDensity"].number_value()),
-        _vs_SoilOrganicCarbon(j["SoilOrganicCarbon"].number_value()),
-        _vs_SoilOrganicMatter(j["SoilOrganicMatter"].number_value())
-    {}
+    SoilParameters(json11::Json object);
 
-    json11::Json to_json() const
-    {
-      return json11::Json::object {
-        {"type", "SoilParameters"},
-        {"SoilSandContent", vs_SoilSandContent},
-        {"SoilClayContent", vs_SoilClayContent},
-        {"SoilpH", vs_SoilpH},
-        {"SoilStoneContent", vs_SoilStoneContent},
-        {"Lambda", vs_Lambda},
-        {"FieldCapacity", vs_FieldCapacity},
-        {"Saturation", vs_Saturation},
-        {"PermanentWiltingPoint", vs_PermanentWiltingPoint},
-        {"SoilTexture", vs_SoilTexture},
-        {"SoilAmmonium", vs_SoilAmmonium},
-        {"SoilNitrate", vs_SoilNitrate},
-        {"SoilRawDensity", _vs_SoilRawDensity},
-        {"SoilBulkDensity", _vs_SoilBulkDensity},
-        {"SoilOrganicCarbon", _vs_SoilOrganicCarbon},
-        {"SoilOrganicMatter", _vs_SoilOrganicMatter}};
-    }
+    json11::Json to_json() const;
 
     double vs_SoilRawDensity() const;
     void set_vs_SoilRawDensity(double srd);

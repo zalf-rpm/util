@@ -82,7 +82,7 @@ double Soil::ld_eff2trd(int ldEff, double clay)
 double Soil::texture2lambda(double sand, double clay)
 {
 	double lambda = (2.0 * (sand * sand * 0.575)) + (clay * 0.1) + ((1.0 - sand - clay) * 0.35);
-	// lambda = 1.0; /** @todo <b>Claas:</b> Temporary override until we have solved the problem with low water percolation loam soils **/
+  // lambda = 1.0; //! @todo <b>Claas:</b> Temporary override until we have solved the problem with low water percolation loam soils
 	return lambda;
 }
 
