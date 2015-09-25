@@ -105,28 +105,11 @@ geoCoord2climateStation(const LatLngCoord& gc) const
 LatLngCoord ClimateSimulation::
 getClosestClimateDataGeoCoord(const LatLngCoord& gc) const
 {
-  LatLngCoord llc;
-  if(!_stations.empty())
-  {
-    auto closestCS = _stations.front();
-    double minDist = gc.distanceTo(closestCS->geoCoord());
-    for(auto cs : _stations)
-    {
-      if(cs == closestCS)
-        continue;
+  map<double, ClimateStationPtr> dist2cs;
+  for(auto cs : _stations)
+    dist2cs[gc.distanceTo(cs->geoCoord())] = cs;
 
-      double dist = gc.distanceTo(cs->geoCoord());
-      if(dist < minDist)
-      {
-        minDist = dist;
-        closestCS = cs;
-      }
-    }
-
-    //cout << "closestCS: " << closestCS->toString() << endl;
-    llc = closestCS->geoCoord();
-  }
-  return llc;
+  return dist2cs.empty() ? LatLngCoord() : dist2cs.begin()->second->geoCoord();
 }
 
 YearRange ClimateSimulation::availableYearRange()

@@ -252,14 +252,11 @@ namespace Climate
     //! get climatestation by a given geocoord, if not found find the closest one, or none
 		ClimateStation geoCoord2climateStation(const Tools::LatLngCoord& gc) const;
 
-		/*!
-		 * gets the closest geocoordinate where climate data (a climatestation)
-		 * is availabel for the given parameter
-		 * @param gc geocoordinate
-		 * @return closest geocoordinate with climate data for given parameter
-		 */
-		Tools::LatLngCoord
-		getClosestClimateDataGeoCoord(const Tools::LatLngCoord& gc) const;
+    //! gets the closest geocoordinate where climate data (a climatestation)
+    //! is availabel for the given parameter
+    //! @param gc geocoordinate
+    //! @return closest geocoordinate with climate data for given parameter
+    Tools::LatLngCoord getClosestClimateDataGeoCoord(const Tools::LatLngCoord& gc) const;
 
 		/*!
 		 * @return DB connection used to access climate data for this simulation
