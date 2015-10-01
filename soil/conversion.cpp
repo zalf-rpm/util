@@ -79,14 +79,14 @@ double Soil::ld_eff2trd(int ldEff, double clay)
 	return x - (0.9 * clay);
 }
 
-double Soil::texture2lambda(double sand, double clay)
+double Soil::sandAndClay2lambda(double sand, double clay)
 {
 	double lambda = (2.0 * (sand * sand * 0.575)) + (clay * 0.1) + ((1.0 - sand - clay) * 0.35);
   // lambda = 1.0; //! @todo <b>Claas:</b> Temporary override until we have solved the problem with low water percolation loam soils
 	return lambda;
 }
 
-string Soil::texture2KA5(double sand, double clay)
+string Soil::sandAndClay2KA5texture(double sand, double clay)
 {
 	double silt = 1.0 - sand - clay;
 	string soilTexture;
@@ -158,7 +158,7 @@ string Soil::texture2KA5(double sand, double clay)
 	return soilTexture;
 }
 
-double Soil::KA52sand(string soilType)
+double Soil::KA5texture2sand(string soilType)
 {
   double x = 0.0;
 
@@ -265,7 +265,7 @@ double Soil::KA52sand(string soilType)
 }
 
 
-double Soil::KA52clay(string soilType)
+double Soil::KA5texture2clay(string soilType)
 {
   double x = 0.0;
 

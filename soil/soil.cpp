@@ -39,6 +39,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "soil.h"
 #include "tools/debug.h"
 #include "constants.h"
+#include "tools/json11-helper.h"
 
 using namespace Db;
 using namespace std;
@@ -48,36 +49,53 @@ using namespace Soil;
 //----------------------------------------------------------------------------------
 
 SoilParameters::SoilParameters(json11::Json j)
-  : vs_SoilSandContent(j["SoilSandContent"].number_value()),
-    vs_SoilClayContent(j["SoilClayContent"].number_value()),
-    vs_SoilpH(j["SoilpH"].number_value()),
-    vs_SoilStoneContent(j["SoilStoneContent"].number_value()),
-    vs_Lambda(j["Lambda"].number_value()),
-    vs_FieldCapacity(j["FieldCapacity"].number_value()),
-    vs_Saturation(j["Saturation"].number_value()),
-    vs_PermanentWiltingPoint(j["PermanentWiltingPoint"].number_value()),
-    vs_SoilTexture(j["SoilTexture"].string_value()),
-    vs_SoilAmmonium(j["SoilAmmonium"].number_value()),
-    vs_SoilNitrate(j["SoilNitrate"].number_value()),
-    _vs_SoilRawDensity(j["SoilRawDensity"].number_value()),
-    _vs_SoilBulkDensity(j["SoilBulkDensity"].number_value()),
-    _vs_SoilOrganicCarbon(j["SoilOrganicCarbon"].number_value()),
-    _vs_SoilOrganicMatter(j["SoilOrganicMatter"].number_value())
-{}
+  : vs_SoilSandContent(number_value(j, "Sand")),
+    vs_SoilClayContent(number_value(j, "Clay")),
+    vs_SoilpH(number_value(j, "pH")),
+    vs_SoilStoneContent(number_value(j, "Sceleton")),
+    vs_Lambda(number_value(j, "Lambda")),
+    vs_FieldCapacity(number_value(j, "FieldCapacity")),
+    vs_Saturation(number_value(j, "PoreVolume")),
+    vs_PermanentWiltingPoint(number_value(j, "PermanentWiltingPoint")),
+    vs_SoilTexture(string_value(j, "KA5TextureClass")),
+    vs_SoilAmmonium(number_value(j, "SoilAmmonium")),
+    vs_SoilNitrate(number_value(j, "SoilNitrate")),
+    _vs_SoilRawDensity(number_value(j, "SoilRawDensity")),
+    _vs_SoilBulkDensity(number_value(j, "SoilBulkDensity")),
+    _vs_SoilOrganicCarbon(number_value(j, "SoilOrganicCarbon")),
+    _vs_SoilOrganicMatter(number_value(j, "SoilOrganicMatter"))
+{
+  if(vs_SoilTexture != "")
+  {
+    auto res = fcSatPwpFromKA5textureClass(vs_SoilTexture,
+                                      vs_SoilStoneContent,
+                                      vs_SoilRawDensity(),
+                                      vs_SoilOrganicMatter());
+    if(vs_FieldCapacity < 0)
+      vs_FieldCapacity = res.fc;
+    if(vs_Saturation < 0)
+      vs_Saturation = res.sat;
+    if(vs_PermanentWiltingPoint < 0)
+      vs_PermanentWiltingPoint = res.pwp;
+  }
+
+  if(vs_Lambda < 0)
+    vs_Lambda = sandAndClay2lambda(vs_SoilSandContent, vs_SoilClayContent);
+}
 
 json11::Json SoilParameters::to_json() const
 {
-  return json11::Json::object {
+  return J11Object {
     {"type", "SoilParameters"},
-    {"SoilSandContent", vs_SoilSandContent},
-    {"SoilClayContent", vs_SoilClayContent},
-    {"SoilpH", vs_SoilpH},
-    {"SoilStoneContent", vs_SoilStoneContent},
+    {"Sand", vs_SoilSandContent},
+    {"Clay", vs_SoilClayContent},
+    {"pH", vs_SoilpH},
+    {"Sceleton", vs_SoilStoneContent},
     {"Lambda", vs_Lambda},
     {"FieldCapacity", vs_FieldCapacity},
-    {"Saturation", vs_Saturation},
+    {"PoreVolume", vs_Saturation},
     {"PermanentWiltingPoint", vs_PermanentWiltingPoint},
-    {"SoilTexture", vs_SoilTexture},
+    {"KA5TextureClass", vs_SoilTexture},
     {"SoilAmmonium", vs_SoilAmmonium},
     {"SoilNitrate", vs_SoilNitrate},
     {"SoilRawDensity", _vs_SoilRawDensity},
@@ -115,7 +133,6 @@ double CapillaryRiseRates::getRate(std::string bodart, int distance) const
 
   return 0.0;
 }
-
 
 std::map<int,double> CapillaryRiseRates::getMap(std::string bodart) const
 {
@@ -176,45 +193,45 @@ bool SoilParameters::isValid()
   bool is_valid = true;
 
   if (vs_FieldCapacity < 0) {
-      cout << "SoilParameters::Error: No field capacity defined in database for " << vs_SoilTexture.c_str() << " , RawDensity: "<< _vs_SoilRawDensity << endl;
+      debug() << "SoilParameters::Error: No field capacity defined in database for " << vs_SoilTexture << " , RawDensity: "<< _vs_SoilRawDensity << endl;
       is_valid = false;
   }
   if (vs_Saturation < 0) {
-      cout << "SoilParameters::Error: No saturation defined in database for " << vs_SoilTexture.c_str() << " , RawDensity: " << _vs_SoilRawDensity << endl;
+      debug() << "SoilParameters::Error: No saturation defined in database for " << vs_SoilTexture << " , RawDensity: " << _vs_SoilRawDensity << endl;
       is_valid = false;
   }
   if (vs_PermanentWiltingPoint < 0) {
-      cout << "SoilParameters::Error: No saturation defined in database for " << vs_SoilTexture.c_str() << " , RawDensity: " << _vs_SoilRawDensity << endl;
+      debug() << "SoilParameters::Error: No saturation defined in database for " << vs_SoilTexture << " , RawDensity: " << _vs_SoilRawDensity << endl;
       is_valid = false;
   }
 
   if (vs_SoilSandContent<0) {
-      cout << "SoilParameters::Error: Invalid soil sand content: "<< vs_SoilSandContent << endl;
+      debug() << "SoilParameters::Error: Invalid soil sand content: "<< vs_SoilSandContent << endl;
       is_valid = false;
   }
 
   if (vs_SoilClayContent<0) {
-      cout << "SoilParameters::Error: Invalid soil clay content: "<< vs_SoilClayContent << endl;
+      debug() << "SoilParameters::Error: Invalid soil clay content: "<< vs_SoilClayContent << endl;
       is_valid = false;
   }
 
   if (vs_SoilpH<0) {
-      cout << "SoilParameters::Error: Invalid soil ph value: "<< vs_SoilpH << endl;
+      debug() << "SoilParameters::Error: Invalid soil ph value: "<< vs_SoilpH << endl;
       is_valid = false;
   }
 
   if (vs_SoilStoneContent<0) {
-      cout << "SoilParameters::Error: Invalid soil stone content: "<< vs_SoilStoneContent << endl;
+      debug() << "SoilParameters::Error: Invalid soil stone content: "<< vs_SoilStoneContent << endl;
       is_valid = false;
   }
 
   if (vs_Saturation<0) {
-      cout << "SoilParameters::Error: Invalid value for saturation: "<< vs_Saturation << endl;
+      debug() << "SoilParameters::Error: Invalid value for saturation: "<< vs_Saturation << endl;
       is_valid = false;
   }
 
   if (vs_PermanentWiltingPoint<0) {
-      cout << "SoilParameters::Error: Invalid value for permanent wilting point: "<< vs_PermanentWiltingPoint << endl;
+      debug() << "SoilParameters::Error: Invalid value for permanent wilting point: "<< vs_PermanentWiltingPoint << endl;
       is_valid = false;
   }
   /*
@@ -317,7 +334,7 @@ double SoilParameters::vs_SoilSiltContent() const
   if ((vs_SoilSandContent - 0.001) < 0 && (vs_SoilClayContent - 0.001) < 0)
     return 0;
 
-  return 1 - vs_SoilSandContent - vs_SoilClayContent;
+  return 1.0 - vs_SoilSandContent - vs_SoilClayContent;
 }
 
 /**
@@ -356,9 +373,9 @@ string SoilParameters::toString() const
  *
  * @return
  */
-double SoilParameters::texture2lambda(double sand, double clay)
+double SoilParameters::sandAndClay2lambda(double sand, double clay)
 {
-  return ::texture2lambda(sand, clay);
+  return ::sandAndClay2lambda(sand, clay);
 }
 
 //------------------------------------------------------------------------------
@@ -449,11 +466,11 @@ const SoilPMs* Soil::soilParameters(const string& abstractDbSchema,
         if(!row[6].empty())
           p.vs_SoilpH = satof(row[6]);
         if(row[7].empty())
-          p.vs_SoilTexture = texture2KA5(p.vs_SoilSandContent, p.vs_SoilClayContent);
+          p.vs_SoilTexture = sandAndClay2KA5texture(p.vs_SoilSandContent, p.vs_SoilClayContent);
         else
           p.vs_SoilTexture = row[7];
         p.vs_SoilStoneContent = 0.0;
-        p.vs_Lambda = texture2lambda(p.vs_SoilSandContent, p.vs_SoilClayContent);
+        p.vs_Lambda = sandAndClay2lambda(p.vs_SoilSandContent, p.vs_SoilClayContent);
 
         // initialization of saturation, field capacity and perm. wilting point
         soilCharacteristicsKA5(p);
@@ -620,11 +637,11 @@ const SoilPMs* Soil::soilParametersFromHermesFile(int soilId,
 
         SoilParameters p;
         p.set_vs_SoilOrganicCarbon(corg / 100.0); //[kg C 100kg] --> [kg C kg-1]
-        p.set_vs_SoilRawDensity(ld_eff2trd(ld, KA52clay(ba)));
-        p.vs_SoilSandContent = KA52sand(ba);
-        p.vs_SoilClayContent = KA52clay(ba);
+        p.set_vs_SoilRawDensity(ld_eff2trd(ld, KA5texture2clay(ba)));
+        p.vs_SoilSandContent = KA5texture2sand(ba);
+        p.vs_SoilClayContent = KA5texture2clay(ba);
         p.vs_SoilStoneContent = stone / 100.0;
-        p.vs_Lambda = texture2lambda(p.vs_SoilSandContent, p.vs_SoilClayContent);
+        p.vs_Lambda = sandAndClay2lambda(p.vs_SoilSandContent, p.vs_SoilClayContent);
         p.vs_SoilTexture = ba;
 
         if (soil_ph != -1.0) {
@@ -777,20 +794,30 @@ RPSCDRes Soil::readSoilCharacteristicModifier(string soilType, double organicMat
 
 //------------------------------------------------------------------------------
 
-void Soil::soilCharacteristicsKA5(SoilParameters& soilParameter)
+void Soil::soilCharacteristicsKA5(SoilParameters& sp)
+{
+  auto res = fcSatPwpFromKA5textureClass(sp.vs_SoilTexture,
+                                         sp.vs_SoilStoneContent,
+                                         sp.vs_SoilRawDensity(),
+                                         sp.vs_SoilOrganicMatter());
+  sp.vs_FieldCapacity = res.fc;
+  sp.vs_Saturation = res.sat;
+  sp.vs_PermanentWiltingPoint = res.pwp;
+}
+
+FcSatPwp Soil::fcSatPwpFromKA5textureClass(std::string texture,
+                                           double stoneContent,
+                                           double soilRawDensity,
+                                           double soilOrganicMatter)
 {
   debug() << "soilCharacteristicsKA5" << endl;
-  std::string texture = soilParameter.vs_SoilTexture;
-  double stoneContent = soilParameter.vs_SoilStoneContent;
 
-  double fc = 0.0;
-  double sat = 0.0;
-  double pwp = 0.0;
+  FcSatPwp res;
 
   if (texture != "")
   {
-    double srd = soilParameter.vs_SoilRawDensity()/1000.0; // [kg m-3] -> [g cm-3]
-    double som = soilParameter.vs_SoilOrganicMatter()*100.0; // [kg kg-1] -> [%]
+    double srd = soilRawDensity/1000.0; // [kg m-3] -> [g cm-3]
+    double som = soilOrganicMatter*100.0; // [kg kg-1] -> [%]
 
     // ***************************************************************************
     // *** The following boundaries are extracted from:                        ***
@@ -986,26 +1013,25 @@ void Soil::soilCharacteristicsKA5(SoilParameters& soilParameter)
       }
 
       // Modifying the principal values by organic matter
-      fc = (fc_unmod + fc_mod)/100.0; // [m3 m-3]
-      sat = (sat_unmod + sat_mod)/100.0; // [m3 m-3]
-      pwp = (pwp_unmod + pwp_mod)/100.0; // [m3 m-3]
+      res.fc = (fc_unmod + fc_mod)/100.0; // [m3 m-3]
+      res.sat = (sat_unmod + sat_mod)/100.0; // [m3 m-3]
+      res.pwp = (pwp_unmod + pwp_mod)/100.0; // [m3 m-3]
 
       // Modifying the principal values by stone content
-      fc *= (1.0 - stoneContent);
-      sat *= (1.0 - stoneContent);
-      pwp *= (1.0 - stoneContent);
+      res.fc *= (1.0 - stoneContent);
+      res.sat *= (1.0 - stoneContent);
+      res.pwp *= (1.0 - stoneContent);
     }
   }
 
-  debug() << "vs_SoilTexture:\t\t\t" << texture << endl;
-  debug() << "vs_Saturation:\t\t\t" << sat << endl;
-  debug() << "vs_FieldCapacity:\t\t" << fc << endl;
-  debug() << "vs_PermanentWiltingPoint:\t" << pwp << endl << endl;
+  debug() << "SoilTexture:\t\t\t" << texture << endl;
+  debug() << "Saturation:\t\t\t" << res.sat << endl;
+  debug() << "FieldCapacity:\t\t" << res.fc << endl;
+  debug() << "PermanentWiltingPoint:\t" << res.pwp << endl << endl;
 
-  soilParameter.vs_FieldCapacity = fc;
-  soilParameter.vs_Saturation = sat;
-  soilParameter.vs_PermanentWiltingPoint = pwp;
+  return res;
 }
+
 
 //------------------------------------------------------------------------------
 

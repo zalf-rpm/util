@@ -65,19 +65,19 @@ namespace Soil
 
     std::string toString() const;
 
-    double texture2lambda(double sand, double clay);
+    double sandAndClay2lambda(double sand, double clay);
 
     bool isValid();
 
     // members
-    double vs_SoilSandContent{0.4};
-    double vs_SoilClayContent{0.05};
+    double vs_SoilSandContent{-1.0}; //{0.4};
+    double vs_SoilClayContent{-1.0}; //{0.05};
     double vs_SoilpH{6.9};
     double vs_SoilStoneContent{0.0};
-    double vs_Lambda{0.0};
-    double vs_FieldCapacity{0.0};
-    double vs_Saturation{0.0};
-    double vs_PermanentWiltingPoint{0.0};
+    double vs_Lambda{-1.0};
+    double vs_FieldCapacity{-1.0};
+    double vs_Saturation{-1.0};
+    double vs_PermanentWiltingPoint{-1.0};
     std::string vs_SoilTexture;
     double vs_SoilAmmonium{-1.0};
     double vs_SoilNitrate{-1.0};
@@ -124,6 +124,7 @@ namespace Soil
                                 int maxDepthCm,
                                 bool loadSingleParameter = false);
 
+  //! creates a concatenated string of the KA5 soil-textures making up the soil-profile with the given id
   std::string soilProfileId2KA5Layers(const std::string& abstractDbSchema,
                                       int soilProfileId);
 
@@ -141,12 +142,23 @@ namespace Soil
     double sat, fc, pwp;
     bool initialized;
   };
-  RPSCDRes readPrincipalSoilCharacteristicData(std::string soilType,
+  RPSCDRes readPrincipalSoilCharacteristicData(std::string KA5TextureClass,
                                                double rawDensity);
-  RPSCDRes readSoilCharacteristicModifier(std::string soilType,
+  RPSCDRes readSoilCharacteristicModifier(std::string KA5TextureClass,
                                           double organicMatter);
 
   void soilCharacteristicsKA5(SoilParameters&);
+
+  struct FcSatPwp
+  {
+    double fc{0.0};
+    double sat{0.0};
+    double pwp{0.0};
+  };
+  FcSatPwp fcSatPwpFromKA5texture(std::string KA5texture,
+                                  double soilStoneContent,
+                                  double soilRawDensity,
+                                  double soilOrganicMatter);
 }
 
 #endif

@@ -28,9 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace Soil;
 
-/**
- * @brief Definition of organic constants
- */
+//! Definition of organic constants
 double const OrganicConstants::po_UreaMolecularWeight = 0.06006;//[kg mol-1]
 double const OrganicConstants::po_Urea_to_N = 0.46667; //Converts 1 kg urea to 1 kg N
 double const OrganicConstants::po_NH3MolecularWeight = 0.01401; //[kg mol-1]

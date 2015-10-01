@@ -36,14 +36,14 @@ namespace Soil
 
 	double ld_eff2trd(int ldEff, double clay);
 
-	double texture2lambda(double sand, double clay);
+	double sandAndClay2lambda(double sand, double clay);
 
 	//! sand and clay [0 - 1]
-	std::string texture2KA5(double sand, double clay);
+	std::string sandAndClay2KA5texture(double sand, double clay);
 
-	double KA52sand(std::string soilType);
+	double KA5texture2sand(std::string soilType);
 
-	double KA52clay(std::string soilType);
+	double KA5texture2clay(std::string soilType);
 }
 
 
