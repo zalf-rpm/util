@@ -49,21 +49,21 @@ using namespace Soil;
 //----------------------------------------------------------------------------------
 
 SoilParameters::SoilParameters(json11::Json j)
-  : vs_SoilSandContent(number_value(j, "Sand")),
-    vs_SoilClayContent(number_value(j, "Clay")),
-    vs_SoilpH(number_value(j, "pH")),
-    vs_SoilStoneContent(number_value(j, "Sceleton")),
-    vs_Lambda(number_value(j, "Lambda")),
-    vs_FieldCapacity(number_value(j, "FieldCapacity")),
-    vs_Saturation(number_value(j, "PoreVolume")),
-    vs_PermanentWiltingPoint(number_value(j, "PermanentWiltingPoint")),
+  : vs_SoilSandContent(double_value(j, "Sand")),
+    vs_SoilClayContent(double_value(j, "Clay")),
+    vs_SoilpH(double_value(j, "pH")),
+    vs_SoilStoneContent(double_value(j, "Sceleton")),
+    vs_Lambda(double_value(j, "Lambda")),
+    vs_FieldCapacity(double_value(j, "FieldCapacity")),
+    vs_Saturation(double_value(j, "PoreVolume")),
+    vs_PermanentWiltingPoint(double_value(j, "PermanentWiltingPoint")),
     vs_SoilTexture(string_value(j, "KA5TextureClass")),
-    vs_SoilAmmonium(number_value(j, "SoilAmmonium")),
-    vs_SoilNitrate(number_value(j, "SoilNitrate")),
-    _vs_SoilRawDensity(number_value(j, "SoilRawDensity")),
-    _vs_SoilBulkDensity(number_value(j, "SoilBulkDensity")),
-    _vs_SoilOrganicCarbon(number_value(j, "SoilOrganicCarbon")),
-    _vs_SoilOrganicMatter(number_value(j, "SoilOrganicMatter"))
+    vs_SoilAmmonium(double_value(j, "SoilAmmonium")),
+    vs_SoilNitrate(double_value(j, "SoilNitrate")),
+    _vs_SoilRawDensity(double_value(j, "SoilRawDensity")),
+    _vs_SoilBulkDensity(double_value(j, "SoilBulkDensity")),
+    _vs_SoilOrganicCarbon(double_value(j, "SoilOrganicCarbon")),
+    _vs_SoilOrganicMatter(double_value(j, "SoilOrganicMatter"))
 {
   if(vs_SoilTexture != "")
   {

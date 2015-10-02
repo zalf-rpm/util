@@ -69,39 +69,91 @@ namespace Tools
 
   //---------------------------------------------------------------------------------------
 
-  std::vector<double> double_vector(const json11::Json& j, double def = 0.0);
+  std::vector<double> double_vectorD(const json11::Json& j, double def);
 
-  std::vector<double> double_vector(const json11::Json& object, const std::string& key, double def = 0.0);
+  inline std::vector<double> double_vector(const json11::Json& j){ return double_vectorD(j, 0.0); }
 
-  std::vector<int> int_vector(const json11::Json& j, int def = 0);
+  std::vector<double> double_vectorD(const json11::Json& j, const std::string& key, double def);
 
-  std::vector<int> int_vector(const json11::Json& object, const std::string& key, int def = 0);
+  inline std::vector<double> double_vector(const json11::Json& j, const std::string& key){ return double_vectorD(j, key, 0.0); }
 
-  std::vector<bool> bool_vector(const json11::Json& j, bool def = false);
+  //-------
 
-  std::vector<bool> bool_vector(const json11::Json& object, const std::string& key, bool def = false);
+  std::vector<int> int_vectorD(const json11::Json& j, int def);
 
-  std::vector<std::string> string_vector(const json11::Json& j, const std::string& def = std::string());
+  inline std::vector<int> int_vector(const json11::Json& j){ return int_vectorD(j, 0); }
 
-  std::vector<std::string> string_vector(const json11::Json& object, const std::string& key, const std::string& def = std::string());
+  std::vector<int> int_vectorD(const json11::Json& j, const std::string& key, int def);
+
+  inline std::vector<int> int_vector(const json11::Json& j, const std::string& key){ return int_vectorD(j, key, 0); }
+
+  //-------
+
+  std::vector<bool> bool_vectorD(const json11::Json& j, bool def);
+
+  inline std::vector<bool> bool_vector(const json11::Json& j){ return bool_vectorD(j, false); }
+
+  std::vector<bool> bool_vectorD(const json11::Json& j, const std::string& key, bool def);
+
+  inline std::vector<bool> bool_vector(const json11::Json& j, const std::string& key){ return bool_vectorD(j, key, false); }
+
+  //-------
+
+  std::vector<std::string> string_vectorD(const json11::Json& j, const std::string& def);
+
+  inline std::vector<std::string> string_vector(const json11::Json& j){ return string_vectorD(j, std::string()); }
+
+  std::vector<std::string> string_vectorD(const json11::Json& j, const std::string& key, const std::string& def);
+
+  inline std::vector<std::string> string_vector(const json11::Json& j, const std::string& key){ return string_vectorD(j, key, std::string()); }
 
   //---------------------------------------------------------------------------------------
 
   void set_int_value(int& var, const json11::Json& j, const std::string& key, int def = 0);
 
-  int int_value(const json11::Json& j, const std::string& key, int def = 0);
+  int int_valueD(const json11::Json& j, int def);
 
-  void set_number_value(double& var, const json11::Json& j, const std::string& key, double def = 0.0);
+  inline int int_value(const json11::Json& j){ return int_valueD(j, 0); }
 
-  double number_value(const json11::Json& j, const std::string& key, double def = 0.0);
+  int int_valueD(const json11::Json& j, const std::string& key, int def);
+
+  inline int int_value(const json11::Json& j, const std::string& key){ return int_valueD(j, key, 0); }
+
+  //-----
+
+  void set_double_value(double& var, const json11::Json& j, const std::string& key, double def = 0.0);
+
+  double double_valueD(const json11::Json& j, double def);
+
+  inline double double_value(const json11::Json& j){ return double_valueD(j, 0.0); }
+
+  double double_valueD(const json11::Json& j, const std::string& key, double def);
+
+  inline double double_value(const json11::Json& j, const std::string& key){ return double_valueD(j, key, 0.0); }
+
+  //------
 
   void set_bool_value(bool& var, const json11::Json& j, const std::string& key, bool def = false);
 
-  bool bool_value(const json11::Json& j, const std::string& key, bool def = false);
+  bool bool_valueD(const json11::Json& j, bool def);
+
+  inline bool bool_value(const json11::Json& j){ return bool_valueD(j, false); }
+
+  bool bool_valueD(const json11::Json& j, const std::string& key, bool def = false);
+
+  inline bool bool_value(const json11::Json& j, const std::string& key){ return bool_valueD(j, key, false); }
+
+  //-------
 
   void set_string_value(std::string& var, const json11::Json& j, const std::string& key, const std::string& def = std::string());
 
-  std::string string_value(const json11::Json& j, const std::string& key, const std::string& def = std::string());
+  std::string string_valueD(const json11::Json& j, const std::string& def);
+
+  inline std::string string_value(const json11::Json& j){ return string_valueD(j, ""); }
+
+  std::string string_valueD(const json11::Json& j, const std::string& key, const std::string& def);
+
+  inline std::string string_value(const json11::Json& j, const std::string& key){ return string_valueD(j, key, ""); }
 
   //---------------------------------------------------------------------------------------
 

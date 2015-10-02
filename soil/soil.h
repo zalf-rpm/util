@@ -155,10 +155,10 @@ namespace Soil
     double sat{0.0};
     double pwp{0.0};
   };
-  FcSatPwp fcSatPwpFromKA5texture(std::string KA5texture,
-                                  double soilStoneContent,
-                                  double soilRawDensity,
-                                  double soilOrganicMatter);
+  FcSatPwp fcSatPwpFromKA5textureClass(std::string KA5textureClass,
+                                       double soilStoneContent,
+                                       double soilRawDensity,
+                                       double soilOrganicMatter);
 }
 
 #endif
