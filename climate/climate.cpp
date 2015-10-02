@@ -312,7 +312,11 @@ Star2Simulation::Star2Simulation(Db::DB* con)
 
 void Star2Simulation::setScenariosAndRealizations()
 {
-	string reals = Db::dbConnectionParameters().value("used-realizations", "star2", "1, 25, 50, 75, 100");
+  auto dbcps = Db::dbConnectionParameters();
+  auto asn = connection().abstractSchemaName();
+  string star2Section = dbcps.value("abstract-schema", asn) + "." + asn;
+
+  string reals = Db::dbConnectionParameters().value(star2Section, "realizations", "1, 25, 50, 75, 100");
 	vector<string> vsr = Tools::splitString(reals, ", ");
 	vector<int> realizationNumbers;
   for(string s : vsr) { realizationNumbers.push_back(atoi(s.c_str())); }
@@ -591,7 +595,11 @@ CLMSimulation::CLMSimulation(Db::DB* con)
 
 void CLMSimulation::setScenariosAndRealizations()
 {
-	string reals = Db::dbConnectionParameters().value("used-realizations", "clm20-9", "1, 2");
+  auto dbcps = Db::dbConnectionParameters();
+  auto asn = connection().abstractSchemaName();
+  string clmSection = dbcps.value("abstract-schema", asn) + "." + asn;
+
+  string reals = Db::dbConnectionParameters().value(clmSection, "realizations", "1, 2");
 	vector<string> vsr = Tools::splitString(reals, ", ");
 
   auto sc = make_shared<ClimateScenario>("A1B", this);
