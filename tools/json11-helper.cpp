@@ -19,7 +19,8 @@ std::vector<double> Tools::double_vectorD(const json11::Json& j, double def)
   }
   else if(j.is_object())
   {
-    if(j.has_shape({{"value", json11::Json::ARRAY}}, string()))
+		string err;
+    if(j.has_shape({{"value", json11::Json::ARRAY}}, err))
       return double_vectorD(j["value"], def);
   }
 
@@ -28,7 +29,8 @@ std::vector<double> Tools::double_vectorD(const json11::Json& j, double def)
 
 std::vector<double> Tools::double_vectorD(const json11::Json& j, const std::string& key, double def)
 {
-  if(j.has_shape({{key, json11::Json::ARRAY}}, string()))
+	string err;
+  if(j.has_shape({{key, json11::Json::ARRAY}}, err))
   {
     auto a = j[key];
     if(a.array_items().size() > 1 && a[1].is_string() && a[0].is_array())
@@ -36,10 +38,10 @@ std::vector<double> Tools::double_vectorD(const json11::Json& j, const std::stri
     else
       return double_vectorD(a, def);
   }
-  else if(j.has_shape({{key, json11::Json::OBJECT}}, string()))
+  else if(j.has_shape({{key, json11::Json::OBJECT}}, err))
   {
     auto o = j[key];
-    if(o.has_shape({{"value", json11::Json::ARRAY}}, string()))
+    if(o.has_shape({{"value", json11::Json::ARRAY}}, err))
       return double_vectorD(o["value"], def);
   }
 
@@ -64,7 +66,8 @@ std::vector<int> Tools::int_vectorD(const json11::Json& j, int def)
   }
   else if(j.is_object())
   {
-    if(j.has_shape({{"value", json11::Json::ARRAY}}, string()))
+		string err;
+    if(j.has_shape({{"value", json11::Json::ARRAY}}, err))
       return int_vectorD(j["value"], def);
   }
 
@@ -73,7 +76,8 @@ std::vector<int> Tools::int_vectorD(const json11::Json& j, int def)
 
 std::vector<int> Tools::int_vectorD(const json11::Json& j, const std::string& key, int def)
 {
-  if(j.has_shape({{key, json11::Json::ARRAY}}, string()))
+	string err;
+  if(j.has_shape({{key, json11::Json::ARRAY}}, err))
   {
     auto a = j[key];
     if(a.array_items().size() > 1 && a[1].is_string() && a[0].is_array())
@@ -81,10 +85,10 @@ std::vector<int> Tools::int_vectorD(const json11::Json& j, const std::string& ke
     else
       return int_vectorD(a, def);
   }
-  else if(j.has_shape({{key, json11::Json::OBJECT}}, string()))
+  else if(j.has_shape({{key, json11::Json::OBJECT}}, err))
   {
     auto o = j[key];
-    if(o.has_shape({{"value", json11::Json::ARRAY}}, string()))
+    if(o.has_shape({{"value", json11::Json::ARRAY}}, err))
       return int_vectorD(o["value"], def);
   }
 
@@ -109,7 +113,8 @@ std::vector<bool> Tools::bool_vectorD(const json11::Json& j, bool def)
   }
   else if(j.is_object())
   {
-    if(j.has_shape({{"value", json11::Json::ARRAY}}, string()))
+		string err;
+    if(j.has_shape({{"value", json11::Json::ARRAY}}, err))
       return bool_vectorD(j["value"], def);
   }
 
@@ -118,7 +123,8 @@ std::vector<bool> Tools::bool_vectorD(const json11::Json& j, bool def)
 
 std::vector<bool> Tools::bool_vectorD(const json11::Json& j, const std::string& key, bool def)
 {
-  if(j.has_shape({{key, json11::Json::ARRAY}}, string()))
+	string err;
+  if(j.has_shape({{key, json11::Json::ARRAY}}, err))
   {
     auto a = j[key];
     if(a.array_items().size() > 1 && a[1].is_string() && a[0].is_array())
@@ -126,10 +132,10 @@ std::vector<bool> Tools::bool_vectorD(const json11::Json& j, const std::string& 
     else
       return bool_vectorD(a, def);
   }
-  else if(j.has_shape({{key, json11::Json::OBJECT}}, string()))
+  else if(j.has_shape({{key, json11::Json::OBJECT}}, err))
   {
     auto o = j[key];
-    if(o.has_shape({{"value", json11::Json::ARRAY}}, string()))
+    if(o.has_shape({{"value", json11::Json::ARRAY}}, err))
       return bool_vectorD(o["value"], def);
   }
 
@@ -154,7 +160,8 @@ std::vector<string> Tools::string_vectorD(const json11::Json& j, const string& d
   }
   else if(j.is_object())
   {
-    if(j.has_shape({{"value", json11::Json::ARRAY}}, string()))
+		string err;
+    if(j.has_shape({{"value", json11::Json::ARRAY}}, err))
       return string_vectorD(j["value"], def);
   }
 
@@ -163,7 +170,8 @@ std::vector<string> Tools::string_vectorD(const json11::Json& j, const string& d
 
 std::vector<string> Tools::string_vectorD(const json11::Json& j, const std::string& key, const string& def)
 {
-  if(j.has_shape({{key, json11::Json::ARRAY}}, string()))
+	string err;
+  if(j.has_shape({{key, json11::Json::ARRAY}}, err))
   {
     auto a = j[key];
     if(a.array_items().size() > 1 && a[1].is_string() && a[0].is_array())
@@ -171,10 +179,10 @@ std::vector<string> Tools::string_vectorD(const json11::Json& j, const std::stri
     else
       return string_vectorD(a, def);
   }
-  else if(j.has_shape({{key, json11::Json::OBJECT}}, string()))
+  else if(j.has_shape({{key, json11::Json::OBJECT}}, err))
   {
     auto o = j[key];
-    if(o.has_shape({{"value", json11::Json::ARRAY}}, string()))
+    if(o.has_shape({{"value", json11::Json::ARRAY}}, err))
       return string_vectorD(o["value"], def);
   }
 
@@ -186,7 +194,6 @@ std::vector<string> Tools::string_vectorD(const json11::Json& j, const std::stri
 void Tools::set_int_value(int& var, const json11::Json& j, const std::string& key, int def)
 {
   string err;
-
   if(j.has_shape({{key, json11::Json::NUMBER}}, err))
     var = j[key].int_value();
   else if(j.has_shape({{key, json11::Json::ARRAY}}, err))
@@ -233,7 +240,6 @@ int Tools::int_valueD(const json11::Json& j, const std::string& key, int def)
 void Tools::set_double_value(double& var, const json11::Json& j, const std::string& key, double def)
 {
   string err;
-
   if(j.has_shape({{key, json11::Json::NUMBER}}, err))
     var = j[key].number_value();
   else if(j.has_shape({{key, json11::Json::ARRAY}}, err))
@@ -280,7 +286,6 @@ double Tools::double_valueD(const json11::Json& j, const std::string& key, doubl
 void Tools::set_bool_value(bool& var, const json11::Json& j, const std::string& key, bool def)
 {
   string err;
-
   if(j.has_shape({{key, json11::Json::BOOL}}, err))
     var = j[key].bool_value();
   else if(j.has_shape({{key, json11::Json::ARRAY}}, err))
@@ -327,7 +332,6 @@ bool Tools::bool_valueD(const json11::Json& j, const std::string& key, bool def)
 void Tools::set_string_value(string& var, const json11::Json& j, const std::string& key, const string& def)
 {
   string err;
-
   if(j.has_shape({{key, json11::Json::STRING}}, err))
     var = j[key].string_value();
   else if(j.has_shape({{key, json11::Json::ARRAY}}, err))

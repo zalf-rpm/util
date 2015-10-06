@@ -29,7 +29,7 @@ namespace Tools
   std::vector<json11::Json> toJsonArray(const Collection& col)
   {
     std::vector<json11::Json> js;
-    for(Collection::value_type t : col)
+    for(typename Collection::value_type t : col)
       js.push_back(t.to_json());
     return js;
   }
