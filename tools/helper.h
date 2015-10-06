@@ -312,6 +312,8 @@ namespace Tools
 	}
 
   bool satob(const std::string& s, bool def = false);
+
+	inline bool stob(const std::string& s, bool def = false) { return satob(s, def); }
 }
 
 

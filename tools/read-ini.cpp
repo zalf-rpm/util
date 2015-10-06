@@ -81,11 +81,7 @@ void IniParameterMap::parseAndInsert(const string& line)
       name = trim(line.substr(0, sepPos));
       value = trim(line.substr(sepPos + 1));
     }
-
-
-
-
-
+				
     //cout << "name: |" << name << "| = value: |" << value << "|" << endl;
 
 		(*this)[_currentSection].insert(make_pair(name, value));
@@ -117,14 +113,14 @@ int IniParameterMap::valueAsInt(const std::string& section,
                                 const std::string& key, int def) const
 {
 	string res = value(section, key, "");
-	return res.empty() ? def : atoi(res.c_str());
+	return res.empty() ? def : stoi(res);
 }
 
 double IniParameterMap::valueAsDouble(const std::string& section,
                                       const std::string& key, double def) const
 {
 	string res = value(section, key, "");
-	return res.empty() ? def : atof(res.c_str());
+	return res.empty() ? def : stof(res);
 }
 
 bool IniParameterMap::valueAsBool(const std::string& section,
@@ -147,5 +143,5 @@ Date IniParameterMap::valueAsDate(const std::string& section,
                                   Date def) const
 {
   string res = value(section, key, "");
-  return res.empty() ? def : fromMysqlString(res.c_str());
+  return res.empty() ? def : Date::fromIsoDateString(res);
 }
