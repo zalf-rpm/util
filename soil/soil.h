@@ -49,19 +49,21 @@ namespace Soil
 
     json11::Json to_json() const;
 
+    //! Soil layer's silt content [kg kg-1] (Schluff)
+    double vs_SoilSiltContent() const { return (1.0 - vs_SoilSandContent - vs_SoilClayContent); }
+
     double vs_SoilRawDensity() const;
-    void set_vs_SoilRawDensity(double srd);
+    void set_vs_SoilRawDensity(double srd){ _vs_SoilRawDensity = srd; }
 
     double vs_SoilBulkDensity() const;
-    void set_vs_SoilBulkDensity(double sbd);
+    void set_vs_SoilBulkDensity(double sbd){ _vs_SoilBulkDensity = sbd; }
 
-    double vs_SoilOrganicCarbon() const;
-    void set_vs_SoilOrganicCarbon(double soc);
+    double vs_SoilOrganicCarbon() const; //!< Soil layer's organic carbon content [kg C kg-1]
+    void set_vs_SoilOrganicCarbon(double soc){ _vs_SoilOrganicCarbon = soc; }
 
-    double vs_SoilOrganicMatter() const;
-    void set_vs_SoilOrganicMatter(double som);
-
-    double vs_SoilSiltContent() const;
+    //!< Soil layer's organic matter content [kg OM kg-1]
+    double vs_SoilOrganicMatter() const ;
+    void set_vs_SoilOrganicMatter(double som){ _vs_SoilOrganicMatter = som; }
 
     std::string toString() const;
 
@@ -70,17 +72,18 @@ namespace Soil
     bool isValid();
 
     // members
-    double vs_SoilSandContent{-1.0}; //{0.4};
-    double vs_SoilClayContent{-1.0}; //{0.05};
-    double vs_SoilpH{6.9};
-    double vs_SoilStoneContent{0.0};
-    double vs_Lambda{-1.0};
-    double vs_FieldCapacity{-1.0};
-    double vs_Saturation{-1.0};
-    double vs_PermanentWiltingPoint{-1.0};
+    double vs_SoilSandContent{-1.0}; //!< Soil layer's sand content [kg kg-1] //{0.4}
+    double vs_SoilClayContent{-1.0}; //!< Soil layer's clay content [kg kg-1] (Ton) //{0.05}
+    double vs_SoilpH{6.9}; //!< Soil pH value [] //{7.0}
+    double vs_SoilStoneContent{0.0}; //!< Soil layer's stone content in soil [kg kg-1]
+    double vs_Lambda{-1.0}; //!< Soil water conductivity coefficient [] //{0.5}
+    double vs_FieldCapacity{-1.0}; //{0.21}
+    double vs_Saturation{-1.0}; //{0.43}
+    double vs_PermanentWiltingPoint{-1.0}; //{0.08}
     std::string vs_SoilTexture;
     double vs_SoilAmmonium{-1.0};
     double vs_SoilNitrate{-1.0};
+    double vs_Soil_CN_Ratio{10.0};
 
   private:
     double _vs_SoilRawDensity{-1.0};
@@ -159,6 +162,12 @@ namespace Soil
                                        double soilStoneContent,
                                        double soilRawDensity,
                                        double soilOrganicMatter);
+
+  FcSatPwp fcSatPwpFromVanGenuchten(double sandContent,
+                                    double clayContent,
+                                    double stoneContent,
+                                    double soilBulkDensity,
+                                    double soilOrganicCarbon);
 }
 
 #endif

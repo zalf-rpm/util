@@ -60,24 +60,28 @@ SoilParameters::SoilParameters(json11::Json j)
     vs_SoilTexture(string_value(j, "KA5TextureClass")),
     vs_SoilAmmonium(double_value(j, "SoilAmmonium")),
     vs_SoilNitrate(double_value(j, "SoilNitrate")),
+    vs_Soil_CN_Ratio(double_value(j, "CN")),
     _vs_SoilRawDensity(double_value(j, "SoilRawDensity")),
     _vs_SoilBulkDensity(double_value(j, "SoilBulkDensity")),
     _vs_SoilOrganicCarbon(double_value(j, "SoilOrganicCarbon")),
     _vs_SoilOrganicMatter(double_value(j, "SoilOrganicMatter"))
 {
-  if(vs_SoilTexture != "")
-  {
-    auto res = fcSatPwpFromKA5textureClass(vs_SoilTexture,
-                                      vs_SoilStoneContent,
-                                      vs_SoilRawDensity(),
-                                      vs_SoilOrganicMatter());
-    if(vs_FieldCapacity < 0)
-      vs_FieldCapacity = res.fc;
-    if(vs_Saturation < 0)
-      vs_Saturation = res.sat;
-    if(vs_PermanentWiltingPoint < 0)
-      vs_PermanentWiltingPoint = res.pwp;
-  }
+  auto res = vs_SoilTexture == ""
+             ? fcSatPwpFromVanGenuchten(vs_SoilSandContent,
+                                        vs_SoilClayContent,
+                                        vs_SoilStoneContent,
+                                        vs_SoilBulkDensity(),
+                                        vs_SoilOrganicCarbon())
+             : fcSatPwpFromKA5textureClass(vs_SoilTexture,
+                                           vs_SoilStoneContent,
+                                           vs_SoilRawDensity(),
+                                           vs_SoilOrganicMatter());
+  if(vs_FieldCapacity < 0)
+    vs_FieldCapacity = res.fc;
+  if(vs_Saturation < 0)
+    vs_Saturation = res.sat;
+  if(vs_PermanentWiltingPoint < 0)
+    vs_PermanentWiltingPoint = res.pwp;
 
   if(vs_Lambda < 0)
     vs_Lambda = sandAndClay2lambda(vs_SoilSandContent, vs_SoilClayContent);
@@ -98,6 +102,7 @@ json11::Json SoilParameters::to_json() const
     {"KA5TextureClass", vs_SoilTexture},
     {"SoilAmmonium", vs_SoilAmmonium},
     {"SoilNitrate", vs_SoilNitrate},
+    {"CN", vs_Soil_CN_Ratio},
     {"SoilRawDensity", _vs_SoilRawDensity},
     {"SoilBulkDensity", _vs_SoilBulkDensity},
     {"SoilOrganicCarbon", _vs_SoilOrganicCarbon},
@@ -254,15 +259,6 @@ double SoilParameters::vs_SoilRawDensity() const
 }
 
 /**
- * @brief Sets soil raw density
- * @param srd New soil rad density
- */
-void SoilParameters::set_vs_SoilRawDensity(double srd)
-{
-  _vs_SoilRawDensity = srd;
-}
-
-/**
 * @brief Getter for soil bulk density.
 * @return bulk density
 */
@@ -271,17 +267,7 @@ double SoilParameters::vs_SoilBulkDensity() const
   if (_vs_SoilRawDensity < 0)
     return _vs_SoilBulkDensity;
 
-  return (_vs_SoilRawDensity + (0.009 * 100 * vs_SoilClayContent)) * 1000;
-  //return _vs_SoilBulkDensity * 1000;
-}
-
-/**
-* @brief Sets soil bulk density
-* @param sbd New soil bulk density
-*/
-void SoilParameters::set_vs_SoilBulkDensity(double sbd)
-{
-  _vs_SoilBulkDensity = sbd;
+  return (_vs_SoilRawDensity + (0.009*100.0*vs_SoilClayContent))*1000.0;
 }
 
 /**
@@ -297,15 +283,6 @@ double SoilParameters::vs_SoilOrganicCarbon() const
 }
 
 /**
- * @brief Setter of soil organic carbon.
- * @param soc New soil organic carbon
- */
-void SoilParameters::set_vs_SoilOrganicCarbon(double soc)
-{
-  _vs_SoilOrganicCarbon = soc;
-}
-
-/**
  * @brief Getter for soil organic matter.
  * @return Soil organic matter
  */
@@ -314,27 +291,6 @@ double SoilParameters::vs_SoilOrganicMatter() const
   if (_vs_SoilOrganicCarbon < 0)
     return _vs_SoilOrganicMatter;
   return _vs_SoilOrganicCarbon / OrganicConstants::po_SOM_to_C;
-}
-
-/**
- * @brief Setter for soil organic matter.
- * @param som New soil organic matter
- */
-void SoilParameters::set_vs_SoilOrganicMatter(double som)
-{
-  _vs_SoilOrganicMatter = som;
-}
-
-/**
- * @brief Getter for silt content
- * @return silt content
- */
-double SoilParameters::vs_SoilSiltContent() const
-{
-  if ((vs_SoilSandContent - 0.001) < 0 && (vs_SoilClayContent - 0.001) < 0)
-    return 0;
-
-  return 1.0 - vs_SoilSandContent - vs_SoilClayContent;
 }
 
 /**
@@ -644,13 +600,11 @@ const SoilPMs* Soil::soilParametersFromHermesFile(int soilId,
         p.vs_Lambda = sandAndClay2lambda(p.vs_SoilSandContent, p.vs_SoilClayContent);
         p.vs_SoilTexture = ba;
 
-        if (soil_ph != -1.0) {
+        if (soil_ph != -1.0)
           p.vs_SoilpH = soil_ph;
-        }
 
-        if (drainage_coeff != -1.0) {
+        if (drainage_coeff != -1.0)
           p.vs_Lambda = drainage_coeff;
-        }
 
         // initialization of saturation, field capacity and perm. wilting point
         soilCharacteristicsKA5(p);
@@ -1035,3 +989,68 @@ FcSatPwp Soil::fcSatPwpFromKA5textureClass(std::string texture,
 
 //------------------------------------------------------------------------------
 
+FcSatPwp Soil::fcSatPwpFromVanGenuchten(double sandContent,
+                                        double clayContent,
+                                        double stoneContent,
+                                        double soilBulkDensity,
+                                        double soilOrganicCarbon)
+{
+  FcSatPwp res;
+
+  //cout << "Permanent Wilting Point is calculated from van Genuchten parameters" << endl;
+  res.pwp = (0.015 + 0.5*clayContent + 1.4*soilOrganicCarbon)*(1.0 - stoneContent);
+
+  res.sat = (0.81 - 0.283*(soilBulkDensity / 1000.0) + 0.1*clayContent)*(1.0 - stoneContent);
+
+  //    cout << "Field capacity is calculated from van Genuchten parameters" << endl;
+  double thetaR = res.pwp;
+  double thetaS = res.sat;
+
+  double vanGenuchtenAlpha = exp(-2.486
+                                 + 2.5*sandContent
+                                 - 35.1*soilOrganicCarbon
+                                 - 2.617*(soilBulkDensity / 1000.0)
+                                 - 2.3*clayContent);
+
+  double vanGenuchtenM = 1.0;
+
+  double vanGenuchtenN = exp(0.053
+                             - 0.9*sandContent
+                             - 1.3*clayContent
+                             + 1.5*(pow(sandContent, 2.0)));
+
+  //***** Van Genuchten retention curve to calculate volumetric water content at
+  //***** moisture equivalent (Field capacity definition KA5)
+
+  double fieldCapacity_pF = 2.1;
+  if((sandContent > 0.48) && (sandContent <= 0.9) && (clayContent <= 0.12))
+    fieldCapacity_pF = 2.1 - (0.476 * (sandContent - 0.48));
+  else if((sandContent > 0.9) && (clayContent <= 0.05))
+    fieldCapacity_pF = 1.9;
+  else if(clayContent > 0.45)
+    fieldCapacity_pF = 2.5;
+  else if((clayContent > 0.30) && (sandContent < 0.2))
+    fieldCapacity_pF = 2.4;
+  else if(clayContent > 0.35)
+    fieldCapacity_pF = 2.3;
+  else if((clayContent > 0.25) && (sandContent < 0.1))
+    fieldCapacity_pF = 2.3;
+  else if((clayContent > 0.17) && (sandContent > 0.68))
+    fieldCapacity_pF = 2.2;
+  else if((clayContent > 0.17) && (sandContent < 0.33))
+    fieldCapacity_pF = 2.2;
+  else if((clayContent > 0.08) && (sandContent < 0.27))
+    fieldCapacity_pF = 2.2;
+  else if((clayContent > 0.25) && (sandContent < 0.25))
+    fieldCapacity_pF = 2.2;
+
+  double matricHead = pow(10, fieldCapacity_pF);
+
+  res.fc = (thetaR + ((thetaS - thetaR)/
+                      (pow(1.0 + pow(vanGenuchtenAlpha*matricHead,
+                                     vanGenuchtenN),
+                           vanGenuchtenM))))*
+           (1.0 - stoneContent);
+
+  return res;
+}
