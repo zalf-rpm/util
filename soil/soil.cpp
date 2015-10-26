@@ -255,7 +255,7 @@ bool SoilParameters::isValid()
 double SoilParameters::vs_SoilRawDensity() const
 {
   // conversion from g cm-3 in kg m-3
-  return _vs_SoilRawDensity * 1000;
+  return _vs_SoilRawDensity * 1000.0;
 }
 
 /**
@@ -336,7 +336,7 @@ double SoilParameters::sandAndClay2lambda(double sand, double clay)
 
 //------------------------------------------------------------------------------
 
-const SoilPMs* Soil::soilParameters(const string& abstractDbSchema,
+const SoilPMsPtr Soil::soilParameters(const string& abstractDbSchema,
                                       int profileId,
                                       int layerThicknessCm,
                                       int maxDepthCm,
@@ -446,22 +446,22 @@ const SoilPMs* Soil::soilParameters(const string& abstractDbSchema,
     }
   }
 
-  static SoilPMs nothing;
+  static SoilPMsPtr nothing = make_shared<SoilPMs>();
   auto ci2 = spss2.find(abstractDbSchema);
   if(ci2 != spss2.end())
   {
     Map& spss = ci2->second;
     Map::const_iterator ci = spss.find(profileId);
-    return ci != spss.end() ? ci->second.get() : &nothing;
+    return ci != spss.end() ? ci->second : nothing;
   }
 
-  return &nothing;
+  return nothing;
 }
 
 //------------------------------------------------------------------------------
 
 string Soil::soilProfileId2KA5Layers(const string& abstractDbSchema,
-                                       int soilProfileId)
+                                     int soilProfileId)
 {
   static mutex lockable;
 
@@ -512,7 +512,7 @@ string Soil::soilProfileId2KA5Layers(const string& abstractDbSchema,
 
 //------------------------------------------------------------------------------
 
-const SoilPMs* Soil::soilParametersFromHermesFile(int soilId,
+const SoilPMsPtr Soil::soilParametersFromHermesFile(int soilId,
                                                   const string& pathToFile,
                                                   int layerThicknessCm,
                                                   int maxDepthCm,
@@ -625,9 +625,9 @@ const SoilPMs* Soil::soilParametersFromHermesFile(int soilId,
     }
   }
 
-  static SoilPMs nothing;
-  Map::const_iterator ci = spss.find(soilId);
-  return ci != spss.end() ? ci->second.get() : &nothing;
+  static SoilPMsPtr nothing = make_shared<SoilPMs>();
+  auto ci = spss.find(soilId);
+  return ci != spss.end() ? ci->second : nothing;
 }
 
 //------------------------------------------------------------------------------

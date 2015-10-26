@@ -121,22 +121,22 @@ namespace Soil
   typedef std::vector<SoilParameters> SoilPMs;
   typedef std::shared_ptr<SoilPMs> SoilPMsPtr;
 
-  const SoilPMs* soilParameters(const std::string& abstractDbSchema,
-                                int profileId,
-                                int layerThicknessCm,
-                                int maxDepthCm,
-                                bool loadSingleParameter = false);
+  const Soil::SoilPMsPtr soilParameters(const std::string& abstractDbSchema,
+                                        int profileId,
+                                        int layerThicknessCm,
+                                        int maxDepthCm,
+                                        bool loadSingleParameter = false);
 
   //! creates a concatenated string of the KA5 soil-textures making up the soil-profile with the given id
   std::string soilProfileId2KA5Layers(const std::string& abstractDbSchema,
                                       int soilProfileId);
 
-  const SoilPMs* soilParametersFromHermesFile(int soilId,
-                                              const std::string& pathToFile,
-                                              int layerThicknessCm,
-                                              int maxDepthCm,
-                                              double soil_ph = -1.0,
-                                              double drainage_coeff=-1.0);
+  const SoilPMsPtr soilParametersFromHermesFile(int soilId,
+                                                const std::string& pathToFile,
+                                                int layerThicknessCm,
+                                                int maxDepthCm,
+                                                double soil_ph = -1.0,
+                                                double drainage_coeff=-1.0);
 
   struct RPSCDRes
   {
