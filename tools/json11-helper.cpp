@@ -191,7 +191,7 @@ std::vector<string> Tools::string_vectorD(const json11::Json& j, const std::stri
 
 //-------------------
 
-void Tools::set_int_value(int& var, const json11::Json& j, const std::string& key, int def)
+void Tools::set_int_valueD(int& var, const json11::Json& j, const std::string& key, int def, bool useDefault)
 {
   string err;
   if(j.has_shape({{key, json11::Json::NUMBER}}, err))
@@ -208,7 +208,7 @@ void Tools::set_int_value(int& var, const json11::Json& j, const std::string& ke
   }
   else if(j.has_shape({{key, json11::Json::OBJECT}}, err))
     var = int_valueD(j[key], "value", def);
-  else
+  else if(useDefault)
     var = def;
 }
 
@@ -231,13 +231,13 @@ int Tools::int_valueD(const json11::Json& j, int def)
 int Tools::int_valueD(const json11::Json& j, const std::string& key, int def)
 {
   int res(def);
-  set_int_value(res, j, key, def);
+  set_int_valueD(res, j, key, def);
   return res;
 }
 
 //-------------------
 
-void Tools::set_double_value(double& var, const json11::Json& j, const std::string& key, double def)
+void Tools::set_double_valueD(double& var, const json11::Json& j, const std::string& key, double def, bool useDefault)
 {
   string err;
   if(j.has_shape({{key, json11::Json::NUMBER}}, err))
@@ -254,7 +254,7 @@ void Tools::set_double_value(double& var, const json11::Json& j, const std::stri
   }
   else if(j.has_shape({{key, json11::Json::OBJECT}}, err))
     var = double_valueD(j[key], "value", def);
-  else
+  else if(useDefault)
     var = def;
 }
 
@@ -277,13 +277,13 @@ double Tools::double_valueD(const json11::Json& j, double def)
 double Tools::double_valueD(const json11::Json& j, const std::string& key, double def)
 {
   double res(def);
-  set_double_value(res, j, key, def);
+  set_double_valueD(res, j, key, def);
   return res;
 }
 
 //-------------------
 
-void Tools::set_bool_value(bool& var, const json11::Json& j, const std::string& key, bool def)
+void Tools::set_bool_valueD(bool& var, const json11::Json& j, const std::string& key, bool def, bool useDefault)
 {
   string err;
   if(j.has_shape({{key, json11::Json::BOOL}}, err))
@@ -300,7 +300,7 @@ void Tools::set_bool_value(bool& var, const json11::Json& j, const std::string& 
   }
   else if(j.has_shape({{key, json11::Json::OBJECT}}, err))
     var = bool_valueD(j[key], "value", def);
-  else
+  else if(useDefault)
     var = def;
 }
 
@@ -323,13 +323,13 @@ bool Tools::bool_valueD(const json11::Json& j, bool def)
 bool Tools::bool_valueD(const json11::Json& j, const std::string& key, bool def)
 {
   bool res(def);
-  set_bool_value(res, j, key, def);
+  set_bool_valueD(res, j, key, def);
   return res;
 }
 
 //-------------------
 
-void Tools::set_string_value(string& var, const json11::Json& j, const std::string& key, const string& def)
+void Tools::set_string_valueD(string& var, const json11::Json& j, const std::string& key, const string& def, bool useDefault)
 {
   string err;
   if(j.has_shape({{key, json11::Json::STRING}}, err))
@@ -346,7 +346,7 @@ void Tools::set_string_value(string& var, const json11::Json& j, const std::stri
   }
   else if(j.has_shape({{key, json11::Json::OBJECT}}, err))
     var = string_valueD(j[key], "value", def);
-  else
+  else if(useDefault)
     var = def;
 }
 
@@ -369,6 +369,6 @@ string Tools::string_valueD(const json11::Json& j, const string& def)
 string Tools::string_valueD(const json11::Json& j, const std::string& key, const string& def)
 {
   string res(def);
-  set_string_value(res, j, key, def);
+  set_string_valueD(res, j, key, def);
   return res;
 }

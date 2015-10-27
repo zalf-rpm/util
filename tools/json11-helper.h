@@ -109,7 +109,9 @@ namespace Tools
 
   //---------------------------------------------------------------------------------------
 
-  void set_int_value(int& var, const json11::Json& j, const std::string& key, int def = 0);
+  void set_int_valueD(int& var, const json11::Json& j, const std::string& key, int def = 0, bool useDefault = true);
+
+  inline void set_int_value(int& var, const json11::Json& j, const std::string& key){ set_int_valueD(var, j, key, 0, false); }
 
   int int_valueD(const json11::Json& j, int def);
 
@@ -121,19 +123,23 @@ namespace Tools
 
   //-----
 
-  void set_double_value(double& var, const json11::Json& j, const std::string& key, double def = 0.0);
+  void set_double_valueD(double& var, const json11::Json& j, const std::string& key, double def = 0.0, bool useDefault = true);
+
+  inline void set_double_value(double& var, const json11::Json& j, const std::string& key){ set_double_valueD(var, j, key, 0.0, false); }
 
   double double_valueD(const json11::Json& j, double def);
 
-  inline double double_value(const json11::Json& j){ return double_valueD(j, 0.0); }
+  double double_value(const json11::Json& j){ return double_valueD(j, 0.0); }
 
   double double_valueD(const json11::Json& j, const std::string& key, double def);
 
-  inline double double_value(const json11::Json& j, const std::string& key){ return double_valueD(j, key, 0.0); }
+  double double_value(const json11::Json& j, const std::string& key){ return double_valueD(j, key, 0.0); }
 
   //------
 
-  void set_bool_value(bool& var, const json11::Json& j, const std::string& key, bool def = false);
+  void set_bool_valueD(bool& var, const json11::Json& j, const std::string& key, bool def = false, bool useDefault = true);
+
+  inline void set_bool_value(bool& var, const json11::Json& j, const std::string& key){ set_bool_valueD(var, j, key, false, false); }
 
   bool bool_valueD(const json11::Json& j, bool def);
 
@@ -145,7 +151,10 @@ namespace Tools
 
   //-------
 
-  void set_string_value(std::string& var, const json11::Json& j, const std::string& key, const std::string& def = std::string());
+  void set_string_valueD(std::string& var, const json11::Json& j, const std::string& key, const std::string& def = std::string(),
+                        bool useDefault = true);
+
+  inline void set_string_value(std::string& var, const json11::Json& j, const std::string& key){ set_string_valueD(var, j, key, "", false); }
 
   std::string string_valueD(const json11::Json& j, const std::string& def);
 
