@@ -129,11 +129,11 @@ namespace Tools
 
   double double_valueD(const json11::Json& j, double def);
 
-  double double_value(const json11::Json& j){ return double_valueD(j, 0.0); }
+  inline double double_value(const json11::Json& j){ return double_valueD(j, 0.0); }
 
   double double_valueD(const json11::Json& j, const std::string& key, double def);
 
-  double double_value(const json11::Json& j, const std::string& key){ return double_valueD(j, key, 0.0); }
+  inline double double_value(const json11::Json& j, const std::string& key){ return double_valueD(j, key, 0.0); }
 
   //------
 

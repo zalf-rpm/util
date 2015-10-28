@@ -299,7 +299,7 @@ void DataAccessor::addClimateData(AvailableClimateData acd,
     assert(_numberOfSteps = data.size());
 
 	_data->push_back(data);
-	_acd2dataIndex[int(acd)] = _data->size() - 1;
+	_acd2dataIndex[int(acd)] = short(_data->size() - 1);
 	_numberOfSteps = _data->empty() ? 0 : _data->front().size();
 }
 
