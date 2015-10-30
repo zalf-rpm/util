@@ -1,3 +1,4 @@
+#include <cstdlib>
 
 #include "helper.h"
 
@@ -20,4 +21,15 @@ bool Tools::satob(const std::string& s, bool def)
   default:
     return def;
   }
+}
+
+void Tools::ensureDirExists(std::string& path)
+{
+#ifdef WIN32
+  string mkdir("mkdir -p ");
+#else
+  string mkdir("mkdir ");
+#endif
+
+ system((mkdir + path).c_str());
 }
