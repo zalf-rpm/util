@@ -81,9 +81,10 @@ namespace Soil
     double vs_Saturation{-1.0}; //{0.43}
     double vs_PermanentWiltingPoint{-1.0}; //{0.08}
     std::string vs_SoilTexture;
-    double vs_SoilAmmonium{-1.0};
-    double vs_SoilNitrate{-1.0};
+    double vs_SoilAmmonium{0.0001}; //!< soil ammonium content [kg NH4-N m-3]
+    double vs_SoilNitrate{0.0001}; //!< soil nitrate content [kg NO3-N m-3]
     double vs_Soil_CN_Ratio{10.0};
+    double vs_SoilMoisturePercentFC{100.0};
 
   private:
     double _vs_SoilRawDensity{-1.0};
