@@ -348,10 +348,12 @@ DBRow SqliteDB::getRow()
       switch(type)
       {
       case SQLITE_INTEGER:
-        row.push_back(to_string(sqlite3_column_int(_ppStmt, i)));
+        //row.push_back(to_string(sqlite3_column_int(_ppStmt, i)));
+				row.push_back((const char*)sqlite3_column_text(_ppStmt, i));
         break;
       case SQLITE_FLOAT:
-        row.push_back(to_string(sqlite3_column_double(_ppStmt, i)));
+        //row.push_back(to_string(sqlite3_column_double(_ppStmt, i)));
+				row.push_back((const char*)sqlite3_column_text(_ppStmt, i));
         break;
       case SQLITE_TEXT:
       case SQLITE_BLOB:
