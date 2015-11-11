@@ -315,6 +315,10 @@ namespace Tools
 
 	inline bool stob(const std::string& s, bool def = false) { return satob(s, def); }
 
+	inline std::string surround(std::string with, std::string str){ return with + str + with;  };
+
+	std::string fixSystemSeparator(std::string path);
+
   void ensureDirExists(std::string& path);
 }
 

@@ -1,4 +1,6 @@
 #include <cstdlib>
+#include <iostream>
+#include <string>
 
 #include "helper.h"
 
@@ -23,13 +25,29 @@ bool Tools::satob(const std::string& s, bool def)
   }
 }
 
+string Tools::fixSystemSeparator(std::string path)
+{
+#ifdef WIN32
+	auto pos = path.find("/");
+	while(pos != string::npos)
+	{
+		path.replace(pos, 1, "\\");
+		pos = path.find("/", pos + 1);
+	}
+#endif
+	return path;
+}
+
 void Tools::ensureDirExists(std::string& path)
 {
 #ifdef WIN32
-  string mkdir("mkdir -p ");
-#else
   string mkdir("mkdir ");
+#else
+  string mkdir("mkdir -p ");
 #endif
 
- system((mkdir + path).c_str());
+	string fullCmd = fixSystemSeparator(mkdir + path);
+	
+	int res = system(fullCmd.c_str());
+	//cout << "res: " << res << endl;
 }
