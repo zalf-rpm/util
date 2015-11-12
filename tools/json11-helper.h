@@ -13,6 +13,17 @@
 
 namespace Tools
 {
+  struct Json11Serializable
+  {
+    virtual void merge(json11::Json j) = 0;
+
+    virtual json11::Json to_json() const = 0;
+
+    virtual std::string toString() const { return to_json().dump(); }
+  };
+
+  //-------------------------------------------
+
   typedef json11::Json::array J11Array;
   typedef json11::Json::object J11Object;
 
@@ -69,49 +80,164 @@ namespace Tools
 
   //---------------------------------------------------------------------------------------
 
-  std::vector<double> double_vectorD(const json11::Json& j, double def);
+  void set_double_vectorD(std::vector<double>& var,
+                          const json11::Json& j,
+                          const std::string& key,
+                          const std::vector<double>& def,
+                          double defaultValue = 0.0,
+                          bool useDefault = true);
 
-  inline std::vector<double> double_vector(const json11::Json& j){ return double_vectorD(j, 0.0); }
+  inline void set_double_vector(std::vector<double>& var,
+                                const json11::Json& j,
+                                const std::string& key)
+  {
+    set_double_vectorD(var, j, key, std::vector<double>(), 0.0, false);
+  }
 
-  std::vector<double> double_vectorD(const json11::Json& j, const std::string& key, double def);
+  std::vector<double> double_vectorD(const json11::Json& j,
+                                     const std::vector<double>& def,
+                                     double defaultValue = 0.0);
 
-  inline std::vector<double> double_vector(const json11::Json& j, const std::string& key){ return double_vectorD(j, key, 0.0); }
+  inline std::vector<double> double_vector(const json11::Json& j)
+  {
+    return double_vectorD(j, std::vector<double>());
+  }
+
+  std::vector<double> double_vectorD(const json11::Json& j,
+                                     const std::string& key,
+                                     const std::vector<double>& def,
+                                     double defaultValue = 0.0);
+
+  inline std::vector<double> double_vector(const json11::Json& j,
+                                           const std::string& key)
+  {
+    return double_vectorD(j, key, std::vector<double>());
+  }
 
   //-------
 
-  std::vector<int> int_vectorD(const json11::Json& j, int def);
+  void set_int_vectorD(std::vector<int>& var,
+                       const json11::Json& j,
+                       const std::string& key,
+                       const std::vector<int>& def,
+                       int defaultValue = 0,
+                       bool useDefault = true);
 
-  inline std::vector<int> int_vector(const json11::Json& j){ return int_vectorD(j, 0); }
+  inline void set_int_vector(std::vector<int>& var,
+                             const json11::Json& j,
+                             const std::string& key)
+  {
+    set_int_vectorD(var, j, key, std::vector<int>(), 0, false);
+  }
 
-  std::vector<int> int_vectorD(const json11::Json& j, const std::string& key, int def);
+  std::vector<int> int_vectorD(const json11::Json& j,
+                               const std::vector<int>& def,
+                               int defaultValue = 0);
 
-  inline std::vector<int> int_vector(const json11::Json& j, const std::string& key){ return int_vectorD(j, key, 0); }
+  inline std::vector<int> int_vector(const json11::Json& j)
+  {
+    return int_vectorD(j, std::vector<int>());
+  }
+
+  std::vector<int> int_vectorD(const json11::Json& j,
+                               const std::string& key,
+                               const std::vector<int>& def,
+                               int defaultValue = 0);
+
+  inline std::vector<int> int_vector(const json11::Json& j,
+                                     const std::string& key)
+  {
+    return int_vectorD(j, key, std::vector<int>());
+  }
 
   //-------
 
-  std::vector<bool> bool_vectorD(const json11::Json& j, bool def);
+  void set_bool_vectorD(std::vector<bool>& var,
+                        const json11::Json& j,
+                        const std::string& key,
+                        const std::vector<bool>& def,
+                        bool defaultValue = false,
+                        bool useDefault = true);
 
-  inline std::vector<bool> bool_vector(const json11::Json& j){ return bool_vectorD(j, false); }
+  inline void set_bool_vector(std::vector<bool>& var,
+                              const json11::Json& j,
+                              const std::string& key)
+  {
+    set_bool_vectorD(var, j, key, std::vector<bool>(), false, false);
+  }
 
-  std::vector<bool> bool_vectorD(const json11::Json& j, const std::string& key, bool def);
+  std::vector<bool> bool_vectorD(const json11::Json& j,
+                                 const std::vector<bool>& def,
+                                 bool defaultValue = false);
 
-  inline std::vector<bool> bool_vector(const json11::Json& j, const std::string& key){ return bool_vectorD(j, key, false); }
+  inline std::vector<bool> bool_vector(const json11::Json& j)
+  {
+    return bool_vectorD(j, std::vector<bool>());
+  }
+
+  std::vector<bool> bool_vectorD(const json11::Json& j,
+                                 const std::string& key,
+                                 const std::vector<bool>& def,
+                                 bool defaultValue = false);
+
+  inline std::vector<bool> bool_vector(const json11::Json& j,
+                                       const std::string& key)
+  {
+    return bool_vectorD(j, key, std::vector<bool>());
+  }
 
   //-------
 
-  std::vector<std::string> string_vectorD(const json11::Json& j, const std::string& def);
+  void set_string_vectorD(std::vector<std::string>& var,
+                          const json11::Json& j,
+                          const std::string& key,
+                          const std::vector<std::string>& def,
+                          const std::string& defaultValue = std::string(),
+                          bool useDefault = true);
 
-  inline std::vector<std::string> string_vector(const json11::Json& j){ return string_vectorD(j, std::string()); }
+  inline void set_string_vector(std::vector<std::string>& var,
+                                const json11::Json& j,
+                                const std::string& key)
+  {
+    set_string_vectorD(var, j, key, std::vector<std::string>(), "", false);
+  }
 
-  std::vector<std::string> string_vectorD(const json11::Json& j, const std::string& key, const std::string& def);
+  std::vector<std::string>
+  string_vectorD(const json11::Json& j,
+                 const std::vector<std::string>& def,
+                 const std::string& defaultValue = std::string());
 
-  inline std::vector<std::string> string_vector(const json11::Json& j, const std::string& key){ return string_vectorD(j, key, std::string()); }
+  inline std::vector<std::string> string_vector(const json11::Json& j)
+  {
+    return string_vectorD(j, std::vector<std::string>());
+  }
+
+  std::vector<std::string>
+  string_vectorD(const json11::Json& j,
+                 const std::string& key,
+                 const std::vector<std::string>& def,
+                 const std::string& defaultValue = std::string());
+
+  inline std::vector<std::string> string_vector(const json11::Json& j,
+                                                const std::string& key)
+  {
+    return string_vectorD(j, key, std::vector<std::string>());
+  }
 
   //---------------------------------------------------------------------------------------
 
-  void set_int_valueD(int& var, const json11::Json& j, const std::string& key, int def = 0, bool useDefault = true);
 
-  inline void set_int_value(int& var, const json11::Json& j, const std::string& key){ set_int_valueD(var, j, key, 0, false); }
+  void set_int_valueD(int& var, const json11::Json& j,
+                      const std::string& key,
+                      int def = 0,
+                      bool useDefault = true);
+
+  inline void set_int_value(int var,
+                            const json11::Json& j,
+                            const std::string& key)
+  {
+    set_int_valueD(var, j, key, 0, false);
+  }
 
   int int_valueD(const json11::Json& j, int def);
 
@@ -119,102 +245,192 @@ namespace Tools
 
   int int_valueD(const json11::Json& j, const std::string& key, int def);
 
-  inline int int_value(const json11::Json& j, const std::string& key){ return int_valueD(j, key, 0); }
+  inline int int_value(const json11::Json& j, const std::string& key)
+  {
+    return int_valueD(j, key, 0);
+  }
 
   //-----
 
-  void set_double_valueD(double& var, const json11::Json& j, const std::string& key, double def = 0.0, bool useDefault = true);
+  void set_double_valueD(double& var,
+                         const json11::Json& j,
+                         const std::string& key,
+                         double def = 0.0,
+                         bool useDefault = true);
 
-  inline void set_double_value(double& var, const json11::Json& j, const std::string& key){ set_double_valueD(var, j, key, 0.0, false); }
+  inline void set_double_value(double& var,
+                               const json11::Json& j,
+                               const std::string& key)
+  {
+    set_double_valueD(var, j, key, 0.0, false);
+  }
 
   double double_valueD(const json11::Json& j, double def);
 
-  inline double double_value(const json11::Json& j){ return double_valueD(j, 0.0); }
+  inline double double_value(const json11::Json& j)
+  {
+    return double_valueD(j, 0.0);
+  }
 
-  double double_valueD(const json11::Json& j, const std::string& key, double def);
+  double double_valueD(const json11::Json& j,
+                       const std::string& key,
+                       double def);
 
-  inline double double_value(const json11::Json& j, const std::string& key){ return double_valueD(j, key, 0.0); }
+  inline double double_value(const json11::Json& j, const std::string& key)
+  {
+    return double_valueD(j, key, 0.0);
+  }
 
   //------
 
-  void set_bool_valueD(bool& var, const json11::Json& j, const std::string& key, bool def = false, bool useDefault = true);
+  void set_bool_valueD(bool& var,
+                       const json11::Json& j,
+                       const std::string& key,
+                       bool def = false,
+                       bool useDefault = true);
 
-  inline void set_bool_value(bool& var, const json11::Json& j, const std::string& key){ set_bool_valueD(var, j, key, false, false); }
+  inline void set_bool_value(bool& var,
+                             const json11::Json& j,
+                             const std::string& key){
+    set_bool_valueD(var, j, key, false, false);
+  }
 
   bool bool_valueD(const json11::Json& j, bool def);
 
   inline bool bool_value(const json11::Json& j){ return bool_valueD(j, false); }
 
-  bool bool_valueD(const json11::Json& j, const std::string& key, bool def = false);
+  bool bool_valueD(const json11::Json& j,
+                   const std::string& key,
+                   bool def = false);
 
-  inline bool bool_value(const json11::Json& j, const std::string& key){ return bool_valueD(j, key, false); }
+  inline bool bool_value(const json11::Json& j, const std::string& key)
+  {
+    return bool_valueD(j, key, false);
+  }
 
   //-------
 
-  void set_string_valueD(std::string& var, const json11::Json& j, const std::string& key, const std::string& def = std::string(),
-                        bool useDefault = true);
+  void set_string_valueD(std::string& var, const json11::Json& j,
+                         const std::string& key,
+                         const std::string& def = std::string(),
+                         bool useDefault = true);
 
-  inline void set_string_value(std::string& var, const json11::Json& j, const std::string& key){ set_string_valueD(var, j, key, "", false); }
+  inline void set_string_value(std::string& var,
+                               const json11::Json& j,
+                               const std::string& key)
+  {
+    set_string_valueD(var, j, key, "", false);
+  }
 
   std::string string_valueD(const json11::Json& j, const std::string& def);
 
-  inline std::string string_value(const json11::Json& j){ return string_valueD(j, ""); }
+  inline std::string string_value(const json11::Json& j)
+  {
+    return string_valueD(j, "");
+  }
 
-  std::string string_valueD(const json11::Json& j, const std::string& key, const std::string& def);
+  std::string string_valueD(const json11::Json& j,
+                            const std::string& key,
+                            const std::string& def);
 
-  inline std::string string_value(const json11::Json& j, const std::string& key){ return string_valueD(j, key, ""); }
+  inline std::string string_value(const json11::Json& j, const std::string& key)
+  {
+    return string_valueD(j, key, "");
+  }
+
+  //-------
+
+  void set_iso_date_value(Tools::Date& var,
+                          const json11::Json& j,
+                          const std::string& key);
+
+  template<class C>
+  void set_shared_ptr_value(std::shared_ptr<C>& var,
+                            const json11::Json& j,
+                            const std::string& key)
+  {
+    string err;
+    if(j.has_shape({{key, json11::Json::OBJECT}}, err))
+      var = make_shared<C>(j[key]);
+  }
+
+  template<class C>
+  void set_ptr_value(C& var,
+                     const json11::Json& j,
+                     const std::string& key)
+  {
+    string err;
+    if(j.has_shape({{key, json11::Json::OBJECT}}, err))
+      var = new C(j[key]);
+  }
+
+  template<class C>
+  void set_value_obj_value(C& var,
+                           const json11::Json& j,
+                           const std::string& key)
+  {
+    string err;
+    if(j.has_shape({{key, json11::Json::OBJECT}}, err))
+      var = C(j[key]);
+  }
 
   //---------------------------------------------------------------------------------------
 
-  inline json11::Json::array cljson11Collection(std::string type, std::initializer_list<json11::Json> l = std::initializer_list<json11::Json>())
+  inline json11::Json::array
+  cljson11Collection(std::string type,
+                     std::initializer_list<json11::Json> l
+                     = std::initializer_list<json11::Json>())
   {
     json11::Json::array a{ type };
     for(auto j : l) a.push_back(j);
     return a; //a.insert(a.end(), l.begin(), l.end());
   }
 
-  inline json11::Json::array cljson11Vector(std::initializer_list<json11::Json> l = std::initializer_list<json11::Json>())
+  inline json11::Json::array
+  cljson11Vector(std::initializer_list<json11::Json> l
+                 = std::initializer_list<json11::Json>())
   {
     return cljson11Collection("v", l);
   }
 
-  inline json11::Json::array cljson11Map(std::initializer_list<json11::Json> l = std::initializer_list<json11::Json>())
+  inline json11::Json::array
+  cljson11Map(std::initializer_list<json11::Json> l
+              = std::initializer_list<json11::Json>())
   {
     return cljson11Collection("m", l);
   }
 
-  inline json11::Json::array cljson11Set(std::initializer_list<json11::Json> l = std::initializer_list<json11::Json>())
+  inline json11::Json::array
+  cljson11Set(std::initializer_list<json11::Json> l
+              = std::initializer_list<json11::Json>())
   {
     return cljson11Collection("s", l);
   }
 
-  inline json11::Json::array cljson11List(std::initializer_list<json11::Json> l = std::initializer_list<json11::Json>())
+  inline json11::Json::array
+  cljson11List(std::initializer_list<json11::Json> l
+               = std::initializer_list<json11::Json>())
   {
     return cljson11Collection("l", l);
   }
 
-  inline json11::Json cljson11Keyword(const std::string& kw) { return json11::Json::array { "k", kw }; }
+  inline json11::Json cljson11Keyword(const std::string& kw)
+  {
+    return json11::Json::array { "k", kw };
+  }
 
-  inline json11::Json cljson11Symbol(const std::string& s) { return json11::Json::array { "y", s }; }
+  inline json11::Json cljson11Symbol(const std::string& s)
+  {
+    return json11::Json::array { "y", s };
+  }
 
-  inline json11::Json cljson11Date(const Tools::Date& d) { return json11::Json::array { "inst", d.toIsoDateString() + "T00:00:00.000-00:00" }; }
+  inline json11::Json cljson11Date(const Tools::Date& d)
+  {
+    return json11::Json::array {
+      "inst",
+      d.toIsoDateString() + "T00:00:00.000-00:00" };
+  }
 
-  //  json11::Json cljsonUuid(const QUuid& uuid);
-
-//  QVariant encodeString(QString s);
-
-//  QVariant encodeCljsonFormat(QVariant v);
-
-//  QJsonArray encodeCljson(QVariantList v);
-
-//  inline QByteArray encodeToCljsonByteArray(QVariantList v)
-//  {
-//    return QJsonDocument(encodeCljson(v)).toJson();
-//  }
-
-//  QVariant decodeCljson(QJsonValue v);
-
-//  QVariant decodeCljsonTagged(QJsonArray a);
 }
 
 #endif

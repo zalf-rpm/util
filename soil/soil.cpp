@@ -49,24 +49,30 @@ using namespace Soil;
 //----------------------------------------------------------------------------------
 
 SoilParameters::SoilParameters(json11::Json j)
-  : vs_SoilSandContent(double_value(j, "Sand"))
-  , vs_SoilClayContent(double_value(j, "Clay"))
-  , vs_SoilpH(double_value(j, "pH"))
-  , vs_SoilStoneContent(double_value(j, "Sceleton"))
-  , vs_Lambda(double_value(j, "Lambda"))
-  , vs_FieldCapacity(double_value(j, "FieldCapacity"))
-  , vs_Saturation(double_value(j, "PoreVolume"))
-  , vs_PermanentWiltingPoint(double_value(j, "PermanentWiltingPoint"))
-  , vs_SoilTexture(string_value(j, "KA5TextureClass"))
-  , vs_SoilAmmonium(double_value(j, "SoilAmmonium"))
-  , vs_SoilNitrate(double_value(j, "SoilNitrate"))
-  , vs_Soil_CN_Ratio(double_value(j, "CN"))
-  , vs_SoilMoisturePercentFC(double_value(j, "SoilMoisturePercentFC"))
-  , _vs_SoilRawDensity(double_value(j, "SoilRawDensity"))
-  , _vs_SoilBulkDensity(double_value(j, "SoilBulkDensity"))
-  , _vs_SoilOrganicCarbon(double_value(j, "SoilOrganicCarbon"))
-  , _vs_SoilOrganicMatter(double_value(j, "SoilOrganicMatter"))
 {
+  merge(j);
+}
+
+void SoilParameters::merge(json11::Json j)
+{
+  set_double_value(vs_SoilSandContent, j, "Sand");
+  set_double_value(vs_SoilClayContent, j, "Clay");
+  set_double_value(vs_SoilpH, j, "pH");
+  set_double_value(vs_SoilStoneContent, j, "Sceleton");
+  set_double_value(vs_Lambda, j, "Lambda");
+  set_double_value(vs_FieldCapacity, j, "FieldCapacity");
+  set_double_value(vs_Saturation, j, "PoreVolume");
+  set_double_value(vs_PermanentWiltingPoint, j, "PermanentWiltingPoint");
+  set_string_value(vs_SoilTexture, j, "KA5TextureClass");
+  set_double_value(vs_SoilAmmonium, j, "SoilAmmonium");
+  set_double_value(vs_SoilNitrate, j, "SoilNitrate");
+  set_double_value(vs_Soil_CN_Ratio, j, "CN");
+  set_double_value(vs_SoilMoisturePercentFC, j, "SoilMoisturePercentFC");
+  set_double_value(_vs_SoilRawDensity, j, "SoilRawDensity");
+  set_double_value(_vs_SoilBulkDensity, j, "SoilBulkDensity");
+  set_double_value(_vs_SoilOrganicCarbon, j, "SoilOrganicCarbon");
+  set_double_value(_vs_SoilOrganicMatter, j, "SoilOrganicMatter");
+
   auto res = vs_SoilTexture == ""
              ? fcSatPwpFromVanGenuchten(vs_SoilSandContent,
                                         vs_SoilClayContent,
@@ -293,35 +299,6 @@ double SoilParameters::vs_SoilOrganicMatter() const
   if (_vs_SoilOrganicCarbon < 0)
     return _vs_SoilOrganicMatter;
   return _vs_SoilOrganicCarbon / OrganicConstants::po_SOM_to_C;
-}
-
-/**
- * @brief Serializes soil parameters into a string.
- * @return String of soil parameters
- */
-string SoilParameters::toString() const
-{
-  ostringstream s;
-  s << "vs_Soilph: " << vs_SoilpH << endl
-      << "vs_SoilOrganicCarbon: " << vs_SoilOrganicCarbon() << endl
-      << "vs_SoilOrganicMatter: " << vs_SoilOrganicMatter() << endl
-      << "vs_SoilRawDensity: " << vs_SoilRawDensity() << endl
-      << "vs_SoilBulkDensity: " << vs_SoilBulkDensity() << endl
-      << "vs_SoilSandContent: " << vs_SoilSandContent << endl
-      << "vs_SoilClayContent: " << vs_SoilClayContent << endl
-      << "vs_SoilSiltContent: " << vs_SoilSiltContent() << endl
-      << "vs_SoilStoneContent: " << vs_SoilStoneContent << endl
-      << "vs_SoilpH: " << vs_SoilpH << endl
-      << "vs_Lambda: " << vs_Lambda << endl
-      << "vs_FieldCapacity: " << vs_FieldCapacity << endl
-      << "vs_Saturation: " << vs_Saturation << endl
-      << "vs_PermanentWiltingPoint: " << vs_PermanentWiltingPoint << endl
-      << "vs_SoilTexture: " << vs_SoilTexture.c_str() << endl
-      << "vs_SoilAmmonium: " << vs_SoilAmmonium << endl
-      << "vs_SoilNitrate: " << vs_SoilNitrate
-      << endl;
-
-  return s.str();
 }
 
 /**
@@ -1048,11 +1025,12 @@ FcSatPwp Soil::fcSatPwpFromVanGenuchten(double sandContent,
 
   double matricHead = pow(10, fieldCapacity_pF);
 
-  res.fc = (thetaR + ((thetaS - thetaR)/
-                      (pow(1.0 + pow(vanGenuchtenAlpha*matricHead,
-                                     vanGenuchtenN),
-                           vanGenuchtenM))))*
-           (1.0 - stoneContent);
+  res.fc = (thetaR
+            + ((thetaS - thetaR)
+               / (pow(1.0 + pow(vanGenuchtenAlpha * matricHead,
+                                vanGenuchtenN),
+                      vanGenuchtenM))))
+           * (1.0 - stoneContent);
 
   return res;
 }

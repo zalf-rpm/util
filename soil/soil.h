@@ -36,21 +36,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "json11/json11.hpp"
 
+#include "tools/json11-helper.h"
+
 namespace Soil
 {
   /**
    * @author Claas Nendel, Michael Berg
    */
-  struct SoilParameters
+  struct SoilParameters : public Tools::Json11Serializable
   {
     SoilParameters(){}
 
     SoilParameters(json11::Json object);
 
-    json11::Json to_json() const;
+    virtual void merge(json11::Json j);
+
+    virtual json11::Json to_json() const;
 
     //! Soil layer's silt content [kg kg-1] (Schluff)
-    double vs_SoilSiltContent() const { return (1.0 - vs_SoilSandContent - vs_SoilClayContent); }
+    double vs_SoilSiltContent() const
+    {
+      return (1.0 - vs_SoilSandContent - vs_SoilClayContent);
+    }
 
     double vs_SoilRawDensity() const;
     void set_vs_SoilRawDensity(double srd){ _vs_SoilRawDensity = srd; }
@@ -64,8 +71,6 @@ namespace Soil
     //!< Soil layer's organic matter content [kg OM kg-1]
     double vs_SoilOrganicMatter() const ;
     void set_vs_SoilOrganicMatter(double som){ _vs_SoilOrganicMatter = som; }
-
-    std::string toString() const;
 
     double sandAndClay2lambda(double sand, double clay);
 
