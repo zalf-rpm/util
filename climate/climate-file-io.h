@@ -1,4 +1,4 @@
-﻿/* This Source Code Form is subject to the terms of the Mozilla Public
+/* This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
@@ -14,24 +14,18 @@ Landscape Systems Analysis at the ZALF.
 Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 */
 
-#ifndef _AGRICULTURAL_HELPER_H
-#define	_AGRICULTURAL_HELPER_H
+#ifndef CLIMATE_FILE_IO_H_
+#define CLIMATE_FILE_IO_H_
 
 #include <string>
-#include <vector>
 
-namespace Tools
+#include "climate-common.h"
+
+namespace Climate
 {
-	//! create stt from stt code
-	std::string sttFromCode(int sttCode);
-
-	std::vector<std::string> sttsFromCode(int sttCode);
-
-	//! splits stt code into its parts
-	std::vector<int> splitSttCode(int sttCode);
-
-	int sttCodeFromStt(std::string stt);
+  Climate::DataAccessor
+  climateDataFromCSVFile(const std::string& pathToFile,
+                         const std::string& separator = ",");
 }
 
-#endif	/* _AGRICULTURAL_HELPER_H */
-
+#endif
