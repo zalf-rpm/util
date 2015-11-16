@@ -23,9 +23,25 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 namespace Climate
 {
-  Climate::DataAccessor
-  climateDataFromCSVFile(const std::string& pathToFile,
-                         const std::string& separator = ",");
+	inline std::vector<ACD> defaultHeader()
+	{
+		return{deDate, tmin, tavg, tmax, precip, globrad, relhumid, wind};
+	}
+
+  Climate::DataAccessor 
+		readClimateDataFromCSVFile(const std::string& pathToFile,
+															 const std::string& separator = ",",
+															 std::vector<ACD> header = std::vector<ACD>(),
+															 Tools::Date startDate = Tools::Date(),
+															 Tools::Date endDate = Tools::Date());
+
+	Climate::DataAccessor
+		readClimateDataFromCSVFileViaHeaders(const std::string& pathToFile,
+																				 const std::string& separator = ",",
+																				 Tools::Date startDate = Tools::Date(),
+																				 Tools::Date endDate = Tools::Date());
+
+
 }
 
 #endif

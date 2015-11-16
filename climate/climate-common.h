@@ -35,11 +35,21 @@ namespace Climate
   enum AvailableClimateData
   {
 		day = 0, month, year, tmin, tavg, tmax, precip, precipOrig, globrad, wind,
-		sunhours, cloudamount, relhumid, airpress, vaporpress
+		sunhours, cloudamount, relhumid, airpress, vaporpress, isoDate, deDate, none
 	};
 
 	//! just a shortcut to the quite long name
 	typedef AvailableClimateData ACD;
+
+	inline std::vector<std::string> acdNames()
+	{
+		return{
+			"day", "month", "year", "tmin", "tavg", "tmax", "precip", "precipOrig",
+				"globrad", "wind", "sunhours", "cloudamount", "relhumid", "airpress",
+				"vaporpress", "isoDate", "deDate", "none"
+		};
+	};
+
 
 	/*!
 	 * helper function to calculate the current size of the available climate
