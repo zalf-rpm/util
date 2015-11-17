@@ -29,17 +29,19 @@ namespace Climate
 	}
 
   Climate::DataAccessor 
-		readClimateDataFromCSVFile(const std::string& pathToFile,
-															 const std::string& separator = ",",
+		readClimateDataFromCSVFile(std::string pathToFile,
+															 std::string separator = ",",
 															 std::vector<ACD> header = std::vector<ACD>(),
 															 Tools::Date startDate = Tools::Date(),
-															 Tools::Date endDate = Tools::Date());
+															 Tools::Date endDate = Tools::Date(),
+															 size_t noOfHeaderLines = 1);
 
 	Climate::DataAccessor
-		readClimateDataFromCSVFileViaHeaders(const std::string& pathToFile,
-																				 const std::string& separator = ",",
+		readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
+																				 std::string separator = ",",
 																				 Tools::Date startDate = Tools::Date(),
-																				 Tools::Date endDate = Tools::Date());
+																				 Tools::Date endDate = Tools::Date(),
+																				 size_t noOfHeaderLines = 1);
 
 
 }

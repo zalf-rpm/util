@@ -36,21 +36,22 @@ using namespace std;
 using namespace Tools;
 
 Climate::DataAccessor
-Climate::readClimateDataFromCSVFileViaHeaders(const std::string& pathToFile,
-																							const std::string& separator,
+Climate::readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
+																							std::string separator,
 																							Tools::Date startDate,
-																							Tools::Date endDate)
+																							Tools::Date endDate,
+																							size_t noOfHeaderLines)
 {
 	ifstream ifs(pathToFile.c_str());
 	if(!ifs.good())
 	{
-		cerr << "Could not open climate file " << pathToFile << ". Aborting now!" << endl;
-		exit(1);
+		cerr << "Could not open climate file " << pathToFile << "." << endl;
+		return DataAccessor();
 	}
 
 	vector<ACD> header;
 	string s;
-	if(getline(ifs, s))
+	if(noOfHeaderLines > 0 && getline(ifs, s))
 	{
 		vector<string> r = splitString(s, separator);
 		for(auto colName : r)
@@ -64,24 +65,41 @@ Climate::readClimateDataFromCSVFileViaHeaders(const std::string& pathToFile,
 		cerr
 			<< "Couldn't match any column names to internally used names. "
 			<< "Read CSV header line was: " << endl
-			<< s << endl
-			<< "Aborting now!" << endl;
-		exit(1);
+			<< s << endl;
+		return DataAccessor();
 	}
 
-	return readClimateDataFromCSVFile(pathToFile, separator, header, 
-																		startDate, endDate);
+	return readClimateDataFromCSVFile(pathToFile, 
+																		separator, 
+																		header, 
+																		startDate, 
+																		endDate,
+																		noOfHeaderLines);
 
 }
 
 
 Climate::DataAccessor 
-Climate::readClimateDataFromCSVFile(const std::string& pathToFile,
-																		const std::string& separator,
+Climate::readClimateDataFromCSVFile(std::string pathToFile,
+																		std::string separator,
 																		std::vector<ACD> header,
 																		Tools::Date startDate,
-																		Tools::Date endDate)
+																		Tools::Date endDate,
+																		size_t noOfHeaderLines)
 {
+	pathToFile = fixSystemSeparator(pathToFile);
+	bool useLeapYears = startDate.useLeapYears();
+	if(startDate.useLeapYears() != endDate.useLeapYears())
+	{
+		cerr
+			<< "The start date " << (useLeapYears ? "uses " : "doesn't use ")
+			<< "leap years, but end date "
+			<< (useLeapYears ? "doesn't. " : "does. ")
+			<< "Setting end year to " << (useLeapYears ? "also " : "not ")
+			<< "use leap years." << endl;
+		endDate.setUseLeapYears(startDate.useLeapYears());
+	}
+
 	if(header.empty())
 		header = defaultHeader();
 
@@ -91,19 +109,30 @@ Climate::readClimateDataFromCSVFile(const std::string& pathToFile,
 	ifstream ifs(pathToFile.c_str());
 	if(!ifs.good()) 
 	{
-		cerr << "Could not open climate file " << pathToFile << ". Aborting now!" << endl;
-		exit(1);
+		cerr << "Could not open climate file " << pathToFile << "." << endl;
+		return DataAccessor();
 	}
 
 	//we store all data in a map to also manage csv files with wrong order
 	map<Date, map<ACD, double>> data;
 	
+	//skip header line(s) and 
+	//save first header line to compare for repeated headers
+	string headerLine;
+	vector<string> startOfHeaderLines;
+	while(noOfHeaderLines-- > 0)
+	{
+		getline(ifs, headerLine);
+		startOfHeaderLines.push_back(headerLine.substr(0, 10));
+	}
+	
 	string s;
-	while(getline(ifs, s)) 
+	while(getline(ifs, s))
 	{
 		//skip (repeated) headers
-		if (s.substr(0, 3) == "day")
-			continue;
+		for(auto startOfHeaderLine : startOfHeaderLines)
+			if(s.substr(0, 10) == startOfHeaderLine)
+				continue;
 
 		vector<string> r = splitString(s, separator);
 		size_t rSize = r.size();
@@ -120,31 +149,46 @@ Climate::readClimateDataFromCSVFile(const std::string& pathToFile,
 
 		Date date;
 		map<ACD, double> vs;
-		for(size_t i = 0; i < hSize; i++)
+		try
 		{
-			ACD acdi = header.at(i);
-			switch(acdi)
+			for(size_t i = 0; i < hSize; i++)
 			{
-			case day: date.setDay(stoi(r.at(i))); break;
-			case month: date.setMonth(stoi(r.at(i))); break;
-			case year: date.setYear(stoi(r.at(i))); break;
-			case isoDate: date = Date::fromIsoDateString(r.at(i)); break;
-			case deDate:
-			{
-				auto dmy = splitString(r.at(i), ".");
-				if(dmy.size() == 3)
+				ACD acdi = header.at(i);
+				switch(acdi)
 				{
-					date.setDay(stoi(dmy.at(0)));
-					date.setMonth(stoi(dmy.at(1)));
-					date.setYear(stoi(dmy.at(2)));
+				case day: date.setDay(stoi(r.at(i))); break;
+				case month: date.setMonth(stoi(r.at(i))); break;
+				case year: date.setYear(stoi(r.at(i))); break;
+				case isoDate: date = Date::fromIsoDateString(r.at(i)); break;
+				case deDate:
+				{
+					auto dmy = splitString(r.at(i), ".");
+					if(dmy.size() == 3)
+					{
+						date.setDay(stoi(dmy.at(0)));
+						date.setMonth(stoi(dmy.at(1)));
+						date.setYear(stoi(dmy.at(2)));
+					}
+					break;
 				}
-				break;
-			}
-			case none: break; //ignore element
-			default:
-				vs[acdi] = stod(r.at(i));
+				case none: break; //ignore element
+				default:
+					vs[acdi] = stod(r.at(i));
+				}
 			}
 		}
+		catch(invalid_argument e)
+		{
+			cerr
+				<< "Error converting one of the (climate) elements in the line: " << endl
+				<< s << endl;
+			return DataAccessor();
+		}
+
+		if(!useLeapYears
+			 && date.day() == 29
+			 && date.month() == 2)
+			continue;
 
 		if(isStartDateValid && date < startDate)
 			continue;
@@ -152,12 +196,12 @@ Climate::readClimateDataFromCSVFile(const std::string& pathToFile,
 		if(isEndDateValid && date > endDate)
 			continue;
 
-		cout 
-			<< "[" << date.day() << "." << date.month() << "." << date.year() 
-			<< "] -> [";
-		for(auto p : vs)
-			cout << "(" << acdNames().at(p.first) << ", " << p.second << ") ";
-		cout << "]" << endl;
+		//cout 
+		//	<< "[" << date.day() << "." << date.month() << "." << date.year() 
+		//	<< "] -> [";
+		//for(auto p : vs)
+		//	cout << "(" << acdNames().at(p.first) << ", " << p.second << ") ";
+		//cout << "]" << endl;
 
 		data[date] = vs;
 	}
@@ -168,21 +212,33 @@ Climate::readClimateDataFromCSVFile(const std::string& pathToFile,
 	if(!isEndDateValid && !data.empty())
 		endDate = data.rbegin()->first;
 	
-	int noOfDays = endDate - startDate;
+	int noOfDays = endDate - startDate + 1;
 	if(data.size() < size_t(noOfDays))
 	{
 		cerr
 			<< "Read timeseries data between " << startDate.toIsoDateString() 
 			<< " and " << endDate.toIsoDateString() 
 			<< " (" << noOfDays << " days) is incomplete. There are just "
-			<< data.size() << " days in read dataset. Aborting now!" << endl;
-		exit(1);
+			<< data.size() << " days in read dataset." << endl;
+		return DataAccessor();
 	}
 
 	map<ACD, vector<double>> daData;
 	for (Date d = startDate, ed = endDate; d <= ed; d++)
 		for(auto p : data[d])
 			daData[p.first].push_back(p.second);
+
+	size_t sizes = 0;
+	for(const auto& p : daData)
+		sizes += p.second.size();
+
+	if(sizes % daData.size() != 0)
+	{
+		cerr
+			<< "At least one of the climate elements has less elements than the others."
+			<< endl;
+		return DataAccessor();
+	}
 
 	Climate::DataAccessor da(startDate, endDate);
 	da.addClimateData(Climate::tmin, daData[tmin]);
