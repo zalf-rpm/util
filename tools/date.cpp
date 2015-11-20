@@ -50,6 +50,23 @@ Date::Date(bool useLeapYears)
 	_daysInMonth = isLeapYear() && _useLeapYears ? &_ldim : &_dim;
 }
 
+Date::Date(const string& isoDateString, bool useLeapYears)
+	:
+	_daysInMonth(nullptr),
+	_d(0),
+	_m(0),
+	_y(0),
+	_useLeapYears(useLeapYears),
+	_relativeBaseYear(0),
+	_isRelativeDate(false)
+{
+	Date d = fromIsoDateString(isoDateString);
+	_d = d.day();
+	_m = d.month();
+	_y = d.year();
+	_daysInMonth = isLeapYear() && _useLeapYears ? &_ldim : &_dim;
+}
+
 /*!
  * construct a date with a named month
  * @param day

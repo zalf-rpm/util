@@ -48,6 +48,8 @@ namespace Tools
 	public:
 		Date(bool useLeapYears = false);
 
+		Date(const std::string& isoDateString, bool useLeapYears = false);
+
 		explicit Date(size_t day, Month month, size_t year,
 									bool useLeapYears = false);
 
