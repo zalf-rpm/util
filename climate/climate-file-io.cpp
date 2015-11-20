@@ -55,9 +55,19 @@ Climate::readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
 	{
 		vector<string> r = splitString(s, separator);
 		for(auto colName : r)
+		{
+			bool knownColName = false;
 			for(int i = 0, size = acdNames().size(); i < size; i++)
-				if(colName == acdNames().at(i))
+				if(toLower(colName) == toLower(acdNames().at(i)))
+				{
 					header.push_back(ACD(i));
+					knownColName = true;
+					break;
+				}
+				
+			if(!knownColName)
+				header.push_back(skip);
+		}
 	}
 
 	if(header.empty())
@@ -171,7 +181,7 @@ Climate::readClimateDataFromCSVFile(std::string pathToFile,
 					}
 					break;
 				}
-				case none: break; //ignore element
+				case skip: break; //ignore element
 				default:
 					vs[acdi] = stod(r.at(i));
 				}
@@ -205,6 +215,9 @@ Climate::readClimateDataFromCSVFile(std::string pathToFile,
 
 		data[date] = vs;
 	}
+
+	auto rda = data.rbegin()->first;
+	auto rd = data.rbegin()->second;
 
 	if(!isStartDateValid && !data.empty())
 		startDate = data.begin()->first;

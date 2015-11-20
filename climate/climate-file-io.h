@@ -34,14 +34,14 @@ namespace Climate
 															 std::vector<ACD> header = std::vector<ACD>(),
 															 Tools::Date startDate = Tools::Date(),
 															 Tools::Date endDate = Tools::Date(),
-															 size_t noOfHeaderLines = 1);
+															 size_t noOfHeaderLines = 2);
 
 	Climate::DataAccessor
 		readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
 																				 std::string separator = ",",
 																				 Tools::Date startDate = Tools::Date(),
 																				 Tools::Date endDate = Tools::Date(),
-																				 size_t noOfHeaderLines = 1);
+																				 size_t noOfHeaderLines = 2);
 
 
 }

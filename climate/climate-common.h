@@ -35,7 +35,7 @@ namespace Climate
   enum AvailableClimateData
   {
 		day = 0, month, year, tmin, tavg, tmax, precip, precipOrig, globrad, wind,
-		sunhours, cloudamount, relhumid, airpress, vaporpress, isoDate, deDate, none
+		sunhours, cloudamount, relhumid, airpress, vaporpress, isoDate, deDate, skip
 	};
 
 	//! just a shortcut to the quite long name
@@ -44,9 +44,9 @@ namespace Climate
 	inline std::vector<std::string> acdNames()
 	{
 		return{
-			"day", "month", "year", "tmin", "tavg", "tmax", "precip", "precipOrig",
+			"day", "month", "year", "tmin", "tavg", "tmax", "precip", "precip-orig",
 				"globrad", "wind", "sunhours", "cloudamount", "relhumid", "airpress",
-				"vaporpress", "isoDate", "deDate", "none"
+				"vaporpress", "iso-date", "de-date", "skip"
 		};
 	};
 
