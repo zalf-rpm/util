@@ -322,11 +322,16 @@ int Tools::int_valueD(const json11::Json& j, const std::string& key, int def)
 
 //-------------------
 
-void Tools::set_double_valueD(double& var, const json11::Json& j, const std::string& key, double def, bool useDefault)
+void Tools::set_double_valueD(double& var,
+                              const json11::Json& j,
+                              const std::string& key,
+                              double def,
+                              std::function<double(double)> transf,
+                              bool useDefault)
 {
   string err;
   if(j.has_shape({{key, json11::Json::NUMBER}}, err))
-    var = j[key].number_value();
+    var = transf(j[key].number_value());
   else if(j.has_shape({{key, json11::Json::ARRAY}}, err))
   {
     auto a = j[key];
@@ -334,13 +339,13 @@ void Tools::set_double_valueD(double& var, const json11::Json& j, const std::str
     {
       auto v = a[0];
       if(v.is_number())
-        var = v.number_value();
+        var = transf(v.number_value());
     }
   }
   else if(j.has_shape({{key, json11::Json::OBJECT}}, err))
-    var = double_valueD(j[key], "value", def);
+    set_double_valueD(var, j[key], "value", def, transf);
   else if(useDefault)
-    var = def;
+    var = transf(def);
 }
 
 double Tools::double_valueD(const json11::Json& j, double def)
@@ -359,7 +364,9 @@ double Tools::double_valueD(const json11::Json& j, double def)
   return def;
 }
 
-double Tools::double_valueD(const json11::Json& j, const std::string& key, double def)
+double Tools::double_valueD(const json11::Json& j, 
+														const std::string& key, 
+														double def)
 {
   double res(def);
   set_double_valueD(res, j, key, def);
@@ -468,4 +475,11 @@ void Tools::set_iso_date_value(Tools::Date& var,
   string dateStr = string_valueD(j, key, defaultMarker);
   if(dateStr != defaultMarker)
     var = Date::fromIsoDateString(dateStr);
+}
+
+Tools::Date Tools::iso_date_value(const json11::Json& j, const std::string& key)
+{
+  Date res;
+  set_iso_date_value(res, j, key);
+  return res;
 }

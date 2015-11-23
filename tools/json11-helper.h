@@ -29,6 +29,9 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 namespace Tools
 {
+  template<typename T>
+  T identity(T t){ return t; }
+
   struct Json11Serializable
   {
     virtual void merge(json11::Json j) = 0;
@@ -272,13 +275,15 @@ namespace Tools
                          const json11::Json& j,
                          const std::string& key,
                          double def = 0.0,
+                         std::function<double(double)> transf = identity<double>,
                          bool useDefault = true);
 
   inline void set_double_value(double& var,
                                const json11::Json& j,
-                               const std::string& key)
+                               const std::string& key,
+                               std::function<double(double)> transf = identity<double>)
   {
-    set_double_valueD(var, j, key, 0.0, false);
+    set_double_valueD(var, j, key, 0.0, transf, false);
   }
 
   double double_valueD(const json11::Json& j, double def);
@@ -355,6 +360,8 @@ namespace Tools
   }
 
   //-------
+
+  Tools::Date iso_date_value(const json11::Json& j, const std::string& key);
 
   void set_iso_date_value(Tools::Date& var,
                           const json11::Json& j,
