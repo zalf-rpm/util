@@ -61,9 +61,16 @@ void SoilParameters::merge(json11::Json j)
   set_double_value(vs_Soil_CN_Ratio, j, "CN");
   set_double_value(vs_SoilMoisturePercentFC, j, "SoilMoisturePercentFC");
   set_double_value(_vs_SoilRawDensity, j, "SoilRawDensity");
-  set_double_value(_vs_SoilBulkDensity, j, "SoilBulkDensity");
-  set_double_value(_vs_SoilOrganicCarbon, j, "SoilOrganicCarbon");
+	set_double_value(_vs_SoilBulkDensity, j, "SoilBulkDensity");
+	set_double_value(_vs_SoilOrganicCarbon, j, "SoilOrganicCarbon",
+									 [](double soc){ return soc / 100.0; });
   set_double_value(_vs_SoilOrganicMatter, j, "SoilOrganicMatter");
+
+	if(vs_SoilSandContent < 0 && vs_SoilTexture != "")
+		vs_SoilSandContent = KA5texture2sand(vs_SoilTexture);
+
+	if(vs_SoilClayContent < 0 && vs_SoilTexture != "")
+		vs_SoilClayContent = KA5texture2clay(vs_SoilTexture);
 
   auto res = vs_SoilTexture == ""
              ? fcSatPwpFromVanGenuchten(vs_SoilSandContent,
@@ -349,9 +356,17 @@ const SoilPMsPtr Soil::soilParameters(const string& abstractDbSchema,
       set<int> skip;
 
       ostringstream s2;
-      s2 << "select id, layer_depth_cm, soil_organic_carbon_percent, soil_raw_density_t_per_m3, "
-            "sand_content_percent, clay_content_percent, ph_value, soil_type "
-            "from soil_profiles ";
+      s2 << 
+				"select "
+				"id, "
+				"layer_depth_cm, "
+				"soil_organic_carbon_percent, "
+				"soil_raw_density_t_per_m3, "
+				"sand_content_percent, "
+				"clay_content_percent, "
+				"ph_value, "
+				"soil_type "
+				"from soil_profiles ";
       if(loadSingleParameter)
         s2 << "where id = " << profileId << " ";
       s2 << "order by id, layer_depth_cm";
