@@ -251,7 +251,7 @@ namespace Tools
                       int def = 0,
                       bool useDefault = true);
 
-  inline void set_int_value(int var,
+  inline void set_int_value(int& var,
                             const json11::Json& j,
                             const std::string& key)
   {
@@ -331,7 +331,8 @@ namespace Tools
 
   //-------
 
-  void set_string_valueD(std::string& var, const json11::Json& j,
+  void set_string_valueD(std::string& var, 
+												 const json11::Json& j,
                          const std::string& key,
                          const std::string& def = std::string(),
                          bool useDefault = true);
@@ -361,7 +362,8 @@ namespace Tools
 
   //-------
 
-  Tools::Date iso_date_value(const json11::Json& j, const std::string& key);
+  Tools::Date iso_date_value(const json11::Json& j, 
+														 const std::string& key);
 
   void set_iso_date_value(Tools::Date& var,
                           const json11::Json& j,
