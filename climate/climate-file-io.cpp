@@ -42,6 +42,7 @@ Climate::readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
 																							Tools::Date endDate,
 																							size_t noOfHeaderLines)
 {
+	pathToFile = fixSystemSeparator(pathToFile);
 	ifstream ifs(pathToFile.c_str());
 	if(!ifs.good())
 	{
