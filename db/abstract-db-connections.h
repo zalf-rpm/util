@@ -29,8 +29,8 @@ namespace Db
 	 * - upon the first call the user can change where to find the ini-file
 	 * - subsequent calls with a parameter won't change the initial map anymore
 	 */
-	Tools::IniParameterMap&
-    dbConnectionParameters(const std::string& initialPathToIniFile = "db-connections.ini");
+	Tools::IniParameterMap& dbConnectionParameters
+		(const std::string& initialPathToIniFile = "db-connections.ini");
 
 	//! connection data for schema from given parameter map
 	DBConData dbConData(const Tools::IniParameterMap& dbParams,
@@ -52,7 +52,8 @@ namespace Db
 		return newConnection(dbConnectionParameters(), abstractSchema);
 	}
 
-	bool attachDB(DB* connection, std::string attachAbstractSchema,
+	bool attachDB(DB* connection, 
+								std::string attachAbstractSchema,
 								std::string alias);
 }
 

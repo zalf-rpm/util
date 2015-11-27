@@ -62,11 +62,12 @@ Db::DB* Db::newConnection(const IniParameterMap& dbParams,
 													const std::string& abstractSchema)
 {
 	DBConData cd = dbConData(dbParams, abstractSchema);
-	if(!cd.isValid()){
+	if(!cd.isValid())
+	{
 		cout << "Couldn't establish new connection for abstract schema: "
-		<< abstractSchema << " via retrieved connection settings: "
-		<< cd.toString() << " !" << endl;
-		exit(1);
+			<< abstractSchema << " via retrieved connection settings: "
+			<< cd.toString() << " !" << endl;
+		return nullptr;
 	}
 
 	return newConnection(cd);
@@ -76,7 +77,9 @@ bool Db::attachDB(DB* con, string attachAbstractSchema, string alias)
 {
 	DBConData cd = dbConData(attachAbstractSchema);
 	if(cd.isSqliteDB())
+	{
 		return con->attachDB(cd.filename, alias);
+	}
 
 	return false;
 }
