@@ -374,9 +374,9 @@ namespace Tools
                             const json11::Json& j,
                             const std::string& key)
   {
-    string err;
+    std::string err;
     if(j.has_shape({{key, json11::Json::OBJECT}}, err))
-      var = make_shared<C>(j[key]);
+      var = std::make_shared<C>(j[key]);
   }
 
   template<class C>
@@ -384,7 +384,7 @@ namespace Tools
                      const json11::Json& j,
                      const std::string& key)
   {
-    string err;
+    std::string err;
     if(j.has_shape({{key, json11::Json::OBJECT}}, err))
       var = new C(j[key]);
   }
@@ -394,7 +394,7 @@ namespace Tools
                            const json11::Json& j,
                            const std::string& key)
   {
-    string err;
+    std::string err;
     if(j.has_shape({{key, json11::Json::OBJECT}}, err))
       var = C(j[key]);
   }
