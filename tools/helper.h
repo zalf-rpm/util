@@ -310,7 +310,7 @@ namespace Tools
 
 	std::string fixSystemSeparator(std::string path);
 
-  void ensureDirExists(std::string& path);
+  void ensureDirExists(const std::string& path);
 }
 
 

@@ -54,7 +54,7 @@ string Tools::fixSystemSeparator(std::string path)
 	return path;
 }
 
-void Tools::ensureDirExists(std::string& path)
+void Tools::ensureDirExists(const std::string& path)
 {
 #ifdef WIN32
   string mkdir("mkdir ");
