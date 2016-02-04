@@ -58,7 +58,7 @@ Climate::readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
 		for(auto colName : r)
 		{
 			bool knownColName = false;
-			for(int i = 0, size = acdNames().size(); i < size; i++)
+			for(ulong i = 0, size = acdNames().size(); i < size; i++)
 				if(toLower(colName) == toLower(acdNames().at(i)))
 				{
 					header.push_back(ACD(i));

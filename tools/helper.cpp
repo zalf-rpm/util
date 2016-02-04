@@ -17,6 +17,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <fstream>
 
 #include "helper.h"
 
@@ -39,6 +40,23 @@ bool Tools::satob(const std::string& s, bool def)
   default:
     return def;
   }
+}
+
+string Tools::readFile(string path)
+{
+	string s;
+	path = fixSystemSeparator(path);
+
+	ifstream ifs;
+	ifs.open(path);
+	if(ifs.good())
+	{
+		for(string line; getline(ifs, line);)
+			s += line;
+	}
+	ifs.close();
+
+	return s;
 }
 
 string Tools::fixSystemSeparator(std::string path)

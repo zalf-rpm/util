@@ -130,10 +130,10 @@ unsigned int MysqlDB::getNumberOfFields()
 	return _resultSet ? (unsigned int)(mysql_num_fields(_resultSet)) : 0;
 }
 
-unsigned long MysqlDB::getNumberOfRows()
+size_t MysqlDB::getNumberOfRows()
 {
   lazyInit();
-	return _resultSet ? (unsigned long)(mysql_num_rows(_resultSet)) : 0;
+	return _resultSet ? size_t(mysql_num_rows(_resultSet)) : 0;
 }
 
 DBRow MysqlDB::getRow()
@@ -303,12 +303,12 @@ unsigned int SqliteDB::getNumberOfFields()
 	return sqlite3_column_count(_ppStmt);
 }
 
-unsigned long SqliteDB::getNumberOfRows()
+size_t SqliteDB::getNumberOfRows()
 {
   lazyInit();
 
 	//old position of cursor is stored in _currentRowNo
-	int noOfRows = _currentRowNo + 1;
+	size_t noOfRows = _currentRowNo + 1;
 	while(sqlite3_step(_ppStmt) != SQLITE_DONE)
 		++noOfRows;
 

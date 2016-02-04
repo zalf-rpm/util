@@ -71,7 +71,7 @@ namespace Db
 		virtual unsigned int getNumberOfFields() = 0;
 		//MYSQL_FIELD* getFields();
 		//MYSQL_FIELD* getNextField();
-		virtual unsigned long getNumberOfRows() = 0;
+		virtual size_t getNumberOfRows() = 0;
 		virtual DBRow getRow() = 0;
 		virtual void freeResultSet() = 0;
 
@@ -79,7 +79,7 @@ namespace Db
 
 		virtual int insertId() = 0;
 
-		virtual std::string errorMsg() { return std::string(); }
+		virtual std::string errorMsg() { return ""; }
 
 		virtual std::string now() const = 0;
 
@@ -160,7 +160,7 @@ namespace Db
 		virtual bool del(const char* deleteStatement){ return inUpDel(deleteStatement); }
 
 		virtual unsigned int getNumberOfFields();
-		virtual unsigned long getNumberOfRows();
+		virtual size_t getNumberOfRows();
 		virtual DBRow getRow();
 
 		virtual void freeResultSet();
@@ -198,8 +198,8 @@ namespace Db
 		bool _isConnected;
 		long _id;
 		bool _initialized;
-		int _currentRowNo;
-		int _noOfRows;
+		size_t _currentRowNo;
+		size_t _noOfRows;
 	};
 #endif
 

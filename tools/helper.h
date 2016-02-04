@@ -308,6 +308,8 @@ namespace Tools
 
 	inline std::string surround(std::string with, std::string str){ return with + str + with;  };
 
+	std::string readFile(std::string path);
+
 	std::string fixSystemSeparator(std::string path);
 
   void ensureDirExists(const std::string& path);
