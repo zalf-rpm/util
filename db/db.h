@@ -68,7 +68,7 @@ namespace Db
 		virtual bool del(const char* deleteStatement){ return exec(deleteStatement); }
 		virtual bool del(const std::string& deleteStatement){ return del(deleteStatement.c_str()); }
 
-		virtual unsigned int getNumberOfFields() = 0;
+		virtual size_t getNumberOfFields() = 0;
 		//MYSQL_FIELD* getFields();
 		//MYSQL_FIELD* getNextField();
 		virtual size_t getNumberOfRows() = 0;
@@ -107,10 +107,10 @@ namespace Db
 						const std::string& schema, unsigned int port = 0);
 		virtual ~MysqlDB();
 		virtual bool exec(const char* query);
-		virtual unsigned int getNumberOfFields();
+		virtual size_t getNumberOfFields();
 		MYSQL_FIELD* getFields();
 		MYSQL_FIELD* getNextField();
-		virtual unsigned long getNumberOfRows();
+		virtual size_t getNumberOfRows();
 		virtual DBRow getRow();
 		MYSQL_ROW getMysqlRow();
 		virtual void freeResultSet();
@@ -136,13 +136,13 @@ namespace Db
 		std::string _user;
 		std::string _pwd;
 		std::string _schema;
-		unsigned int _port;
+		unsigned int _port{0};
 
-		MYSQL* _connection;
-		MYSQL_RES* _resultSet;
-		bool _isConnected;
-		long _id;
-		bool _initialized;
+		MYSQL* _connection{nullptr};
+		MYSQL_RES* _resultSet{nullptr};
+		bool _isConnected{false};
+		long _id{-1};
+		bool _initialized{false};
 	};
 #endif
 
@@ -159,7 +159,7 @@ namespace Db
 		virtual bool update(const char* updateStatement){ return inUpDel(updateStatement); }
 		virtual bool del(const char* deleteStatement){ return inUpDel(deleteStatement); }
 
-		virtual unsigned int getNumberOfFields();
+		virtual size_t getNumberOfFields();
 		virtual size_t getNumberOfRows();
 		virtual DBRow getRow();
 
@@ -192,14 +192,14 @@ namespace Db
 
 	private:
 		std::string _filename;
-		sqlite3* _db;
-		sqlite3_stmt* _ppStmt;
+		sqlite3* _db{nullptr};
+		sqlite3_stmt* _ppStmt{nullptr};
 		std::string _query;
-		bool _isConnected;
-		long _id;
-		bool _initialized;
-		size_t _currentRowNo;
-		size_t _noOfRows;
+		bool _isConnected{false};
+		long _id{-1};
+		bool _initialized{false};
+		size_t _currentRowNo{0};
+		size_t _noOfRows{0};
 	};
 #endif
 

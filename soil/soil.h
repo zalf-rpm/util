@@ -85,8 +85,8 @@ namespace Soil
 		double vs_SoilMoisturePercentFC{100.0};
 
 	private:
-		double _vs_SoilRawDensity{-1.0};
-		double _vs_SoilBulkDensity{-1.0};
+		double _vs_SoilRawDensity{-1.0}; //!< [kg m-3]
+		double _vs_SoilBulkDensity{-1.0}; //!< [kg m-3]
 		double _vs_SoilOrganicCarbon{-1.0};
 		double _vs_SoilOrganicMatter{-1.0};
 	};

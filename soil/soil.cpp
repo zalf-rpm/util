@@ -97,8 +97,8 @@ json11::Json SoilParameters::to_json() const
 {
 	return J11Object{
 		{"type", "SoilParameters"},
-		{"Sand", vs_SoilSandContent},
-		{"Clay", vs_SoilClayContent},
+		{"Sand", J11Array {vs_SoilSandContent, "% [0-1]"}},
+		{"Clay", J11Array {vs_SoilClayContent, "% [0-1]"}},
 		{"pH", vs_SoilpH},
 		{"Sceleton", vs_SoilStoneContent},
 		{"Lambda", vs_Lambda},
@@ -109,11 +109,11 @@ json11::Json SoilParameters::to_json() const
 		{"SoilAmmonium", vs_SoilAmmonium},
 		{"SoilNitrate", vs_SoilNitrate},
 		{"CN", vs_Soil_CN_Ratio},
-		{"SoilRawDensity", _vs_SoilRawDensity},
-		{"SoilBulkDensity", _vs_SoilBulkDensity},
-		{"SoilOrganicCarbon", _vs_SoilOrganicCarbon},
-		{"SoilOrganicMatter", _vs_SoilOrganicMatter},
-		{"SoilMoisturePercentFC", vs_SoilMoisturePercentFC}};
+		{"SoilRawDensity", J11Array {_vs_SoilRawDensity, "kg m-3"}},
+		{"SoilBulkDensity", J11Array {_vs_SoilBulkDensity, "kg m-3"}},
+		{"SoilOrganicCarbon", J11Array {_vs_SoilOrganicCarbon, "% [0-1]"}},
+		{"SoilOrganicMatter", J11Array {_vs_SoilOrganicMatter, ""}},
+		{"SoilMoisturePercentFC", J11Array {vs_SoilMoisturePercentFC, "% [0-1]"}}};
 }
 
 //----------------------------------------------------------------------------------
@@ -270,8 +270,11 @@ bool SoilParameters::isValid()
  */
 double SoilParameters::vs_SoilRawDensity() const
 {
-	// conversion from g cm-3 in kg m-3
-	return _vs_SoilRawDensity * 1000.0;
+	auto srd = _vs_SoilRawDensity < 0
+	           ? _vs_SoilBulkDensity - (0.009*100.0*vs_SoilClayContent)
+	           : _vs_SoilRawDensity;
+
+	return srd;
 }
 
 /**
@@ -280,12 +283,11 @@ double SoilParameters::vs_SoilRawDensity() const
 */
 double SoilParameters::vs_SoilBulkDensity() const
 {
-	if(_vs_SoilRawDensity < 0)
-	{
-		return _vs_SoilBulkDensity;
-	}
+	auto sbd = _vs_SoilBulkDensity < 0
+	           ? _vs_SoilRawDensity + (0.009*100.0*vs_SoilClayContent)
+	           : _vs_SoilBulkDensity;
 
-	return (_vs_SoilRawDensity + (0.009*100.0*vs_SoilClayContent))*1000.0;
+	return sbd;
 }
 
 /**
@@ -294,12 +296,9 @@ double SoilParameters::vs_SoilBulkDensity() const
  */
 double SoilParameters::vs_SoilOrganicCarbon() const
 {
-	if(_vs_SoilOrganicMatter < 0)
-	{
-		return _vs_SoilOrganicCarbon;
-	}
-
-	return _vs_SoilOrganicMatter * OrganicConstants::po_SOM_to_C;
+	return _vs_SoilOrganicCarbon < 0
+	       ? _vs_SoilOrganicMatter * OrganicConstants::po_SOM_to_C
+	       : _vs_SoilOrganicCarbon;
 }
 
 /**
@@ -308,9 +307,9 @@ double SoilParameters::vs_SoilOrganicCarbon() const
  */
 double SoilParameters::vs_SoilOrganicMatter() const
 {
-	if(_vs_SoilOrganicCarbon < 0)
-		return _vs_SoilOrganicMatter;
-	return _vs_SoilOrganicCarbon / OrganicConstants::po_SOM_to_C;
+	return _vs_SoilOrganicMatter < 0
+	       ? _vs_SoilOrganicCarbon / OrganicConstants::po_SOM_to_C
+	       : _vs_SoilOrganicMatter;
 }
 
 /**

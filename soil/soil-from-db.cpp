@@ -48,16 +48,17 @@ SoilPMsPtr Soil::soilParameters(DBPtr con,
 			      "id, "
 			      "layer_depth_cm, "
 			      "soil_organic_carbon_percent, "
-			      "soil_raw_density_t_per_m3, "
+			      "soil_raw_density_kg_per_m3, "
 			      "sand_content_percent, "
 			      "clay_content_percent, "
 			      "ph_value, "
 			      "soil_type "
-			      "from soil_profiles ";
+			      "from soil_profile ";
 	s2 << "where id = " << profileId << " ";
 	s2 << "order by id, layer_depth_cm";
 
 	con->select(s2.str());
+	//cout << "query: " << s2.str() << endl;
 	auto sps = make_shared<SoilPMs>();
 	size_t currenth = 0;
 	size_t hcount = con->getNumberOfRows();
@@ -72,6 +73,9 @@ SoilPMsPtr Soil::soilParameters(DBPtr con,
 		int subhcount = Tools::roundRT<int>(double(hsize) / double(layerThicknessCm), 0);
 		if(currenth == hcount && (sps->size() + subhcount) < maxNoOfLayers)
 			subhcount += maxNoOfLayers - sps->size() - subhcount;
+
+		//cout << "id: " << id << " ho: " << ho << " hu: " << hu << " hsize: " << hsize
+		//<< " subhcount: " << subhcount << " currenth: " << currenth << endl;
 
 		SoilParameters p;
 		p.set_vs_SoilOrganicCarbon(satof(row[2]) / 100.);

@@ -31,11 +31,7 @@ _host(host),
 _user(user),
 _pwd(pwd),
 _schema(schema),
-_port(port),
-_connection(NULL),
-_resultSet(NULL),
-_isConnected(false),
-_initialized(false)
+_port(port)
 {
   //commented out to make the DB connections initialized lazily
   //init();
@@ -124,10 +120,10 @@ MYSQL_FIELD* MysqlDB::getNextField()
 	return _resultSet ? mysql_fetch_field(_resultSet) : NULL;
 }
 
-unsigned int MysqlDB::getNumberOfFields()
+size_t MysqlDB::getNumberOfFields()
 {
   lazyInit();
-	return _resultSet ? (unsigned int)(mysql_num_fields(_resultSet)) : 0;
+	return _resultSet ? size_t(mysql_num_fields(_resultSet)) : 0;
 }
 
 size_t MysqlDB::getNumberOfRows()
@@ -201,14 +197,7 @@ int MysqlDB::insertId()
 
 #ifndef NO_SQLITE	
 SqliteDB::SqliteDB(const string& filename) :
-	_filename(filename),
-	_db(NULL),
-	_ppStmt(NULL),
-	_isConnected(false),
-	_id(-1),
-	_initialized(false),
-	_currentRowNo(-1),
-	_noOfRows(-1)
+	_filename(filename)
 {
   //commented out to make the DB connections initialized lazily
   //init();
@@ -282,10 +271,11 @@ bool SqliteDB::inUpDel(const char* inUpDelStatement)
 			return true;
 		case SQLITE_ROW:
 			cerr << "Error during executing sql statement. Seams "
-							"it was no insert/update/delete statement." << endl;
+				        "it was no insert/update/delete statement." << endl;
 			return false;
 		case SQLITE_ERROR:
 			return false;
+		default:;
 		}
 	}
 
@@ -297,10 +287,10 @@ string SqliteDB::errorMsg()
 	return sqlite3_errmsg(_db);
 }
 
-unsigned int SqliteDB::getNumberOfFields()
+size_t SqliteDB::getNumberOfFields()
 {
   lazyInit();
-	return sqlite3_column_count(_ppStmt);
+	return size_t(sqlite3_column_count(_ppStmt));
 }
 
 size_t SqliteDB::getNumberOfRows()
@@ -308,13 +298,13 @@ size_t SqliteDB::getNumberOfRows()
   lazyInit();
 
 	//old position of cursor is stored in _currentRowNo
-	size_t noOfRows = _currentRowNo + 1;
+	size_t noOfRows = _currentRowNo;
 	while(sqlite3_step(_ppStmt) != SQLITE_DONE)
 		++noOfRows;
 
 	sqlite3_reset(_ppStmt);
 	//restore old cursor position 
-	for(int i = 0; i < _currentRowNo; i++)
+	for(int i = 1; i <= _currentRowNo; i++)
 		sqlite3_step(_ppStmt);
 	
 	return noOfRows;
@@ -351,8 +341,9 @@ DBRow SqliteDB::getRow()
         row.push_back((const char*)sqlite3_column_text(_ppStmt, i));
         break;
       case SQLITE_NULL:
-        row.push_back(string());
+        row.push_back("");
         break;
+      default:;
       }
 //      const char* col = (const char*)sqlite3_column_text(_ppStmt, i);
 //			row.push_back(col ? col : string());
@@ -361,7 +352,7 @@ DBRow SqliteDB::getRow()
 	break;
 	case SQLITE_DONE: 
 		sqlite3_reset(_ppStmt);
-		_currentRowNo = -1;
+		_currentRowNo = 0;
 		break;
 
 	default: //error
