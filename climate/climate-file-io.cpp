@@ -37,10 +37,7 @@ using namespace Tools;
 
 Climate::DataAccessor
 Climate::readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
-																							std::string separator,
-																							Tools::Date startDate,
-																							Tools::Date endDate,
-																							size_t noOfHeaderLines)
+                                              CSVViaHeaderOptions options)
 {
 	pathToFile = fixSystemSeparator(pathToFile);
 	ifstream ifs(pathToFile.c_str());
@@ -52,22 +49,16 @@ Climate::readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
 
 	vector<ACD> header;
 	string s;
-	if(noOfHeaderLines > 0 && getline(ifs, s))
+	if(options.noOfHeaderLines > 0 && getline(ifs, s))
 	{
-		vector<string> r = splitString(s, separator);
+		vector<string> r = splitString(s, options.separator);
+		auto n2acd = name2acd();
 		for(auto colName : r)
 		{
-			bool knownColName = false;
-			for(ulong i = 0, size = acdNames().size(); i < size; i++)
-				if(toLower(colName) == toLower(acdNames().at(i)))
-				{
-					header.push_back(ACD(i));
-					knownColName = true;
-					break;
-				}
-				
-			if(!knownColName)
-				header.push_back(skip);
+			auto it2 = options.headerName2ACDName.find(colName);
+			auto it = n2acd.find(it2 == options.headerName2ACDName.end()
+			                     ? colName : it2->second);
+			header.push_back(it == n2acd.end() ? skip : it->second);
 		}
 	}
 
@@ -81,11 +72,11 @@ Climate::readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
 	}
 
 	return readClimateDataFromCSVFile(pathToFile, 
-																		separator, 
+																		options.separator,
 																		header, 
-																		startDate, 
-																		endDate,
-																		noOfHeaderLines);
+																		options.startDate,
+																		options.endDate,
+																		options.noOfHeaderLines);
 
 }
 
@@ -141,9 +132,18 @@ Climate::readClimateDataFromCSVFile(std::string pathToFile,
 	while(getline(ifs, s))
 	{
 		//skip (repeated) headers
+		bool isRepeatedHeader = false;
 		for(auto startOfHeaderLine : startOfHeaderLines)
-			if(s.substr(0, 10) == startOfHeaderLine)
-				continue;
+		{
+			if (s.substr(0, 10) == startOfHeaderLine)
+			{
+				isRepeatedHeader = true;
+				break;
+			}
+		}
+
+		if(isRepeatedHeader)
+			continue;
 
 		vector<string> r = splitString(s, separator);
 		size_t rSize = r.size();
@@ -167,18 +167,18 @@ Climate::readClimateDataFromCSVFile(std::string pathToFile,
 				ACD acdi = header.at(i);
 				switch(acdi)
 				{
-				case day: date.setDay(stoi(r.at(i))); break;
-				case month: date.setMonth(stoi(r.at(i))); break;
-				case year: date.setYear(stoi(r.at(i))); break;
+				case day: date.setDay(stoul(r.at(i))); break;
+				case month: date.setMonth(stoul(r.at(i))); break;
+				case year: date.setYear(stoul(r.at(i))); break;
 				case isoDate: date = Date::fromIsoDateString(r.at(i)); break;
 				case deDate:
 				{
 					auto dmy = splitString(r.at(i), ".");
 					if(dmy.size() == 3)
 					{
-						date.setDay(stoi(dmy.at(0)));
-						date.setMonth(stoi(dmy.at(1)));
-						date.setYear(stoi(dmy.at(2)));
+						date.setDay(stoul(dmy.at(0)));
+						date.setMonth(stoul(dmy.at(1)));
+						date.setYear(stoul(dmy.at(2)));
 					}
 					break;
 				}
@@ -216,9 +216,6 @@ Climate::readClimateDataFromCSVFile(std::string pathToFile,
 
 		data[date] = vs;
 	}
-
-	auto rda = data.rbegin()->first;
-	auto rd = data.rbegin()->second;
 
 	if(!isStartDateValid && !data.empty())
 		startDate = data.begin()->first;

@@ -286,7 +286,7 @@ DataAccessor DataAccessor::cloneForRange(size_t fromStep,
 void DataAccessor::addClimateData(AvailableClimateData acd,
                                   const vector<double>& data)
 {
-  if(!_data->empty())
+	if(!_data->empty())
     assert(_numberOfSteps = data.size());
 
 	_data->push_back(data);

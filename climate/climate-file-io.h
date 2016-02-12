@@ -28,22 +28,26 @@ namespace Climate
 		return{deDate, tmin, tavg, tmax, precip, globrad, relhumid, wind};
 	}
 
-  Climate::DataAccessor 
+	struct CSVViaHeaderOptions
+	{
+		CSVViaHeaderOptions() : separator(",") {}
+		std::string separator;
+		Tools::Date startDate;
+		Tools::Date endDate;
+		size_t noOfHeaderLines{2};
+		std::map<std::string, std::string> headerName2ACDName;
+	};
+	Climate::DataAccessor
+		readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
+		                                     CSVViaHeaderOptions options = CSVViaHeaderOptions());
+
+	Climate::DataAccessor
 		readClimateDataFromCSVFile(std::string pathToFile,
 															 std::string separator = ",",
 															 std::vector<ACD> header = std::vector<ACD>(),
 															 Tools::Date startDate = Tools::Date(),
 															 Tools::Date endDate = Tools::Date(),
 															 size_t noOfHeaderLines = 2);
-
-	Climate::DataAccessor
-		readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
-																				 std::string separator = ",",
-																				 Tools::Date startDate = Tools::Date(),
-																				 Tools::Date endDate = Tools::Date(),
-																				 size_t noOfHeaderLines = 2);
-
-
 }
 
 #endif

@@ -18,6 +18,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #define CLIMATE_COMMON_H_
 
 #include <vector>
+#include <map>
 #include <string>
 #include <memory>
 
@@ -41,14 +42,30 @@ namespace Climate
 	//! just a shortcut to the quite long name
 	typedef AvailableClimateData ACD;
 
-	inline std::vector<std::string> acdNames()
+	inline std::map<std::string, ACD> name2acd()
 	{
-		return{
-			"day", "month", "year", "tmin", "tavg", "tmax", "precip", "precip-orig",
-				"globrad", "wind", "sunhours", "cloudamount", "relhumid", "airpress",
-				"vaporpress", "iso-date", "de-date", "skip"
+		return {
+			{"day", day},
+			{"month", month},
+			{"year", year},
+			{"tmin", tmin},
+			{"tavg", tavg},
+			{"tmax", tmax},
+			{"precip", precip},
+			{"precip-orig", precipOrig},
+			{"globrad", globrad},
+			{"wind", wind}, {"windspeed", wind},
+			{"sunhours", sunhours},
+			{"cloudamount", cloudamount},
+			{"relhumid", relhumid},
+			{"airpress", airpress},
+			{"vaporpress", vaporpress},
+			{"iso-date", isoDate},
+			{"de-date", deDate},
+			{"skip", skip}
 		};
 	};
+
 
 
 	/*!
