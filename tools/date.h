@@ -41,9 +41,7 @@ namespace Tools
 	class  Date
 	{
 	public:
-		//! to be able to use named months
-
-		static const size_t defaultRelativeBaseYear;
+		static const size_t defaultRelativeBaseYear = 2000;
 
 	public:
 		Date(bool useLeapYears = false);
@@ -126,13 +124,13 @@ namespace Tools
 			return !((*this) < other);
 		}
 
-		Date operator-(int days) const;
+		Date operator-(size_t days) const;
 
 		/*!
 		 * @param days
 		 * @return change 'this' date to 'days' before
 		 */
-		Date & operator-=(int days) { return (*this) = (*this) - days; }
+		Date & operator-=(size_t days) { return (*this) = (*this) - days; }
 
 		/*!
 		 * prefix --
@@ -142,13 +140,13 @@ namespace Tools
 
 		Date operator--(int);
 
-		Date operator+(int days) const;
+		Date operator+(size_t days) const;
 
 		/*!
 		 * @param days
 		 * @return 'this' date changed to 'days' ahead
 		 */
-		Date & operator+=(int days) { return (*this) = (*this) + days; }
+		Date & operator+=(size_t days) { return (*this) = (*this) + days; }
 
 		/*!
 		 *
@@ -295,8 +293,8 @@ namespace Tools
 														size_t month,
 														bool useLeapYears = false)
 		{
-			return Date(day, month, year, useLeapYears)
-				- Date(1, jan, year, useLeapYears) + 1;
+			return size_t(Date(day, month, year, useLeapYears)
+				- Date(1, jan, year, useLeapYears) + 1);
 		}
 
 		/*!
@@ -355,7 +353,7 @@ namespace Tools
 		bool isRelativeBaseYear() const { return _relativeBaseYear == year(); }
 
 		//! get the base year if this is a relative date
-		int relativeBaseYear() const { return _relativeBaseYear; }
+		size_t relativeBaseYear() const { return _relativeBaseYear; }
 
 	private:
 		//! days in month (1-indexed)
@@ -363,21 +361,21 @@ namespace Tools
 		//! days in month in a leap year
 		static const std::vector<size_t> _ldim;
 		//! pointer to correct leap year array, depending of activated leap years
-		const std::vector<size_t>* _daysInMonth;
+		const std::vector<size_t>* _daysInMonth{nullptr};
 
 		//! members variables for day, month, year
-		size_t _d, _m, _y;
+		size_t _d{0}, _m{0}, _y{0};
 		//! the choosen arbitrary leap year
 		static const size_t _aLeapYear = 2008;
 
 		//! member var holding whether leap years are being used or not
-		bool _useLeapYears;
+		bool _useLeapYears{false};
 
 		//! choosen base relative year
-		size_t _relativeBaseYear;
+		size_t _relativeBaseYear{0};
 
 		//! is this a relative date = what's the meaning of the year
-		bool _isRelativeDate;
+		bool _isRelativeDate{false};
 	};
 
 	inline Date fromMysqlString(const char* mysqlDateString, bool useLeapYears = true)

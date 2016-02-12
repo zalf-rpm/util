@@ -34,33 +34,19 @@ const std::vector<size_t> Date::_dim =
 const std::vector<size_t> Date::_ldim =
 {0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
-const size_t Date::defaultRelativeBaseYear = 2000;
+//const size_t Date::defaultRelativeBaseYear = 2000;
 
 //! default constructor
 Date::Date(bool useLeapYears)
-	:
-	_daysInMonth(nullptr),
-	_d(0),
-	_m(0),
-	_y(0),
-	_useLeapYears(useLeapYears),
-	_relativeBaseYear(0),
-	_isRelativeDate(false)
+	: _useLeapYears(useLeapYears)
 {
 	_daysInMonth = isLeapYear() && _useLeapYears ? &_ldim : &_dim;
 }
 
 Date::Date(const string& isoDateString, bool useLeapYears)
-	:
-	_daysInMonth(nullptr),
-	_d(0),
-	_m(0),
-	_y(0),
-	_useLeapYears(useLeapYears),
-	_relativeBaseYear(0),
-	_isRelativeDate(false)
+	: _useLeapYears(useLeapYears)
 {
-	Date d = fromIsoDateString(isoDateString);
+	Date d = fromIsoDateString(isoDateString, useLeapYears);
 	_d = d.day();
 	_m = d.month();
 	_y = d.year();
@@ -77,14 +63,11 @@ Date::Date(const string& isoDateString, bool useLeapYears)
 Date::Date(size_t day, 
 					 Month month, 
 					 size_t year,
-					 bool useLeapYears) :
-	_daysInMonth(nullptr),
-	_d(day),
-	_m(month),
-	_y(year),
-	_useLeapYears(useLeapYears),
-	_relativeBaseYear(0),
-	_isRelativeDate(false)
+					 bool useLeapYears)
+	: _d(day)
+	, _m(month)
+	, _y(year)
+	, _useLeapYears(useLeapYears)
 {
 	_daysInMonth = isLeapYear() && _useLeapYears ? &_ldim : &_dim;
 	if(day > daysInMonth(month) || day == 0)
@@ -106,14 +89,13 @@ Date::Date(size_t day,
 					 size_t year,
 					 bool useLeapYears, 
 					 bool isRelativeDate,
-					 size_t relativeBaseYear) :
-	_daysInMonth(nullptr),
-	_d(day),
-	_m(month),
-	_y(year),
-	_useLeapYears(useLeapYears),
-	_relativeBaseYear(relativeBaseYear),
-	_isRelativeDate(isRelativeDate)
+					 size_t relativeBaseYear)
+	: _d(day)
+	, _m(month)
+	, _y(year)
+	, _useLeapYears(useLeapYears)
+	, _relativeBaseYear(relativeBaseYear)
+	, _isRelativeDate(isRelativeDate)
 {
 	_daysInMonth = isLeapYear() && _useLeapYears ? &_ldim : &_dim;
 	if(month > 12 || month == 0 || day > daysInMonth(month) || day == 0)
@@ -138,9 +120,9 @@ Date Date::fromIsoDateString(const std::string& isoDateString,
 {
 	if(isoDateString.size() == 10)
 	{
-		int year = stoi(isoDateString.substr(0, 4));
-		int month = stoi(isoDateString.substr(5, 2));
-		int day = stoi(isoDateString.substr(8, 2));
+		auto year = stoul(isoDateString.substr(0, 4));
+		auto month = stoul(isoDateString.substr(5, 2));
+		auto day = stoul(isoDateString.substr(8, 2));
 		//cout << day << "." << month << "." << year << endl;
 		return Date(day, month, year, useLeapYears);
 	}
@@ -150,14 +132,13 @@ Date Date::fromIsoDateString(const std::string& isoDateString,
 
 //! copy constructor
 Date::Date(const Date& other)
-	:
-	_daysInMonth(other._daysInMonth),
-	_d(other._d),
-	_m(other._m),
-	_y(other._y),
-	_useLeapYears(other._useLeapYears),
-	_relativeBaseYear(other._relativeBaseYear),
-	_isRelativeDate(other._isRelativeDate)
+	: _daysInMonth(other._daysInMonth)
+	, _d(other._d)
+	, _m(other._m)
+	, _y(other._y)
+	, _useLeapYears(other._useLeapYears)
+	, _relativeBaseYear(other._relativeBaseYear)
+	, _isRelativeDate(other._isRelativeDate)
 {}
 
 /*!
@@ -200,7 +181,7 @@ int Date::numberOfDaysTo(const Date& toDate) const
 	{
 		for(size_t y = from.year(); y <= to.year(); y++)
 		{
-			int startMonth = 1, endMonth = 12;
+			size_t startMonth = 1, endMonth = 12;
 			if(y == from.year())
 			{
 				startMonth = from.month() + 1;
@@ -212,7 +193,7 @@ int Date::numberOfDaysTo(const Date& toDate) const
 				nods += to.day();
 			}
 			Date cy(1, 1, y, useLeapYears()); //current year, needed to count months in leap years correctly
-			for(int m = startMonth; m >= 1 && m <= 12 && m <= endMonth; m++)
+			for(size_t m = startMonth; m >= 1 && m <= 12 && m <= endMonth; m++)
 				nods += cy.daysInMonth(m);
 		}
 	}
@@ -302,7 +283,7 @@ std::string Date::toString(const std::string& separator,
 	{
 		if(isRelativeDate())
 		{
-			int deltaYears = year() - _relativeBaseYear;
+			size_t deltaYears = year() - _relativeBaseYear;
 			s << separator << "year"
 				<< (deltaYears > 0 ? "+" : "");
 			if(deltaYears != 0)
@@ -318,7 +299,7 @@ std::string Date::toString(const std::string& separator,
  * @param days
  * @return a copy of 'this' date 'days' before
  */
-Date Date::operator-(int days) const
+Date Date::operator-(size_t days) const
 {
 	if(days < 0)
 		return (*this) + (-days);
@@ -327,7 +308,7 @@ Date Date::operator-(int days) const
 	size_t ds = days; //days
 
 	bool isRelativeDate = cd.isRelativeDate();
-	int relativeBaseYear = cd.relativeBaseYear();
+	size_t relativeBaseYear = cd.relativeBaseYear();
 
 	while(true)
 	{
@@ -369,20 +350,20 @@ Date Date::operator--(int)
  * @param days
  * @return date 'days' ahead of 'this' date
  */
-Date Date::operator+(int days) const
+Date Date::operator+(size_t days) const
 {
 	if(days < 0)
 		return (*this) - (-days);
 
 	Date cd(*this); //current date
-	int ds = days; //days
+	size_t ds = days; //days
 
 	bool isRelativeDate = cd.isRelativeDate();
-	int relativeBaseYear = cd.relativeBaseYear();
+	size_t relativeBaseYear = cd.relativeBaseYear();
 
 	while(true)
 	{
-		int delta = cd.daysInMonth(cd.month()) - cd.day() + 1;
+		size_t delta = cd.daysInMonth(cd.month()) - cd.day() + 1;
 		if(delta <= ds)
 		{
 			ds -= delta;
@@ -419,7 +400,7 @@ Date Date::operator++(int)
 
 Date Date::toAbsoluteDate(size_t absYear, bool ignoreDeltaYears) const
 {
-	int deltaYears = ignoreDeltaYears ? 0 : year() - _relativeBaseYear;
+	long int deltaYears = ignoreDeltaYears ? 0 : year() - _relativeBaseYear;
 	return Date(day(), month(), absYear == 0 ? year() : absYear + deltaYears,
 							useLeapYears());
 }
