@@ -302,17 +302,20 @@ namespace Tools
     return s.empty() ? def : std::stof(s);
 	}
 
-  bool satob(const std::string& s, bool def = false);
-
-	inline bool stob(const std::string& s, bool def = false) { return satob(s, def); }
+	bool stob(const std::string& s, bool def = false);
+	inline bool satob(const std::string& s, bool def = false){ return stob(s, def); }
 
 	inline std::string surround(std::string with, std::string str){ return with + str + with;  };
 
 	std::string readFile(std::string path);
 
+	std::pair<std::string, std::string> splitPathToFile(const std::string& pathToFile);
+
+	bool isAbsolutePath(const std::string& path);
+
 	std::string fixSystemSeparator(std::string path);
 
-  void ensureDirExists(const std::string& path);
+  std::string ensureDirExists(const std::string& path);
 }
 
 
