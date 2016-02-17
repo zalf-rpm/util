@@ -305,7 +305,7 @@ namespace Tools
 		void setUseLeapYears(bool useLeapYears)
 		{
 			_useLeapYears = useLeapYears;
-			_daysInMonth = _useLeapYears ? &_ldim : &_dim;
+      _daysInMonth = _useLeapYears ? _ldim() : _dim();
 		}
 
 		/*!
@@ -357,9 +357,9 @@ namespace Tools
 
 	private:
 		//! days in month (1-indexed)
-		static const std::vector<size_t> _dim;
+    static const std::vector<size_t>* _dim();
 		//! days in month in a leap year
-		static const std::vector<size_t> _ldim;
+    static const std::vector<size_t>* _ldim();
 		//! pointer to correct leap year array, depending of activated leap years
 		const std::vector<size_t>* _daysInMonth{nullptr};
 

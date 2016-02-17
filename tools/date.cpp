@@ -29,10 +29,17 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 using namespace Tools;
 using namespace std;
 
-const std::vector<size_t> Date::_dim =
-{0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-const std::vector<size_t> Date::_ldim =
-{0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+const std::vector<size_t>* Date::_dim()
+{
+  static vector<size_t> dim{0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  return &dim;
+}
+
+const std::vector<size_t>* Date::_ldim()
+{
+  static vector<size_t> dim {0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  return &dim;
+}
 
 //const size_t Date::defaultRelativeBaseYear = 2000;
 
@@ -40,7 +47,7 @@ const std::vector<size_t> Date::_ldim =
 Date::Date(bool useLeapYears)
 	: _useLeapYears(useLeapYears)
 {
-	_daysInMonth = isLeapYear() && _useLeapYears ? &_ldim : &_dim;
+  _daysInMonth = isLeapYear() && _useLeapYears ? _ldim() : _dim();
 }
 
 Date::Date(const string& isoDateString, bool useLeapYears)
@@ -50,7 +57,7 @@ Date::Date(const string& isoDateString, bool useLeapYears)
 	_d = d.day();
 	_m = d.month();
 	_y = d.year();
-	_daysInMonth = isLeapYear() && _useLeapYears ? &_ldim : &_dim;
+  _daysInMonth = isLeapYear() && _useLeapYears ? _ldim() : _dim();
 }
 
 /*!
@@ -69,7 +76,7 @@ Date::Date(size_t day,
 	, _y(year)
 	, _useLeapYears(useLeapYears)
 {
-	_daysInMonth = isLeapYear() && _useLeapYears ? &_ldim : &_dim;
+  _daysInMonth = isLeapYear() && _useLeapYears ? _ldim() : _dim();
 	if(day > daysInMonth(month) || day == 0)
 	{
 		//_daysInMonth = nullptr;
@@ -97,7 +104,7 @@ Date::Date(size_t day,
 	, _relativeBaseYear(relativeBaseYear)
 	, _isRelativeDate(isRelativeDate)
 {
-	_daysInMonth = isLeapYear() && _useLeapYears ? &_ldim : &_dim;
+  _daysInMonth = isLeapYear() && _useLeapYears ? _ldim() : _dim();
 	if(month > 12 || month == 0 || day > daysInMonth(month) || day == 0)
 	{
 		//_daysInMonth = nullptr;
