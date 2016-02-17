@@ -56,7 +56,7 @@ namespace
   }
 
   //! return true if successfully checked or created
-  bool ensureDirExists(string pathToDir)
+  bool ensureDirExists_(string pathToDir)
   {
     //cout << "pathToDir: " << pathToDir << endl;
 
@@ -532,7 +532,7 @@ bool GridP::writeHdf(const string& pathToHdfFile, const string& datasetName,
                      const string& regionName, const string& coordinateSystemShort, time_t t)
 {
   //cout << "pathToHdfFile: " << pathToHdfFile << endl;
-  if(!ensureDirExists(pathToHdfFile.substr(0, pathToHdfFile.find_last_of('/'))))
+  if(!ensureDirExists_(pathToHdfFile.substr(0, pathToHdfFile.find_last_of('/'))))
     return false;
 
   size_t ncols = _grid->ncols;
