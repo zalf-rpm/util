@@ -377,6 +377,8 @@ namespace Tools
     std::string err;
     if(j.has_shape({{key, json11::Json::OBJECT}}, err))
       var = std::make_shared<C>(j[key]);
+		if(!err.empty())
+			std::cerr << "Error @ Tools::set_shared_ptr_value: " << err << std::endl;
   }
 
   template<class C>
@@ -387,6 +389,8 @@ namespace Tools
     std::string err;
     if(j.has_shape({{key, json11::Json::OBJECT}}, err))
       var = new C(j[key]);
+		if(!err.empty())
+			std::cerr << "Error @ Tools::set_ptr_value: " << err << std::endl;
   }
 
   template<class C>
@@ -397,6 +401,8 @@ namespace Tools
     std::string err;
     if(j.has_shape({{key, json11::Json::OBJECT}}, err))
       var = C(j[key]);
+		if(!err.empty())
+			std::cerr << "Error @ Tools::set_value_obj_value: " << err << std::endl;
   }
 
   //---------------------------------------------------------------------------------------
