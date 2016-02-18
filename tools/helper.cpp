@@ -90,6 +90,19 @@ string Tools::fixSystemSeparator(string path)
 		path.replace(pos, 1, "\\");
 		pos = path.find("/", pos + 1);
 	}
+	pos = path.find("\\\\");
+	while(pos != string::npos)
+	{
+		path.replace(pos, 2, "\\");
+		pos = path.find("\\\\", pos + 1);
+	}
+#else
+	auto pos = path.find("//");
+	while(pos != string::npos)
+	{
+		path.replace(pos, 2, "/");
+		pos = path.find("//", pos + 1);
+	}
 #endif
 	return path;
 }
