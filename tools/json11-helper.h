@@ -20,6 +20,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <string>
 #include <functional>
 #include <initializer_list>
+#include <iostream>
 
 #include "json11/json11.hpp"
 
