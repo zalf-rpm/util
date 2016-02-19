@@ -463,7 +463,7 @@ const SoilPMsPtr Soil::soilParametersFromHermesFile(int soilId,
 
 				SoilParameters p;
 				p.set_vs_SoilOrganicCarbon(corg / 100.0); //[kg C 100kg] --> [kg C kg-1]
-				p.set_vs_SoilRawDensity(ld_eff2trd(ld, KA5texture2clay(ba)));
+				p.set_vs_SoilRawDensity(ld_eff2trd(ld, KA5texture2clay(ba)) * 1000.0);
 				p.vs_SoilSandContent = KA5texture2sand(ba);
 				p.vs_SoilClayContent = KA5texture2clay(ba);
 				p.vs_SoilStoneContent = stone / 100.0;
