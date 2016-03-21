@@ -133,9 +133,9 @@ namespace Climate
 		int _id;
 		std::string _name;
 		std::string _dbName;
-		SL _sl;
+    SL _sl{f};
 		Tools::LatLngCoord _geoCoord;
-		double _nn;
+    double _nn{0};
     ClimateSimulation* _simulation{nullptr};
     bool _isPrecipStation{false};
     ClimateStation* _fullClimateReferenceStation{nullptr};
@@ -534,6 +534,11 @@ namespace Climate
     ClimateRealization* realization(const std::string& name) const { return realizationPtr(name).get(); }
 
     void setRealizations(Realizations rs){ _realizations = rs; }
+
+    void addRealizations(Realizations rs)
+    {
+      _realizations.insert(_realizations.end(), rs.begin(), rs.end());
+    }
 
 		//! return the simulation this scenario belongs to
 		ClimateSimulation* simulation() const { return _simulation; }

@@ -455,7 +455,8 @@ void DDClimateDataServerSimulation::setClimateStations()
   if(_setupData.simulationId() == "wettreg2006")
     ss << "and sl.dat_id not in (283, 385, 1120, 1623, 1861)";
 
-	connection().select(ss.str().c_str());
+  //cout << "climate-stations query: " << ss.str() << endl;
+  connection().select(ss.str().c_str());
 
 	bool commaDotConversionChecked = false;
 	bool convertCommaToDot = false;
@@ -1614,7 +1615,7 @@ DDClimateDataServerRealization::executeQuery(const ACDV& acds,
 			{
         string csPrefix = cs.isPrecipStation() && cs.fullClimateReferenceStation()
                           ? "p" : "f";
-        query << csPrefix << ".rr, " << csPrefix << ".tm, " << csPrefix << ".monat";
+        query << csPrefix << ".rr, f.tm, f.monat";
 				int posPrecip = c++; int posTavg = c++; int posMonat = c++;
 				fs.push_back(new CalcCorrWRAndCLMPrecip(posPrecip, posTavg, posMonat,
 																								cs.sl()));
@@ -1661,7 +1662,7 @@ DDClimateDataServerRealization::executeQuery(const ACDV& acds,
         << "and not (f.monat = 2 and f.tag = 29) "
            "order by f.jahr, f.monat, f.tag";
 
-//  cout << "select: " << query.str() << endl;
+  //cout << "select: " << query.str() << endl;
 	connection().select(query.str().c_str());
 
 	int rowCount = connection().getNumberOfRows();
@@ -1949,6 +1950,7 @@ void ClimateDataManager::loadAvailableSimulations(set<string> ass)
         else
         {
           auto simScenReal = splitString(value, " ,");
+          //cout << "simScenReal: " << value << endl;
           if(!simScenReal.empty() && simScenReal.size() == 3)
           {
             auto sim = simScenReal.at(0);
@@ -1956,24 +1958,43 @@ void ClimateDataManager::loadAvailableSimulations(set<string> ass)
             {
               if(auto sc = cs->scenario(simScenReal.at(1)))
                 if(auto r = sc->realizationPtr(simScenReal.at(2)))
-                  nsc->setRealizations({r});
+                  nsc->addRealizations({r});
+
+              map<int, ClimateStationPtr> id2fullClimateStation;
 
               for(auto s : cs->climateStations())
               {
-                if(!s->isPrecipStation())
+                //we already added a full climate station
+                //when copying a precipitation station
+                if(id2fullClimateStation.find(s->id()) != id2fullClimateStation.end())
+                  continue;
+
+                auto csCopy = make_shared<ClimateStation>(*s);
+                csCopy->setSimulation(ncs.get());
+
+                if(csCopy->isPrecipStation())
                 {
-                  auto csCopy = make_shared<ClimateStation>(*s);
-                  csCopy->setSimulation(ncs.get());
+                  auto id2fcsit = id2fullClimateStation.find(s->id());
+                  ClimateStationPtr fullCS;
+                  if(id2fcsit == id2fullClimateStation.end())
+                  {
+                    fullCS = make_shared<ClimateStation>(*csCopy->fullClimateReferenceStation());
+                    fullCS->setSimulation(ncs.get());
 
-                  //                if(csCopy->isPrecipStation())
-                  //                {
-                  //                  auto fullCSCopy = new ClimateStation(*csCopy->fullClimateReferenceStation());
-                  //                  fullCSCopy->setSimulation(ncs);
-                  //                  csCopy->setFullClimateReferenceStation(fullCSCopy);
-                  //                }
+                    //add new full climate station copy
+                    id2fullClimateStation[fullCS->id()] = fullCS;
+                    climateStations.push_back(fullCS);
+                  }
+                  else
+                    fullCS = id2fcsit->second;
 
-                  climateStations.push_back(csCopy);
+                  //add full reference station to precipition station copy
+                  csCopy->setFullClimateReferenceStation(fullCS.get());
                 }
+                else
+                  id2fullClimateStation[csCopy->id()] = csCopy;
+
+                climateStations.push_back(csCopy);
               }
             };
 

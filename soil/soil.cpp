@@ -353,7 +353,7 @@ string Soil::soilProfileId2KA5Layers(const string& abstractDbSchema,
 			Map& m2 = m[abstractDbSchema];
 
 			con->select("SELECT id, soil_type "
-									"from soil_profiles "
+                  "from soil_profile "
 									"order by id, layer_depth_cm");
 			while(!(row = con->getRow()).empty())
 			{
