@@ -46,27 +46,38 @@ namespace Tools
 	public:
 		Date(bool useLeapYears = false);
 
-		Date(const std::string& isoDateString, bool useLeapYears = false);
+		Date(const std::string& isoDateString, 
+				 bool useLeapYears = false);
 
-		explicit Date(size_t day, Month month, size_t year,
+		explicit Date(size_t day, 
+									Month month, 
+									size_t year,
 									bool useLeapYears = false);
 
-		Date(size_t day, size_t month, size_t year,
-				 bool useLeapYears = false, bool isRelativeDate = false,
+		Date(size_t day, 
+				 size_t month, 
+				 size_t year,
+				 bool useLeapYears = false, 
+				 bool isRelativeDate = false,
 				 size_t relativeBaseYear = defaultRelativeBaseYear);
 
-		static Date relativeDate(size_t day, size_t month,
-														 int deltaYears = 0, bool useLeapYears = false,
+		static Date relativeDate(size_t day, 
+														 size_t month,
+														 int deltaYears = 0, 
+														 bool useLeapYears = false,
 														 size_t relativeYear = defaultRelativeBaseYear);
 
-		static inline Date julianDate(size_t julianDay, size_t year,
-																	bool useLeapYears = false, bool isRelativeDate = false,
+		static inline Date julianDate(size_t julianDay, 
+																	size_t year,
+																	bool useLeapYears = false, 
+																	bool isRelativeDate = false,
 																	size_t relativeBaseYear = defaultRelativeBaseYear)
 		{
 			return Date(1, 1, year, useLeapYears, isRelativeDate, relativeBaseYear) + (julianDay - 1);
 		}
 
-		static Date fromIsoDateString(const std::string& isoDateString, bool useLeapYears = true);
+		static Date fromIsoDateString(const std::string& isoDateString, 
+																	bool useLeapYears = true);
 
 		Date(const Date& other);
 
@@ -342,7 +353,8 @@ namespace Tools
 		Date toAbsoluteDate(size_t absYear = 0,
 												bool ignoreDeltaYears = false) const;
 
-		Date toRelativeDate(int deltaYears = 0, bool useLeapYears = false,
+		Date toRelativeDate(int deltaYears = 0, 
+												bool useLeapYears = false,
 												size_t relativeYear = defaultRelativeBaseYear)
 		{
 			return relativeDate(day(), month(), deltaYears, useLeapYears,

@@ -79,7 +79,6 @@ Date::Date(size_t day,
   _daysInMonth = isLeapYear() && _useLeapYears ? _ldim() : _dim();
 	if(day > daysInMonth(month) || day == 0)
 	{
-		//_daysInMonth = nullptr;
 		_d = _m = _y = 0;
 	}
 }
@@ -107,7 +106,6 @@ Date::Date(size_t day,
   _daysInMonth = isLeapYear() && _useLeapYears ? _ldim() : _dim();
 	if(month > 12 || month == 0 || day > daysInMonth(month) || day == 0)
 	{
-		//_daysInMonth = nullptr;
 		_d = _m = _y = 0;
 	}
 }
@@ -131,7 +129,9 @@ Date Date::fromIsoDateString(const std::string& isoDateString,
 		auto month = stoul(isoDateString.substr(5, 2));
 		auto day = stoul(isoDateString.substr(8, 2));
 		//cout << day << "." << month << "." << year << endl;
-		return Date(day, month, year, useLeapYears);
+		return year < 100
+			? relativeDate(day, month, year, useLeapYears)
+			: Date(day, month, year, useLeapYears);
 	}
 	return Date();
 }
@@ -269,7 +269,19 @@ bool Date::operator<(const Date& other) const
 std::string Date::toIsoDateString(const std::string& wrapInto) const
 {
 	ostringstream s;
-	s << wrapInto << year()
+	auto y = year() - (isRelativeDate() ? relativeBaseYear() : 0);
+	
+	s << wrapInto;
+	if(isRelativeDate())
+	{
+		if(y < 10)
+			s << "000";
+		else if(y < 100)
+			s << "00";
+		else if(y < 1000)
+			s << "0";
+	}
+	s << y
 		<< "-" << (month() < 10 ? "0" : "") << month()
 		<< "-" << (day() < 10 ? "0" : "") << day() << wrapInto;
 	return s.str();
