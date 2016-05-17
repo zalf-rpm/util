@@ -22,7 +22,10 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <string>
 #include <memory>
 
+#include "json11/json11.hpp"
+
 #include "tools/date.h"
+#include "tools/json11-helper.h"
 
 //! All climate data related classes.
 namespace Climate
@@ -156,14 +159,21 @@ namespace Climate
   //----------------------------------------------------------------------------
   
   //! deep copied access to a range of climate data
-  class DataAccessor
+  class DataAccessor : public Tools::Json11Serializable
   {
 	public:
 		DataAccessor();
 
-		DataAccessor(const Tools::Date& startDate, const Tools::Date& endDate);
+		DataAccessor(const Tools::Date& startDate, 
+								 const Tools::Date& endDate);
 
 		DataAccessor(const DataAccessor& other);
+
+		DataAccessor(json11::Json object);
+
+		virtual void merge(json11::Json j);
+
+		virtual json11::Json to_json() const;
 
 		~DataAccessor(){}
 

@@ -42,7 +42,7 @@ namespace Tools
   };
 
 #ifndef NO_ZMQ
-  Msg receiveMsg(zmq::socket_t& pullSocket, bool nonBlockingMode = false);
+  Msg receiveMsg(zmq::socket_t& socket, bool nonBlockingMode = false);
 
   inline bool sendMsg(zmq::socket_t& pushSocket, json11::Json msg){ return s_send(pushSocket, msg.dump()); }
 #endif

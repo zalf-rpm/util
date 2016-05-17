@@ -225,30 +225,63 @@ YearRange Climate::snapToRaster(YearRange yr, int raster)
 //------------------------------------------------------------------------------
 
 DataAccessor::DataAccessor()
-  : _data(new VVD),
-    _acd2dataIndex(availableClimateDataSize(), -1),
-    _fromStep(0),
-    _numberOfSteps(0)
+	: _data(new VVD)
+  , _acd2dataIndex(availableClimateDataSize(), -1)
+  , _fromStep(0)
+  , _numberOfSteps(0)
 {}
 
 DataAccessor::DataAccessor(const Tools::Date& startDate,
 													 const Tools::Date& endDate)
-  : _startDate(startDate),
-    _endDate(endDate),
-    _data(new VVD),
-    _acd2dataIndex(availableClimateDataSize(), -1),
-    _fromStep(0),
-    _numberOfSteps(0)
+  : _startDate(startDate)
+  , _endDate(endDate)
+  , _data(new VVD)
+  , _acd2dataIndex(availableClimateDataSize(), -1)
+  , _fromStep(0)
+	, _numberOfSteps(0)
 {}
 
 DataAccessor::DataAccessor(const DataAccessor& other)
-  : _startDate(other._startDate),
-    _endDate(other._endDate),
-    _data(other._data),
-    _acd2dataIndex(other._acd2dataIndex),
-    _fromStep(other._fromStep),
-    _numberOfSteps(other._numberOfSteps)
+  : _startDate(other._startDate)
+  ,  _endDate(other._endDate)
+  , _data(other._data)
+  , _acd2dataIndex(other._acd2dataIndex)
+  , _fromStep(other._fromStep)
+  , _numberOfSteps(other._numberOfSteps)
 {}
+
+DataAccessor::DataAccessor(json11::Json j)
+{
+	merge(j);
+}
+
+void DataAccessor::merge(json11::Json j)
+{
+	for(const auto& acd2data : j["data"].object_items())
+		addOrReplaceClimateData(ACD(stoi(acd2data.first)), double_vector(acd2data.second));
+
+	set_iso_date_value(_startDate, j, "startDate");
+	set_iso_date_value(_endDate, j, "endDate");
+}
+
+json11::Json DataAccessor::to_json() const
+{
+	J11Object data;
+	for(auto i : _acd2dataIndex)
+	{
+		if(i >= 0)
+		{
+			data[to_string(i)] = toPrimJsonArray(dataAsVector(ACD(i)));
+		}
+	}
+	
+	return json11::Json::object{
+		{"type", "DataAccessor"},
+		{"data", data},
+		{"startDate", startDate().toIsoDateString()},
+		{"endDate", endDate().toIsoDateString()}
+	};
+}
 
 double DataAccessor::dataForTimestep(AvailableClimateData acd,
                                      size_t stepNo) const
