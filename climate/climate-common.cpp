@@ -267,12 +267,14 @@ void DataAccessor::merge(json11::Json j)
 json11::Json DataAccessor::to_json() const
 {
 	J11Object data;
+	int acd = 0;
 	for(auto i : _acd2dataIndex)
 	{
 		if(i >= 0)
 		{
-			data[to_string(i)] = toPrimJsonArray(dataAsVector(ACD(i)));
+			data[to_string(acd)] = toPrimJsonArray(dataAsVector(ACD(acd)));
 		}
+		acd++;
 	}
 	
 	return json11::Json::object{
