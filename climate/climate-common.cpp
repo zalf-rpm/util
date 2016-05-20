@@ -277,7 +277,7 @@ json11::Json DataAccessor::to_json() const
 		acd++;
 	}
 	
-	return json11::Json::object{
+	return J11Object {
 		{"type", "DataAccessor"},
 		{"data", data},
 		{"startDate", startDate().toIsoDateString()},
@@ -295,9 +295,10 @@ double DataAccessor::dataForTimestep(AvailableClimateData acd,
 vector<double> DataAccessor::dataAsVector(AvailableClimateData acd) const
 {
   short cacheIndex = _acd2dataIndex.at(int(acd));
-  return cacheIndex < 0 ? vector<double>()
-                        :vector<double>(_data->at(cacheIndex).begin()+_fromStep,
-                                        _data->at(cacheIndex).begin()+_fromStep+noOfStepsPossible());
+  return cacheIndex < 0 
+		? vector<double>()
+		: vector<double>(_data->at(cacheIndex).begin() + _fromStep,
+										 _data->at(cacheIndex).begin() + _fromStep + noOfStepsPossible());
 }
 
 DataAccessor DataAccessor::cloneForRange(size_t fromStep,
@@ -333,9 +334,16 @@ void DataAccessor::addOrReplaceClimateData(AvailableClimateData acd,
                                            const vector<double>& data)
 {
   int index = _acd2dataIndex[int(acd)];
-  if(index < 0)
-    addClimateData(acd, data);
-  else
-    (*_data)[index] = data;
+	if(index < 0)
+	{
+		addClimateData(acd, data);
+	}
+	else
+	{
+		if(!_data->empty())
+			assert(_numberOfSteps = data.size());
+
+		(*_data)[index] = data;
+	}
 }
 

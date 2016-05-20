@@ -48,7 +48,7 @@ namespace Tools
   typedef json11::Json::object J11Object;
 
   template<class Collection>
-  std::vector<json11::Json> toPrimJsonArray(const Collection& col)
+  J11Array toPrimJsonArray(const Collection& col)
   {
     std::vector<json11::Json> js;
     for(auto v : col)
@@ -57,7 +57,7 @@ namespace Tools
   }
 
   template<class Collection>
-  std::vector<json11::Json> toJsonArray(const Collection& col)
+  J11Array toJsonArray(const Collection& col)
   {
     std::vector<json11::Json> js;
     for(typename Collection::value_type t : col)
