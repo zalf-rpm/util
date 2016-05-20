@@ -68,7 +68,7 @@ double Soil::ld_eff2trd(int ldEff, double clay)
 		x = 2.1;
 		break;
 	}
-	return x - (0.9 * clay);
+	return (x - (0.9 * clay)) * 1000.0; //* 1000 = conversion from g cm-3 -> kg m-3
 }
 
 double Soil::sandAndClay2lambda(double sand, double clay)

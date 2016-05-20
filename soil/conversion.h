@@ -25,6 +25,7 @@ namespace Soil
 {
 	double humus_st2corg(int humus_st);
 
+	//! return soil raw density [kg m-3]
 	double ld_eff2trd(int ldEff, double clay);
 
 	double sandAndClay2lambda(double sand, double clay);
