@@ -510,6 +510,9 @@ RPSCDRes Soil::readPrincipalSoilCharacteristicData(string soilType, double rawDe
 	typedef map<string, M1> M2;
 	static M2 m;
 	static bool initialized = false;
+
+	RPSCDRes errorRes;
+
 	if(!initialized)
 	{
 		lock_guard<mutex> lock(lockable);
@@ -517,6 +520,8 @@ RPSCDRes Soil::readPrincipalSoilCharacteristicData(string soilType, double rawDe
 		if(!initialized)
 		{
 			DBPtr con(newConnection("ka5-soil-data"));
+			if(!con)
+				return errorRes;
 
 			string query("select soil_type, soil_raw_density*10, "
 									 "air_capacity, field_capacity, n_field_capacity "
@@ -558,10 +563,10 @@ RPSCDRes Soil::readPrincipalSoilCharacteristicData(string soilType, double rawDe
 					(11 <= rd10 && rd10 <= 19))
 			rd10 += delta;
 
-		return ci2 != ci->second.end() ? ci2->second : RPSCDRes();
+		return ci2 != ci->second.end() ? ci2->second : errorRes;
 	}
 
-	return RPSCDRes();
+	return errorRes;
 }
 
 //------------------------------------------------------------------------------
