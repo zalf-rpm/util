@@ -100,7 +100,7 @@ json11::Json SoilParameters::to_json() const
 		{"Sand", J11Array {vs_SoilSandContent, "% [0-1]"}},
 		{"Clay", J11Array {vs_SoilClayContent, "% [0-1]"}},
 		{"pH", vs_SoilpH},
-		{"Sceleton", vs_SoilStoneContent},
+		{"Sceleton", J11Array {vs_SoilStoneContent, "% [0-1]"}},
 		{"Lambda", vs_Lambda},
 		{"FieldCapacity", vs_FieldCapacity},
 		{"PoreVolume", vs_Saturation},
