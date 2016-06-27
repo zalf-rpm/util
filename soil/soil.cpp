@@ -45,7 +45,7 @@ SoilParameters::SoilParameters(json11::Json j)
 	merge(j);
 }
 
-void SoilParameters::merge(json11::Json j)
+SE SoilParameters::merge(json11::Json j)
 {
 	set_double_value(vs_SoilSandContent, j, "Sand");
 	set_double_value(vs_SoilClayContent, j, "Clay");
@@ -91,6 +91,8 @@ void SoilParameters::merge(json11::Json j)
 
 	if(vs_Lambda < 0)
 		vs_Lambda = sandAndClay2lambda(vs_SoilSandContent, vs_SoilClayContent);
+
+	return true;
 }
 
 json11::Json SoilParameters::to_json() const

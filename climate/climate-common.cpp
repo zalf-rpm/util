@@ -255,13 +255,15 @@ DataAccessor::DataAccessor(json11::Json j)
 	merge(j);
 }
 
-void DataAccessor::merge(json11::Json j)
+SE DataAccessor::merge(json11::Json j)
 {
 	for(const auto& acd2data : j["data"].object_items())
 		addOrReplaceClimateData(ACD(stoi(acd2data.first)), double_vector(acd2data.second));
 
 	set_iso_date_value(_startDate, j, "startDate");
 	set_iso_date_value(_endDate, j, "endDate");
+
+	return{};
 }
 
 json11::Json DataAccessor::to_json() const

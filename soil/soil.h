@@ -33,16 +33,14 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 namespace Soil
 {
-	/**
-	 * @author Claas Nendel, Michael Berg
-	 */
+	//! @author Claas Nendel, Michael Berg 
 	struct SoilParameters : public Tools::Json11Serializable
 	{
 		SoilParameters() {}
 
 		SoilParameters(json11::Json object);
 
-		virtual void merge(json11::Json j);
+		virtual Tools::SE merge(json11::Json j);
 
 		virtual json11::Json to_json() const;
 
