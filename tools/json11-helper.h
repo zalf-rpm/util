@@ -25,27 +25,16 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include "json11/json11.hpp"
 
 #include "tools/date.h"
-
-//#include "tools/helper.h"
+#include "tools/helper.h"
 
 namespace Tools
 {
   template<typename T>
   T identity(T t){ return t; }
 
-	struct SE
-	{
-		SE() : success(true) {};
-		SE(bool s) : success(s) {};
-		SE(bool s, std::string e) : success(s) { errors.push_back(e); }
-		SE(bool s, std::vector<std::string> es) : success(s), errors(es) {}
-		bool success;
-		std::vector<std::string> errors;
-	};
-
   struct Json11Serializable
   {
-    virtual SE merge(json11::Json j) = 0;
+    virtual Errors merge(json11::Json j) = 0;
 
     virtual json11::Json to_json() const = 0;
 

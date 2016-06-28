@@ -255,7 +255,7 @@ DataAccessor::DataAccessor(json11::Json j)
 	merge(j);
 }
 
-SE DataAccessor::merge(json11::Json j)
+Errors DataAccessor::merge(json11::Json j)
 {
 	for(const auto& acd2data : j["data"].object_items())
 		addOrReplaceClimateData(ACD(stoi(acd2data.first)), double_vector(acd2data.second));

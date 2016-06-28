@@ -27,6 +27,52 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 namespace Tools
 {
+	struct Errors
+	{
+		enum Type { ERR, WARN };
+
+		Errors() {}
+		Errors(std::string e) { errors.push_back(e); }
+		Errors(Type t, std::string m) { if(t == ERR) errors.push_back(m); else warnings.push_back(m); }
+		Errors(std::vector<std::string> es) : errors(es) {}
+
+		inline bool success() const { return errors.empty(); }
+		inline bool failure() const { return !success(); }
+
+		void append(const Errors& es)
+		{
+			errors.insert(errors.end(), es.errors.begin(), es.errors.end());
+			warnings.insert(warnings.end(), es.warnings.begin(), es.warnings.end());
+		}
+
+		std::vector<std::string> errors;
+		std::vector<std::string> warnings;
+	};
+
+	template<typename T>
+	struct EResult : public Errors
+	{
+		EResult() {}
+		EResult(T result) : result(result) {}
+		EResult(T result, std::string e) : Errors(e), result(result) {}
+		EResult(T result, Type t, std::string m) : Errors(t, m), result(result) { }
+		EResult(T result, std::vector<std::string> es) : Errors(es), result(result) {}
+
+		T result;
+	};
+
+	bool printPossibleErrors(const Errors& es, bool includeWarnings = false);
+
+	template<typename T>
+	T printPossibleErrors(const EResult<T>& er, bool includeWarnings = false)
+	{
+		if(printPossibleErrors(Errors(er)))
+			 return er.result;
+		return T();
+	};
+	
+	//----------------------------------------------------------------------------
+
 	template<typename T, typename S>
 	struct Cast { S operator()(const T& in) const { return S(in); } };
 
@@ -307,7 +353,7 @@ namespace Tools
 
 	inline std::string surround(std::string with, std::string str){ return with + str + with;  };
 
-	std::string readFile(std::string path);
+	EResult<std::string> readFile(std::string path);
 
 	std::pair<std::string, std::string> splitPathToFile(const std::string& pathToFile);
 

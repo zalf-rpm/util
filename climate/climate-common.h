@@ -171,7 +171,7 @@ namespace Climate
 
 		DataAccessor(json11::Json object);
 
-		virtual Tools::SE merge(json11::Json j);
+		virtual Tools::Errors merge(json11::Json j);
 
 		virtual json11::Json to_json() const;
 

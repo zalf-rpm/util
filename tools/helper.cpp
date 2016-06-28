@@ -24,6 +24,21 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 using namespace Tools;
 using namespace std;
 
+bool Tools::printPossibleErrors(const Errors& es, bool includeWarnings)
+{
+	if(es.failure())
+		for(auto e : es.errors)
+			std::cerr << e << std::endl;
+
+	if(includeWarnings)
+		for(auto w : es.warnings)
+			std::cerr << w << std::endl;
+
+	return es.success();
+};
+
+//-----------------------------------------------------------------------------
+
 bool Tools::stob(const std::string& s, bool def)
 {
   if(s.empty())
@@ -42,9 +57,9 @@ bool Tools::stob(const std::string& s, bool def)
   }
 }
 
-string Tools::readFile(string path)
+EResult<string> Tools::readFile(string path)
 {
-	string s;
+	EResult<string> res;
 	path = fixSystemSeparator(path);
 
 	ifstream ifs;
@@ -52,11 +67,13 @@ string Tools::readFile(string path)
 	if(ifs.good())
 	{
 		for(string line; getline(ifs, line);)
-			s += line;
+			res.result += line;
 	}
-	ifs.close();
+	else
+		res.errors.push_back(string("Couldn't open file: '") + path + "'");
 
-	return s;
+	ifs.close();
+	return res;
 }
 
 pair<string, string> Tools::splitPathToFile(const string& pathToFile)

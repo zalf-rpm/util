@@ -45,8 +45,10 @@ SoilParameters::SoilParameters(json11::Json j)
 	merge(j);
 }
 
-SE SoilParameters::merge(json11::Json j)
+Errors SoilParameters::merge(json11::Json j)
 {
+	Errors es;
+
 	set_double_value(vs_SoilSandContent, j, "Sand");
 	set_double_value(vs_SoilClayContent, j, "Clay");
 	set_double_value(vs_SoilpH, j, "pH");
@@ -92,7 +94,7 @@ SE SoilParameters::merge(json11::Json j)
 	if(vs_Lambda < 0)
 		vs_Lambda = sandAndClay2lambda(vs_SoilSandContent, vs_SoilClayContent);
 
-	return true;
+	return es;
 }
 
 json11::Json SoilParameters::to_json() const
