@@ -24,6 +24,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <iostream>
 #include <sstream>
 #include <cassert>
+#include <utility>
 
 #include "algorithms.h"
 #include "tools/date.h"
@@ -32,14 +33,31 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 using namespace std;
 using namespace Tools;
 
-vector<string> Tools::splitString(string s, string splitElements)
+vector<string> Tools::splitString(string s, 
+																	string splitElements, 
+																	pair<string, string> tokenDelimiters,
+																	bool removeDelimiters)
 {
 	vector<string> v;
 	v.push_back("");
+	int delimiterLevel = 0;
 	for(auto cit = s.begin(); cit != s.end(); cit++)
 	{
-		if(splitElements.find(*cit) == string::npos)
-			v.back().append(1, *cit);
+		auto c = *cit;
+		if(splitElements.find(c) == string::npos
+			 || delimiterLevel > 0)
+		{
+			int levelInc = 0;
+			if(!tokenDelimiters.first.empty()
+				 && tokenDelimiters.first.find(c) != string::npos)
+				levelInc = 1;
+			else if(!tokenDelimiters.second.empty()
+							&& tokenDelimiters.second.find(c) != string::npos)
+				levelInc = -1;
+			if(levelInc == 0 || !removeDelimiters)
+				v.back().append(1, c);
+			delimiterLevel += levelInc;
+		}
 		else if(v.back().size() > 0)
 			v.push_back("");
 	}

@@ -36,7 +36,10 @@ namespace Tools
 #undef min
 #undef max
 
-	std::vector<std::string> splitString(std::string s, std::string splitElements);
+	std::vector<std::string> splitString(std::string s, 
+																			 std::string splitElements, 
+																			 std::pair<std::string, std::string> tokenDelimiters = std::make_pair("", ""),
+																			 bool removeDelimiters = false);
 
 	int createRandomNumber();
 	int createRandomNumber(int max);
