@@ -129,6 +129,7 @@ Date Date::fromIsoDateString(const std::string& isoDateString,
 		auto month = stoul(isoDateString.substr(5, 2));
 		auto day = stoul(isoDateString.substr(8, 2));
 		//cout << day << "." << month << "." << year << endl;
+
 		return year < 100
 			? relativeDate(day, month, year, useLeapYears)
 			: Date(day, month, year, useLeapYears);
@@ -236,14 +237,6 @@ Date Date::withYear(size_t y)
  */
 bool Date::operator<(const Date& other) const
 {
-	if(!isValid())
-		return true;
-	else if(!other.isValid())
-		return false;
-	if((isRelativeDate() && !other.isRelativeDate())
-		 || (!isRelativeDate() && other.isRelativeDate()))
-		return false;
-
 	bool t = day() < other.day();
 	//month might be <=
 	if(t)
