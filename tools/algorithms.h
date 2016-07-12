@@ -30,6 +30,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <iterator>
 #include <cassert>
 #include <functional>
+#include <limits>
 
 namespace Tools
 {
@@ -73,7 +74,7 @@ namespace Tools
   * @return a trimmed version of s
   */
   std::string trim(const std::string& s,
-		const std::string& whitespaces = " \t\f\v\n\r");
+									 const std::string& whitespaces = " \t\f\v\n\r");
 
   /*!
   * keep a value in the given border [lower, upper]
@@ -651,22 +652,17 @@ Collection Tools::simpleGlidingAverage(const Collection& ys, int n)
 
 template<class Collection>
 std::pair<typename Collection::value_type, typename Collection::value_type>
-	Tools::minMax(const Collection& ys)
+	Tools::minMax(const Collection& vs)
 {
   typedef typename Collection::value_type T;
-  if(ys.empty())
+  if(vs.empty())
     return std::make_pair(T(0), T(0));
 
-  T minY = *(ys.begin());
-  T maxY = *(ys.begin());
-  for(typename Collection::const_iterator ci = ys.begin();
-    ci != ys.end(); ci++)
-  {
-      T y = *ci;
-      if(y < minY) minY = y;
-      if(y > maxY) maxY = y;
-  }
-  return std::make_pair(minY, maxY);
+	T minv = std::numeric_limits<T>::max(); //*(ys.begin());
+	T maxv = std::numeric_limits<T>::min(); // *(ys.begin());
+  for(auto v : vs)
+		minv = min(minv, v), maxv = max(maxv, v);
+  return std::make_pair(minv, maxv);
 }
 
 template<typename T>
