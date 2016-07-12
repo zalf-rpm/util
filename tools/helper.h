@@ -338,6 +338,8 @@ namespace Tools
 
 	//-------------------------------------------------------------------------
 
+	std::string replace(std::string s, std::string findStr, std::string replStr);
+
 	inline int satoi(const std::string& s, int def = 0)
 	{
     return s.empty() ? def : std::stoi(s);

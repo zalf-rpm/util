@@ -139,3 +139,18 @@ string Tools::ensureDirExists(const string& path)
 
 	return path;
 }
+
+//-----------------------------------------------------------------------------
+
+string Tools::replace(std::string s, std::string findStr, std::string replStr)
+{
+	auto count = findStr.size();
+	size_t pos = s.find(findStr);
+	while(pos != std::string::npos)
+	{
+		s.replace(pos, count, replStr);
+		pos = s.find(findStr);
+	}
+	return s;
+}
+
