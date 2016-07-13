@@ -34,9 +34,6 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 namespace Tools
 {
-#undef min
-#undef max
-
 	std::vector<std::string> splitString(std::string s, 
 																			 std::string splitElements, 
 																			 std::pair<std::string, std::string> tokenDelimiters = std::make_pair("", ""),
@@ -661,7 +658,7 @@ std::pair<typename Collection::value_type, typename Collection::value_type>
 	T minv = std::numeric_limits<T>::max(); //*(ys.begin());
 	T maxv = std::numeric_limits<T>::min(); // *(ys.begin());
   for(auto v : vs)
-		minv = min(minv, v), maxv = max(maxv, v);
+		minv = std::min(minv, v), maxv = std::max(maxv, v);
   return std::make_pair(minv, maxv);
 }
 
