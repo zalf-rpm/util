@@ -27,12 +27,18 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include "tools/date.h"
 #include "tools/helper.h"
 
+#ifdef DLL_EXPORTS
+#define TOOLS_API __declspec(dllexport)
+#else
+#define TOOLS_API __declspec(dllimport)
+#endif
+
 namespace Tools
 {
   template<typename T>
   T identity(T t){ return t; }
 
-  struct Json11Serializable
+  struct TOOLS_API Json11Serializable
   {
     virtual Errors merge(json11::Json j) = 0;
 
