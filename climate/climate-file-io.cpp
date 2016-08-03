@@ -34,22 +34,21 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 using namespace std;
 using namespace Tools;
+using namespace Climate;
 
 Climate::DataAccessor
-Climate::readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
-                                              CSVViaHeaderOptions options)
+Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
+																										 CSVViaHeaderOptions options)
 {
-	pathToFile = fixSystemSeparator(pathToFile);
-	ifstream ifs(pathToFile.c_str());
-	if(!ifs.good())
+	if(!is.good())
 	{
-		cerr << "Could not open climate file " << pathToFile << "." << endl;
+		cerr << "Input stream not good!" << endl;
 		return DataAccessor();
 	}
 
 	vector<ACD> header;
 	string s;
-	if(options.noOfHeaderLines > 0 && getline(ifs, s))
+	if(options.noOfHeaderLines > 0 && getline(is, s))
 	{
 		vector<string> r = splitString(s, options.separator);
 		auto n2acd = name2acd();
@@ -57,7 +56,7 @@ Climate::readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
 		{
 			auto it2 = options.headerName2ACDName.find(colName);
 			auto it = n2acd.find(it2 == options.headerName2ACDName.end()
-			                     ? colName : it2->second);
+													 ? colName : it2->second);
 			header.push_back(it == n2acd.end() ? skip : it->second);
 		}
 	}
@@ -71,25 +70,60 @@ Climate::readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
 		return DataAccessor();
 	}
 
-	return readClimateDataFromCSVFile(pathToFile, 
-																		options.separator,
-																		header, 
-																		options.startDate,
-																		options.endDate,
-																		options.noOfHeaderLines);
+	return readClimateDataFromCSVInputStream(is,
+																					 options.separator,
+																					 header,
+																					 options.startDate,
+																					 options.endDate,
+																					 options.noOfHeaderLines);
 
 }
 
-
-Climate::DataAccessor 
-Climate::readClimateDataFromCSVFile(std::string pathToFile,
-																		std::string separator,
-																		std::vector<ACD> header,
-																		Tools::Date startDate,
-																		Tools::Date endDate,
-																		size_t noOfHeaderLines)
+Climate::DataAccessor
+Climate::readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
+                                              CSVViaHeaderOptions options)
 {
 	pathToFile = fixSystemSeparator(pathToFile);
+	ifstream ifs(pathToFile.c_str());
+	if(!ifs.good())
+	{
+		cerr << "Could not open climate file " << pathToFile << "." << endl;
+		return DataAccessor();
+	}
+
+	return readClimateDataFromCSVInputStreamViaHeaders(ifs, options);
+}
+
+Climate::DataAccessor
+Climate::readClimateDataFromCSVStringViaHeaders(std::string csvString,
+																								CSVViaHeaderOptions options)
+{
+	istringstream iss(csvString);
+	if(!iss.good())
+	{
+		cerr << "Could not access input string stream!" << endl;
+		return DataAccessor();
+	}
+
+	return readClimateDataFromCSVInputStreamViaHeaders(iss, options);
+}
+
+//-----------------------------------------------------------------------------
+
+Climate::DataAccessor
+Climate::readClimateDataFromCSVInputStream(std::istream& is,
+																					 std::string separator,
+																					 std::vector<ACD> header,
+																					 Tools::Date startDate,
+																					 Tools::Date endDate,
+																					 size_t noOfHeaderLines)
+{
+	if(!is.good())
+	{
+		cerr << "Input stream not good!" << endl;
+		return DataAccessor();
+	}
+
 	bool useLeapYears = startDate.useLeapYears();
 	if(startDate.useLeapYears() != endDate.useLeapYears())
 	{
@@ -107,35 +141,28 @@ Climate::readClimateDataFromCSVFile(std::string pathToFile,
 
 	bool isStartDateValid = startDate.isValid();
 	bool isEndDateValid = endDate.isValid();
-
-	ifstream ifs(pathToFile.c_str());
-	if(!ifs.good()) 
-	{
-		cerr << "Could not open climate file " << pathToFile << "." << endl;
-		return DataAccessor();
-	}
-
+	
 	//we store all data in a map to also manage csv files with wrong order
 	map<Date, map<ACD, double>> data;
-	
+
 	//skip header line(s) and 
 	//save first header line to compare for repeated headers
 	string headerLine;
 	vector<string> startOfHeaderLines;
 	while(noOfHeaderLines-- > 0)
 	{
-		getline(ifs, headerLine);
+		getline(is, headerLine);
 		startOfHeaderLines.push_back(headerLine.substr(0, 10));
 	}
-	
+
 	string s;
-	while(getline(ifs, s))
+	while(getline(is, s))
 	{
 		//skip (repeated) headers
 		bool isRepeatedHeader = false;
 		for(auto startOfHeaderLine : startOfHeaderLines)
 		{
-			if (s.substr(0, 10) == startOfHeaderLine)
+			if(s.substr(0, 10) == startOfHeaderLine)
 			{
 				isRepeatedHeader = true;
 				break;
@@ -222,20 +249,20 @@ Climate::readClimateDataFromCSVFile(std::string pathToFile,
 
 	if(!isEndDateValid && !data.empty())
 		endDate = data.rbegin()->first;
-	
+
 	int noOfDays = endDate - startDate + 1;
 	if(data.size() < size_t(noOfDays))
 	{
 		cerr
-			<< "Read timeseries data between " << startDate.toIsoDateString() 
-			<< " and " << endDate.toIsoDateString() 
+			<< "Read timeseries data between " << startDate.toIsoDateString()
+			<< " and " << endDate.toIsoDateString()
 			<< " (" << noOfDays << " days) is incomplete. There are just "
 			<< data.size() << " days in read dataset." << endl;
 		return DataAccessor();
 	}
 
 	map<ACD, vector<double>> daData;
-	for (Date d = startDate, ed = endDate; d <= ed; d++)
+	for(Date d = startDate, ed = endDate; d <= ed; d++)
 		for(auto p : data[d])
 			daData[p.first].push_back(p.second);
 
@@ -261,5 +288,53 @@ Climate::readClimateDataFromCSVFile(std::string pathToFile,
 	da.addClimateData(Climate::wind, daData[wind]);
 
 	return da;
+}
+
+
+Climate::DataAccessor 
+Climate::readClimateDataFromCSVFile(std::string pathToFile,
+																		std::string separator,
+																		std::vector<ACD> header,
+																		Tools::Date startDate,
+																		Tools::Date endDate,
+																		size_t noOfHeaderLines)
+{
+	pathToFile = fixSystemSeparator(pathToFile);
+	ifstream ifs(pathToFile.c_str());
+	if(!ifs.good()) 
+	{
+		cerr << "Could not open climate file " << pathToFile << "." << endl;
+		return DataAccessor();
+	}
+
+	return readClimateDataFromCSVInputStream(ifs, 
+																					 separator, 
+																					 header, 
+																					 startDate, 
+																					 endDate, 
+																					 noOfHeaderLines);
+}
+
+Climate::DataAccessor
+Climate::readClimateDataFromCSVString(std::string csvString,
+																			std::string separator,
+																			std::vector<ACD> header,
+																			Tools::Date startDate,
+																			Tools::Date endDate,
+																			size_t noOfHeaderLines)
+{
+	istringstream iss(csvString);
+	if(!iss.good())
+	{
+		cerr << "Could not access input string stream!" << endl;
+		return DataAccessor();
+	}
+
+	return readClimateDataFromCSVInputStream(iss, 
+																					 separator, 
+																					 header, 
+																					 startDate, 
+																					 endDate, 
+																					 noOfHeaderLines);
 }
 

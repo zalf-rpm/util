@@ -18,6 +18,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #define CLIMATE_FILE_IO_H_
 
 #include <string>
+#include <istream>
 
 #include "climate-common.h"
 
@@ -38,8 +39,24 @@ namespace Climate
 		std::map<std::string, std::string> headerName2ACDName;
 	};
 	Climate::DataAccessor
+		readClimateDataFromCSVInputStreamViaHeaders(std::istream& inputStream,
+																								CSVViaHeaderOptions options = CSVViaHeaderOptions());
+
+	Climate::DataAccessor
 		readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
 		                                     CSVViaHeaderOptions options = CSVViaHeaderOptions());
+
+	Climate::DataAccessor
+		readClimateDataFromCSVStringViaHeaders(std::string csvString,
+																					 CSVViaHeaderOptions options = CSVViaHeaderOptions());
+
+	Climate::DataAccessor
+		readClimateDataFromCSVInputStream(std::istream& inputStream,
+																			std::string separator = ",",
+																			std::vector<ACD> header = std::vector<ACD>(),
+																			Tools::Date startDate = Tools::Date(),
+																			Tools::Date endDate = Tools::Date(),
+																			size_t noOfHeaderLines = 2);
 
 	Climate::DataAccessor
 		readClimateDataFromCSVFile(std::string pathToFile,
@@ -48,6 +65,14 @@ namespace Climate
 															 Tools::Date startDate = Tools::Date(),
 															 Tools::Date endDate = Tools::Date(),
 															 size_t noOfHeaderLines = 2);
+
+	Climate::DataAccessor
+		readClimateDataFromCSVString(std::string csvString,
+																 std::string separator = ",",
+																 std::vector<ACD> header = std::vector<ACD>(),
+																 Tools::Date startDate = Tools::Date(),
+																 Tools::Date endDate = Tools::Date(),
+																 size_t noOfHeaderLines = 2);
 }
 
 #endif
