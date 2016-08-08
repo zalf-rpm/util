@@ -18,6 +18,26 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 using namespace Tools;
 using namespace std;
+using namespace json11;
+
+EResult<Json> Tools::readAndParseJsonFile(string path)
+{
+	auto r = readFile(path);
+	if(r.success())
+		return parseJsonString(r.result);
+	return{Json(), r.errors};
+}
+
+EResult<Json> Tools::parseJsonString(string jsonString)
+{
+	string err;
+	Json j = Json::parse(jsonString, err);
+	if(!err.empty())
+		return{j, string("Error parsing JSON object: '") + jsonString + "' "};
+	return{j};
+}
+
+//-----------------------------------------------------------------------------
 
 void Tools::set_double_vectorD(std::vector<double>& var,
                                const json11::Json& j,

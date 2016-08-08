@@ -30,6 +30,12 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 namespace Tools
 {
+	EResult<json11::Json> readAndParseJsonFile(std::string path);
+
+	EResult<json11::Json> parseJsonString(std::string jsonString);
+
+	//---------------------------------------------------------------------------
+
   template<typename T>
   T identity(T t){ return t; }
 
