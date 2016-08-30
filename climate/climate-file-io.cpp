@@ -76,7 +76,6 @@ Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
 																					 options.startDate,
 																					 options.endDate,
 																					 options.noOfHeaderLines);
-
 }
 
 Climate::DataAccessor
@@ -185,7 +184,7 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 			continue;
 		}
 
-		Date date;
+		Date date(useLeapYears);
 		map<ACD, double> vs;
 		try
 		{
@@ -197,7 +196,7 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 				case day: date.setDay(stoul(r.at(i))); break;
 				case month: date.setMonth(stoul(r.at(i))); break;
 				case year: date.setYear(stoul(r.at(i))); break;
-				case isoDate: date = Date::fromIsoDateString(r.at(i)); break;
+				case isoDate: date = Date::fromIsoDateString(r.at(i), useLeapYears); break;
 				case deDate:
 				{
 					auto dmy = splitString(r.at(i), ".");
