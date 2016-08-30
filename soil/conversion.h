@@ -21,21 +21,33 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 #include <string>
 
+#include <tools/helper.h>
+
 namespace Soil
 {
-	double humus_st2corg(int humus_st);
+	Tools::EResult<double> humusClass2corg(int humusClass);
+	//Tools::EResult<double> humus_st2corg(int humus_st)
+	//{
+	//	return humusClass2corg(humus_st);
+	//}
 
 	//! return soil raw density [kg m-3]
-	double ld_eff2trd(int ldEff, double clay);
+	Tools::EResult<double> bulkDensityClass2rawDensity(int bulkDensityClass, double clay);
+
+	//inline Tools::EResult<double> ld_eff2trd(int ldEff, double clay)
+	//{ 
+	//	return bulkDensityClass2rawDensity(ldEff, clay);
+	//}
+	
 
 	double sandAndClay2lambda(double sand, double clay);
 
 	//! sand and clay [0 - 1]
-	std::string sandAndClay2KA5texture(double sand, double clay);
+	Tools::EResult<std::string> sandAndClay2KA5texture(double sand, double clay);
 
-	double KA5texture2sand(std::string soilType);
+	Tools::EResult<double> KA5texture2sand(std::string soilType);
 
-	double KA5texture2clay(std::string soilType);
+	Tools::EResult<double> KA5texture2clay(std::string soilType);
 }
 
 

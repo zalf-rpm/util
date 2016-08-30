@@ -73,9 +73,9 @@ namespace Soil
 		double vs_SoilpH{6.9}; //!< Soil pH value [] //{7.0}
 		double vs_SoilStoneContent{0.0}; //!< Soil layer's stone content in soil [kg kg-1]
 		double vs_Lambda{-1.0}; //!< Soil water conductivity coefficient [] //{0.5}
-		double vs_FieldCapacity{-1.0}; //{0.21}
-		double vs_Saturation{-1.0}; //{0.43}
-		double vs_PermanentWiltingPoint{-1.0}; //{0.08}
+		double vs_FieldCapacity{-1.0}; //{0.21} //!< [m3 m-3]
+		double vs_Saturation{-1.0}; //{0.43} //!< [m3 m-3]
+		double vs_PermanentWiltingPoint{-1.0}; //{0.08} //!< [m3 m-3]
 		std::string vs_SoilTexture;
 		double vs_SoilAmmonium{0.0001}; //!< soil ammonium content [kg NH4-N m-3]
 		double vs_SoilNitrate{0.0001}; //!< soil nitrate content [kg NO3-N m-3]
@@ -133,7 +133,9 @@ namespace Soil
 	{
 		RPSCDRes() : sat(0), fc(0), pwp(0), initialized(false) {}
 		RPSCDRes(bool initialized) : sat(0), fc(0), pwp(0), initialized(initialized) {}
-		double sat, fc, pwp;
+		double sat; //!< [m3 m-3]
+		double fc; //!< [m3 m-3]
+		double pwp; //!< [m3 m-3]
 		bool initialized;
 	};
 	RPSCDRes readPrincipalSoilCharacteristicData(std::string KA5TextureClass,

@@ -21,10 +21,11 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 using namespace Soil;
 using namespace std;
+using namespace Tools;
 
-double Soil::humus_st2corg(int humus_st)
+EResult<double> Soil::humusClass2corg(int humusClass)
 {
-	switch (humus_st)
+	switch (humusClass)
 	{
 	case 0:
 		return 0.0;
@@ -43,32 +44,27 @@ double Soil::humus_st2corg(int humus_st)
 	case 7:
 		return 30.0 / 2.0;
 	}
-	return 0.0;
+	return{0.0, string("Soil::humusClass2corg: Unknown humus class: " + to_string(humusClass) + "!")};
 }
 
-double Soil::ld_eff2trd(int ldEff, double clay)
+EResult<double> Soil::bulkDensityClass2rawDensity(int bulkDensityClass, double clay)
 {
+	EResult<double> res;
 	double x = 0.0;
 
-	switch (ldEff)
+	switch(bulkDensityClass)
 	{
-	case 1:
-		x = 1.3;
-		break;
-	case 2:
-		x = 1.5;
-		break;
-	case 3:
-		x = 1.7;
-		break;
-	case 4:
-		x = 1.9;
-		break;
-	case 5:
-		x = 2.1;
-		break;
+	case 1: x = 1.3; break;
+	case 2: x = 1.5; break;
+	case 3: x = 1.7; break;
+	case 4: x = 1.9; break;
+	case 5: x = 2.1; break;
+	default:
+		res.errors.push_back(string("Soil::bulkDensityClass2rawDensity: Unknown bulk density class: " + to_string(bulkDensityClass) + "!"));
 	}
-	return (x - (0.9 * clay)) * 1000.0; //* 1000 = conversion from g cm-3 -> kg m-3
+	
+	res.result = (x - (0.9 * clay)) * 1000.0; //* 1000 = conversion from g cm-3 -> kg m-3
+	return res;
 }
 
 double Soil::sandAndClay2lambda(double sand, double clay)
@@ -78,10 +74,11 @@ double Soil::sandAndClay2lambda(double sand, double clay)
 	return lambda;
 }
 
-string Soil::sandAndClay2KA5texture(double sand, double clay)
+EResult<string> Soil::sandAndClay2KA5texture(double sand, double clay)
 {
+	EResult<string> res;
 	double silt = 1.0 - sand - clay;
-	string soilTexture;
+	string& soilTexture = res.result;
 
 	if(silt < 0.1 && clay < 0.05)
 		soilTexture = "Ss";
@@ -145,15 +142,20 @@ string Soil::sandAndClay2KA5texture(double sand, double clay)
 		soilTexture = "Tu2";
 	else if(clay >= 0.65)
 		soilTexture = "Tt";
-	else soilTexture = "";
+	else
+	{
+		soilTexture = "";
+		res.errors.push_back(string("Soil::sandAndClay2KA5texture: Undefined combination of sand (" + to_string(sand) + ") and clay (" + to_string(clay) + ")!"));
+	}
 
-	return soilTexture;
+	return res;
 }
 
-double Soil::KA5texture2sand(string soilType)
+EResult<double> Soil::KA5texture2sand(string soilType)
 {
-  double x = 0.0;
-
+	EResult<double> res;
+	double& x = res.result;
+  
   if(soilType == "fS")
     x = 0.84;
   else if(soilType == "fSms")
@@ -250,17 +252,21 @@ double Soil::KA5texture2sand(string soilType)
     x = 0.15;
   else if(soilType == "Hn")
     x = 0.15;
-  else
-    x = 0.66;
+	else
+	{
+		x = 0.66;
+		res.errors.push_back(string("Soil::KA5texture2sand Unknown soil type: " + soilType + "!"));
+	}
 
-  return x;
+  return res;
 }
 
 
-double Soil::KA5texture2clay(string soilType)
+EResult<double> Soil::KA5texture2clay(string soilType)
 {
-  double x = 0.0;
-
+	EResult<double> res;
+	double& x = res.result;
+	
   if(soilType == "fS")
     x = 0.02;
   else if(soilType == "fSms")
@@ -357,6 +363,11 @@ double Soil::KA5texture2clay(string soilType)
     x = 0.1;
   else if(soilType == "Hn")
     x = 0.1;
+	else
+	{
+		x = 0.0;
+		res.errors.push_back(string("Soil::KA5texture2clay: Unknown soil type: " + soilType + "!"));
+	}
 
-  return x;
+  return res;
 }

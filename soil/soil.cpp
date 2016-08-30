@@ -69,10 +69,22 @@ Errors SoilParameters::merge(json11::Json j)
 	set_double_value(_vs_SoilOrganicMatter, j, "SoilOrganicMatter");
 
 	if(vs_SoilSandContent < 0 && vs_SoilTexture != "")
-		vs_SoilSandContent = KA5texture2sand(vs_SoilTexture);
+	{
+		auto res = KA5texture2sand(vs_SoilTexture);
+		if(res.success())
+			vs_SoilSandContent = res.result;
+		else
+			es.append(res);
+	}
 
 	if(vs_SoilClayContent < 0 && vs_SoilTexture != "")
-		vs_SoilClayContent = KA5texture2clay(vs_SoilTexture);
+	{
+		auto res = KA5texture2clay(vs_SoilTexture);
+		if(res.success())
+			vs_SoilClayContent = res.result;
+		else
+			es.append(res);
+	}
 
 	auto res = vs_SoilTexture == ""
 		? fcSatPwpFromVanGenuchten(vs_SoilSandContent,
@@ -106,9 +118,9 @@ json11::Json SoilParameters::to_json() const
 		{"pH", vs_SoilpH},
 		{"Sceleton", J11Array {vs_SoilStoneContent, "% [0-1]"}},
 		{"Lambda", vs_Lambda},
-		{"FieldCapacity", vs_FieldCapacity},
-		{"PoreVolume", vs_Saturation},
-		{"PermanentWiltingPoint", vs_PermanentWiltingPoint},
+		{"FieldCapacity", J11Array {vs_FieldCapacity, "m3 m-3"}},
+		{"PoreVolume", J11Array{vs_Saturation, "m3 m-3"}},
+		{"PermanentWiltingPoint", J11Array{vs_PermanentWiltingPoint, "m3 m-3"}},
 		{"KA5TextureClass", vs_SoilTexture},
 		{"SoilAmmonium", vs_SoilAmmonium},
 		{"SoilNitrate", vs_SoilNitrate},
@@ -117,7 +129,7 @@ json11::Json SoilParameters::to_json() const
 		{"SoilBulkDensity", J11Array {_vs_SoilBulkDensity, "kg m-3"}},
 		{"SoilOrganicCarbon", J11Array {_vs_SoilOrganicCarbon, "% [0-1]"}},
 		{"SoilOrganicMatter", J11Array {_vs_SoilOrganicMatter, ""}},
-		{"SoilMoisturePercentFC", J11Array {vs_SoilMoisturePercentFC, "% [0-1]"}}};
+		{"SoilMoisturePercentFC", J11Array {vs_SoilMoisturePercentFC, "% [0-100]"}}};
 }
 
 //----------------------------------------------------------------------------------
@@ -467,9 +479,29 @@ const SoilPMsPtr Soil::soilParametersFromHermesFile(int soilId,
 
 				SoilParameters p;
 				p.set_vs_SoilOrganicCarbon(corg / 100.0); //[kg C 100kg] --> [kg C kg-1]
-				p.set_vs_SoilRawDensity(ld_eff2trd(ld, KA5texture2clay(ba)) * 1000.0);
-				p.vs_SoilSandContent = KA5texture2sand(ba);
-				p.vs_SoilClayContent = KA5texture2clay(ba);
+				auto ec = KA5texture2clay(ba);
+				if(ec.success())
+				{
+					p.vs_SoilClayContent = ec.result;
+
+					auto erd = bulkDensityClass2rawDensity(ld, ec.result);
+					if(erd.success())
+						p.set_vs_SoilRawDensity(erd.result * 1000.0);
+					else
+						for(auto e : erd.errors)
+							cout << e << endl;
+				}
+				else
+				{
+					for(auto e : ec.errors)
+						cout << e << endl;
+				}
+				auto es = KA5texture2sand(ba);
+				if(es.success())
+					p.vs_SoilSandContent = es.result;
+				else
+					for(auto e : ec.errors)
+						cout << e << endl;
 				p.vs_SoilStoneContent = stone / 100.0;
 				p.vs_Lambda = sandAndClay2lambda(p.vs_SoilSandContent, p.vs_SoilClayContent);
 				p.vs_SoilTexture = ba;
