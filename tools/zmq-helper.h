@@ -38,11 +38,12 @@ namespace Tools
     std::string toString() const { return std::string("type: ") + type() + " msg: " + json.dump() + (err.empty() ? "" : " err: " + err); }
     json11::Json json;
     std::string err;
+		std::string topic;
     bool valid;
   };
 
 #ifndef NO_ZMQ
-  Msg receiveMsg(zmq::socket_t& socket, bool nonBlockingMode = false);
+	Msg receiveMsg(zmq::socket_t& socket, int topicCharCount = 0, bool nonBlockingMode = false);
 
   inline bool sendMsg(zmq::socket_t& pushSocket, json11::Json msg){ return s_send(pushSocket, msg.dump()); }
 #endif

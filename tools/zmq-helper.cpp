@@ -23,21 +23,23 @@ using namespace std;
 using namespace json11;
 
 #ifndef NO_ZMQ
-Msg Tools::receiveMsg(zmq::socket_t& socket, bool nonBlockingMode)
+Msg Tools::receiveMsg(zmq::socket_t& socket, int topicCharCount, bool nonBlockingMode)
 {
   zmq::message_t message;
   if(socket.recv(&message, nonBlockingMode ? ZMQ_NOBLOCK : 0))
   {
     std::string strMsg(static_cast<char*>(message.data()), message.size());
+		std::string topic = topicCharCount > 0 ? strMsg.substr(0, topicCharCount) : "";
+		strMsg = strMsg.substr(topicCharCount);
 
 //    cout << "receiveMsg: " << strMsg << endl;
 
     //    string strMsg = s_recv(pullSocket);
     string err;
     const Json& jsonMsg = Json::parse(strMsg, err);
-    return Msg{jsonMsg, err, true};
+    return Msg{jsonMsg, err, topic, true};
   }
-  return Msg{Json(), "", false};
+  return Msg{Json(), "", "", false};
 }
 #endif
 
