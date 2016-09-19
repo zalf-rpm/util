@@ -38,7 +38,7 @@ namespace Climate
 	 */
   enum AvailableClimateData
   {
-		day = 0, month, year, tmin, tavg, tmax, precip, precipOrig, globrad, wind,
+		day = 1, month, year, tmin, tavg, tmax, precip, precipOrig, globrad, wind,
 		sunhours, cloudamount, relhumid, airpress, vaporpress, isoDate, deDate, skip
 	};
 
@@ -87,7 +87,7 @@ namespace Climate
 	 * helper function
 	 * @return a vector of all climate data elements
 	 */
-	const ACDV& acds();
+	//const ACDV& acds();
 
 	/*!
 	 * helper function

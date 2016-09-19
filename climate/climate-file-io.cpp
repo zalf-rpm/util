@@ -45,7 +45,7 @@ Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
 		cerr << "Input stream not good!" << endl;
 		return DataAccessor();
 	}
-
+		
 	vector<ACD> header;
 	string s;
 	if(options.noOfHeaderLines > 0 && getline(is, s))
@@ -54,13 +54,12 @@ Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
 		auto n2acd = name2acd();
 		for(auto colName : r)
 		{
-			auto it2 = options.headerName2ACDName.find(colName);
-			auto it = n2acd.find(it2 == options.headerName2ACDName.end()
-													 ? colName : it2->second);
-			header.push_back(it == n2acd.end() ? skip : it->second);
+			auto replColName = options.headerName2ACDName[colName];
+			auto acd = n2acd[replColName.empty() ? colName : replColName];
+			header.push_back(acd == 0 ? skip : acd);
 		}
 	}
-
+		
 	if(header.empty())
 	{
 		cerr
@@ -70,7 +69,7 @@ Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
 		return DataAccessor();
 	}
 
-	return readClimateDataFromCSVInputStream(is,
+	return readClimateDataFromCSVInputStream(is.seekg(0),
 																					 options.separator,
 																					 header,
 																					 options.startDate,
@@ -122,7 +121,7 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 		cerr << "Input stream not good!" << endl;
 		return DataAccessor();
 	}
-
+		
 	bool useLeapYears = startDate.useLeapYears();
 	if(startDate.useLeapYears() != endDate.useLeapYears())
 	{
@@ -134,7 +133,7 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 			<< "use leap years." << endl;
 		endDate.setUseLeapYears(startDate.useLeapYears());
 	}
-
+		
 	if(header.empty())
 		header = defaultHeader();
 
@@ -237,7 +236,7 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 		//	<< "[" << date.day() << "." << date.month() << "." << date.year() 
 		//	<< "] -> [";
 		//for(auto p : vs)
-		//	cout << "(" << acdNames().at(p.first) << ", " << p.second << ") ";
+		//	cout << "(" << availableClimateData2Name(p.first) << ", " << p.second << ") ";
 		//cout << "]" << endl;
 
 		data[date] = vs;
@@ -252,14 +251,14 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 	int noOfDays = endDate - startDate + 1;
 	if(data.size() < size_t(noOfDays))
 	{
-		cerr
+		cout
 			<< "Read timeseries data between " << startDate.toIsoDateString()
 			<< " and " << endDate.toIsoDateString()
 			<< " (" << noOfDays << " days) is incomplete. There are just "
 			<< data.size() << " days in read dataset." << endl;
 		return DataAccessor();
 	}
-
+		
 	map<ACD, vector<double>> daData;
 	for(Date d = startDate, ed = endDate; d <= ed; d++)
 		for(auto p : data[d])

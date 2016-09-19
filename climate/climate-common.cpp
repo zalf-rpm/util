@@ -170,7 +170,7 @@ std::string Climate::availableClimateData2Name(AvailableClimateData col)
 	case wind: return "Windgeschwindigkeit";
 	default: ;
 	}
-	return "unbekannt";
+	return "unknown";
 }
 
 std::string Climate::availableClimateData2unit(AvailableClimateData col)
