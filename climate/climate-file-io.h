@@ -20,6 +20,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <string>
 #include <istream>
 
+#include "tools/json11-helper.h"
 #include "climate-common.h"
 
 namespace Climate
@@ -29,9 +30,16 @@ namespace Climate
 		return{deDate, tmin, tavg, tmax, precip, globrad, relhumid, wind};
 	}
 
-	struct CSVViaHeaderOptions
+	struct CSVViaHeaderOptions : public Tools::Json11Serializable
 	{
-		CSVViaHeaderOptions() : separator(",") {}
+		CSVViaHeaderOptions();
+
+		CSVViaHeaderOptions(json11::Json object);
+
+		virtual Tools::Errors merge(json11::Json j);
+
+		virtual json11::Json to_json() const;
+
 		std::string separator;
 		Tools::Date startDate;
 		Tools::Date endDate;

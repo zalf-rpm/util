@@ -36,6 +36,54 @@ using namespace std;
 using namespace Tools;
 using namespace Climate;
 
+CSVViaHeaderOptions::CSVViaHeaderOptions() 
+	: separator(",") 
+{}
+
+CSVViaHeaderOptions::CSVViaHeaderOptions(json11::Json j)
+{
+	merge(j);
+}
+
+Tools::Errors CSVViaHeaderOptions::merge(json11::Json j)
+{
+	map<string, string> headerNames;
+	for(auto p : j["header-to-acd-names"].object_items())
+		headerNames[p.first] = p.second.string_value();
+
+	auto uly = j["use-leap-years"];
+	bool useLeapYears = uly.is_null() ? true : uly.bool_value();
+	startDate.setUseLeapYears(useLeapYears);
+	endDate.setUseLeapYears(useLeapYears);
+	set_iso_date_value(startDate, j, "start-date");
+	set_iso_date_value(endDate, j, "end-date");
+
+	set_string_valueD(separator, j, "csv-separator", ",");
+	noOfHeaderLines = size_t(int_valueD(j, "no-of-climate-file-header-lines", 2));
+	headerName2ACDName = headerNames;
+
+	return{};
+}
+
+json11::Json CSVViaHeaderOptions::to_json() const
+{
+	J11Object headerNames;
+	for(auto p : headerName2ACDName)
+		headerNames[p.first] = p.second;
+
+	return json11::Json::object{
+		 {"type", "CSVViaHeaderOptions"}
+		,{"csv-separator", separator}
+		,{"use-leap-years", startDate.useLeapYears()}
+		,{"start-date", startDate.toIsoDateString()}
+		,{"end-date", endDate.toIsoDateString()}
+		,{"no-of-climate-file-header-lines", int(noOfHeaderLines)}
+		,{"header-to-acd-names", headerNames}
+	};
+}
+
+//-----------------------------------------------------------------------------
+
 Climate::DataAccessor
 Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
 																										 CSVViaHeaderOptions options)
