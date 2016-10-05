@@ -99,6 +99,9 @@ Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
 	if(options.noOfHeaderLines > 0 && getline(is, s))
 	{
 		vector<string> r = splitString(s, options.separator);
+		//remove possible \r at the end of the last element, when reading windows files under linux
+		if(r.back().back() == '\r')
+			r.back().pop_back();
 		auto n2acd = name2acd();
 		for(auto colName : r)
 		{
@@ -219,6 +222,9 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 			continue;
 
 		vector<string> r = splitString(s, separator);
+		//remove possible \r at the end of the last element, when reading windows files under linux
+		if(r.back().back() == '\r')
+			r.back().pop_back();
 		size_t rSize = r.size();
 		size_t hSize = header.size();
 		if(rSize < header.size())
