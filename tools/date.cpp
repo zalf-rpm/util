@@ -410,6 +410,11 @@ Date Date::operator++(int)
 	return d;
 }
 
+bool Date::isLeapYear() const 
+{ 
+	return _y % 4 == 0 && (_y % 100 != 0 || _y % 400 == 0); 
+}
+
 Date Date::toAbsoluteDate(size_t absYear, bool ignoreDeltaYears) const
 {
 	long int deltaYears = ignoreDeltaYears ? 0 : year() - _relativeBaseYear;

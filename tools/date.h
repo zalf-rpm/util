@@ -181,7 +181,7 @@ namespace Tools
 		/*!
 		 * @return if 'this' dates year is a leap year
 		 */
-		bool isLeapYear() const { return (_y - _aLeapYear) % 4 == 0; }
+		bool isLeapYear() const;
 
 		/*!
 		 * @param month
