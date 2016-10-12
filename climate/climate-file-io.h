@@ -45,6 +45,7 @@ namespace Climate
 		Tools::Date endDate;
 		size_t noOfHeaderLines{2};
 		std::map<std::string, std::string> headerName2ACDName;
+		std::map<std::string, std::pair<std::string, double>> convert;
 	};
 	Climate::DataAccessor
 		readClimateDataFromCSVInputStreamViaHeaders(std::istream& inputStream,
@@ -64,7 +65,9 @@ namespace Climate
 																			std::vector<ACD> header = std::vector<ACD>(),
 																			Tools::Date startDate = Tools::Date(),
 																			Tools::Date endDate = Tools::Date(),
-																			size_t noOfHeaderLines = 2);
+																			size_t noOfHeaderLines = 2,
+																			std::map<ACD, std::function<double(double)>> convert 
+																			= std::map<ACD, std::function<double(double)>>());
 
 	Climate::DataAccessor
 		readClimateDataFromCSVFile(std::string pathToFile,
@@ -72,7 +75,9 @@ namespace Climate
 															 std::vector<ACD> header = std::vector<ACD>(),
 															 Tools::Date startDate = Tools::Date(),
 															 Tools::Date endDate = Tools::Date(),
-															 size_t noOfHeaderLines = 2);
+															 size_t noOfHeaderLines = 2,
+															 std::map<ACD, std::function<double(double)>> convert
+															 = std::map<ACD, std::function<double(double)>>());
 
 	Climate::DataAccessor
 		readClimateDataFromCSVString(std::string csvString,
@@ -80,7 +85,9 @@ namespace Climate
 																 std::vector<ACD> header = std::vector<ACD>(),
 																 Tools::Date startDate = Tools::Date(),
 																 Tools::Date endDate = Tools::Date(),
-																 size_t noOfHeaderLines = 2);
+																 size_t noOfHeaderLines = 2,
+																 std::map<ACD, std::function<double(double)>> convert
+																 = std::map<ACD, std::function<double(double)>>());
 }
 
 #endif

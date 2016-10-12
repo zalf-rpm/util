@@ -49,7 +49,16 @@ Tools::Errors CSVViaHeaderOptions::merge(json11::Json j)
 {
 	map<string, string> headerNames;
 	for(auto p : j["header-to-acd-names"].object_items())
-		headerNames[p.first] = p.second.string_value();
+	{
+		if(p.second.is_array() 
+			 && p.second.array_items().size() == 3)
+		{
+			headerNames[p.first] = p.second[0].string_value();
+			convert[p.first] = make_pair(p.second[1].string_value(), p.second[2].number_value());
+		}
+		else
+			headerNames[p.first] = p.second.string_value();
+	}
 
 	auto uly = j["use-leap-years"];
 	bool useLeapYears = uly.is_null() ? true : uly.bool_value();
@@ -69,7 +78,17 @@ json11::Json CSVViaHeaderOptions::to_json() const
 {
 	J11Object headerNames;
 	for(auto p : headerName2ACDName)
-		headerNames[p.first] = p.second;
+	{
+		auto it = convert.find(p.first);
+		if(it != convert.end())
+			headerNames[p.first] = J11Array{p.second, it->second.first, it->second.second};
+		else
+			headerNames[p.first] = p.second;
+	}
+
+	J11Object convert_;
+	for(auto p : convert)
+		convert_[p.first] = J11Array{p.second.first, p.second.second};
 
 	return json11::Json::object{
 		 {"type", "CSVViaHeaderOptions"}
@@ -95,6 +114,7 @@ Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
 	}
 		
 	vector<ACD> header;
+	map<ACD, function<double(double)>> convert;
 	string s;
 	if(options.noOfHeaderLines > 0 && getline(is, s))
 	{
@@ -108,6 +128,25 @@ Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
 			auto replColName = options.headerName2ACDName[colName];
 			auto acd = n2acd[replColName.empty() ? colName : replColName];
 			header.push_back(acd == 0 ? skip : acd);
+
+			if(!options.convert.empty())
+			{
+				auto it = options.convert.find(colName);
+				if(it != options.convert.end())
+				{
+					auto acd = n2acd[replColName.empty() ? colName : replColName];
+					auto op = it->second.first;
+					double value = it->second.second;
+					if(op == "*")
+						convert[acd] = [=](double d){ return d * value; };
+					else if(op == "/")
+						convert[acd] = [=](double d){ return d / value; };
+					else if(op == "+")
+						convert[acd] = [=](double d){ return d + value; };
+					else if(op == "-")
+						convert[acd] = [=](double d){ return d - value; };
+				}
+			}
 		}
 	}
 		
@@ -125,7 +164,8 @@ Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
 																					 header,
 																					 options.startDate,
 																					 options.endDate,
-																					 options.noOfHeaderLines);
+																					 options.noOfHeaderLines,
+																					 convert);
 }
 
 Climate::DataAccessor
@@ -165,7 +205,8 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 																					 std::vector<ACD> header,
 																					 Tools::Date startDate,
 																					 Tools::Date endDate,
-																					 size_t noOfHeaderLines)
+																					 size_t noOfHeaderLines, 
+																					 std::map<ACD, std::function<double(double)>> convert)
 {
 	if(!is.good())
 	{
@@ -244,6 +285,7 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 			for(size_t i = 0; i < hSize; i++)
 			{
 				ACD acdi = header.at(i);
+				bool doConvert = !convert.empty() && convert[acdi];
 				switch(acdi)
 				{
 				case day: date.setDay(stoul(r.at(i))); break;
@@ -263,7 +305,10 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 				}
 				case skip: break; //ignore element
 				default:
-					vs[acdi] = stod(r.at(i));
+				{
+					auto v = stod(r.at(i));
+					vs[acdi] = doConvert ? convert[acdi](v) : v;
+				}
 				}
 			}
 		}
@@ -349,7 +394,8 @@ Climate::readClimateDataFromCSVFile(std::string pathToFile,
 																		std::vector<ACD> header,
 																		Tools::Date startDate,
 																		Tools::Date endDate,
-																		size_t noOfHeaderLines)
+																		size_t noOfHeaderLines,
+																		std::map<ACD, std::function<double(double)>> convert)
 {
 	pathToFile = fixSystemSeparator(pathToFile);
 	ifstream ifs(pathToFile.c_str());
@@ -373,7 +419,8 @@ Climate::readClimateDataFromCSVString(std::string csvString,
 																			std::vector<ACD> header,
 																			Tools::Date startDate,
 																			Tools::Date endDate,
-																			size_t noOfHeaderLines)
+																			size_t noOfHeaderLines,
+																			std::map<ACD, std::function<double(double)>> convert)
 {
 	istringstream iss(csvString);
 	if(!iss.good())
