@@ -32,12 +32,12 @@ Msg Tools::receiveMsg(zmq::socket_t& socket, int topicCharCount, bool nonBlockin
 		std::string topic = topicCharCount > 0 ? strMsg.substr(0, topicCharCount) : "";
 		strMsg = strMsg.substr(topicCharCount);
 
-//    cout << "receiveMsg: " << strMsg << endl;
+    //cout << "receiveMsg: " << strMsg << endl;
 
     //    string strMsg = s_recv(pullSocket);
     string err;
     const Json& jsonMsg = Json::parse(strMsg, err);
-    return Msg{jsonMsg, err, topic, true};
+    return Msg{jsonMsg, err, topic, (err.empty() ? "" : strMsg), true};
   }
   return Msg{Json(), "", "", false};
 }

@@ -39,6 +39,7 @@ namespace Tools
     json11::Json json;
     std::string err;
 		std::string topic;
+		std::string msg;
     bool valid;
   };
 
