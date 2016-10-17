@@ -56,7 +56,9 @@ namespace Soil
 		double vs_SoilBulkDensity() const;
 		void set_vs_SoilBulkDensity(double sbd) { _vs_SoilBulkDensity = sbd; }
 
+		//! returns soc [% [0-1]]
 		double vs_SoilOrganicCarbon() const; //!< Soil layer's organic carbon content [kg C kg-1]
+		//! soc [% [0-1]]
 		void set_vs_SoilOrganicCarbon(double soc) { _vs_SoilOrganicCarbon = soc; }
 
 		//!< Soil layer's organic matter content [kg OM kg-1]

@@ -122,12 +122,12 @@ json11::Json SoilParameters::to_json() const
 		{"PoreVolume", J11Array{vs_Saturation, "m3 m-3"}},
 		{"PermanentWiltingPoint", J11Array{vs_PermanentWiltingPoint, "m3 m-3"}},
 		{"KA5TextureClass", vs_SoilTexture},
-		{"SoilAmmonium", vs_SoilAmmonium},
-		{"SoilNitrate", vs_SoilNitrate},
+		{"SoilAmmonium", J11Array{vs_SoilAmmonium, "kg NH4-N m-3"}},
+		{"SoilNitrate", J11Array{vs_SoilNitrate, "kg NO3-N m-3"}},
 		{"CN", vs_Soil_CN_Ratio},
 		{"SoilRawDensity", J11Array {_vs_SoilRawDensity, "kg m-3"}},
 		{"SoilBulkDensity", J11Array {_vs_SoilBulkDensity, "kg m-3"}},
-		{"SoilOrganicCarbon", J11Array {_vs_SoilOrganicCarbon, "% [0-1]"}},
+		{"SoilOrganicCarbon", J11Array {_vs_SoilOrganicCarbon * 100.0, "% [0-100]"}},
 		{"SoilOrganicMatter", J11Array {_vs_SoilOrganicMatter, ""}},
 		{"SoilMoisturePercentFC", J11Array {vs_SoilMoisturePercentFC, "% [0-100]"}}};
 }
@@ -286,9 +286,10 @@ bool SoilParameters::isValid()
  */
 double SoilParameters::vs_SoilRawDensity() const
 {
-	auto srd = _vs_SoilRawDensity < 0
-	           ? _vs_SoilBulkDensity - (0.009*100.0*vs_SoilClayContent)
-	           : _vs_SoilRawDensity;
+	auto srd = 
+		_vs_SoilRawDensity < 0
+		? ((_vs_SoilBulkDensity / 1000.0) - (0.009*100.0*vs_SoilClayContent)) * 1000.0
+		: _vs_SoilRawDensity;
 
 	return srd;
 }
@@ -299,9 +300,10 @@ double SoilParameters::vs_SoilRawDensity() const
 */
 double SoilParameters::vs_SoilBulkDensity() const
 {
-	auto sbd = _vs_SoilBulkDensity < 0
-	           ? _vs_SoilRawDensity + (0.009*100.0*vs_SoilClayContent)
-	           : _vs_SoilBulkDensity;
+	auto sbd = 
+		_vs_SoilBulkDensity < 0
+		? ((_vs_SoilRawDensity / 1000.0) + (0.009*100.0*vs_SoilClayContent)) * 1000.0
+		: _vs_SoilBulkDensity;
 
 	return sbd;
 }
