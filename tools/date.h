@@ -51,12 +51,12 @@ namespace Tools
 
 		explicit Date(size_t day, 
 									Month month, 
-									size_t year,
+									int year,
 									bool useLeapYears = false);
 
 		Date(size_t day, 
 				 size_t month, 
-				 size_t year,
+				 int year,
 				 bool useLeapYears = false, 
 				 bool isRelativeDate = false,
 				 size_t relativeBaseYear = defaultRelativeBaseYear);
@@ -237,7 +237,7 @@ namespace Tools
 		/*!
 		 * @return 'this' dates year
 		 */
-		size_t year() const { return _y; }
+		int year() const { return _y; }
 
 		/*!
 		 * set 'this' dates year
@@ -263,9 +263,9 @@ namespace Tools
 		/*!
 		 * @return some leap year for use in calculations
 		 */
-		static size_t aLeapYear() { return _aLeapYear; }
+		static int aLeapYear() { return _aLeapYear; }
 
-		static size_t notALeapYear() { return aLeapYear() - 1; }
+		static int notALeapYear() { return aLeapYear() - 1; }
 
 		/*!
 		 * @ see dayInYear(int year, int day, int month, bool useLeapYears)
@@ -376,9 +376,10 @@ namespace Tools
 		const std::vector<size_t>* _daysInMonth{nullptr};
 
 		//! members variables for day, month, year
-		size_t _d{0}, _m{0}, _y{0};
+		size_t _d{0}, _m{0};
+		int _y{0};
 		//! the choosen arbitrary leap year
-		static const size_t _aLeapYear = 2008;
+		static const int _aLeapYear = 2008;
 
 		//! member var holding whether leap years are being used or not
 		bool _useLeapYears{false};

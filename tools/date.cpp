@@ -69,7 +69,7 @@ Date::Date(const string& isoDateString, bool useLeapYears)
  */
 Date::Date(size_t day, 
 					 Month month, 
-					 size_t year,
+					 int year,
 					 bool useLeapYears)
 	: _d(day)
 	, _m(month)
@@ -92,7 +92,7 @@ Date::Date(size_t day,
  */
 Date::Date(size_t day, 
 					 size_t month, 
-					 size_t year,
+					 int year,
 					 bool useLeapYears, 
 					 bool isRelativeDate,
 					 size_t relativeBaseYear)
