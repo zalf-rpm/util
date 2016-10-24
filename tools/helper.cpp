@@ -85,14 +85,15 @@ pair<string, string> Tools::splitPathToFile(const string& pathToFile)
 
 bool Tools::isAbsolutePath(const std::string& path)
 {
-	size_t found = path.find_first_of("/\\");
+	size_t found = path.find_first_of("/:");
 	//unix absolute path
 	if(found == 0 && path.at(0) == '/')
 		return true;
 	//absolute windows path
-	else if(found == 2
-	        && path.at(1) == ':'
-	        && path.at(2) == '\\')
+	else if(found == 1	
+	        && path.at(1) == ':'	
+	        && (path.at(2) == '\\'	
+				|| path.at(2) == '/')	)
 		return true;
 
 	return false;
