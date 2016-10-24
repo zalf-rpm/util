@@ -71,6 +71,35 @@ namespace Tools
 		return T();
 	};
 	
+	//---------------------------------------------------------------------------
+
+	//code adapted from: http://stackoverflow.com/questions/7690864/haskell-style-maybe-type-chaining-in-c11
+	template<typename T>
+	class Maybe
+	{
+	public:
+		Maybe() : _value(T()), _isNothing(true) {}
+		Maybe(const T& a) : _value(a), _isNothing(false) {}
+		Maybe(const Maybe& b) : _value(b._value), _isNothing(b._isNothing) {}
+		
+		T value() const { return _value; }
+		void setValue(const T& v) { _value = v; }
+		bool isValue() const { return !isNothing(); }
+		bool isNothing() const { return _isNothing; }
+		
+		Maybe& operator=(const T& b) { return *this = Maybe(b); }
+
+		Maybe& operator=(const Maybe& b)
+		{
+			_value = b._value;
+			_isNothing = b._isNothing;
+			return *this;
+		}
+	private:
+		T _value;
+		bool _isNothing = false;
+	};
+
 	//----------------------------------------------------------------------------
 
 	template<typename T, typename S>
@@ -216,6 +245,14 @@ namespace Tools
 		for(int i = from; i <= to; i += step)
 			c.insert(c.end(), typename Container::value_type(i));
 		return c;
+	}
+
+	//----------------------------------------------------------------------------
+
+	template<typename T>
+	bool between(T low, T value, T high)
+	{
+		return low <= value && value <= high;
 	}
 
 	//----------------------------------------------------------------------------
