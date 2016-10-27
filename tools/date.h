@@ -44,40 +44,34 @@ namespace Tools
 		static const size_t defaultRelativeBaseYear = 2000;
 
 	public:
-		Date(bool useLeapYears = false);
+		Date();
 
-		Date(const std::string& isoDateString, 
-				 bool useLeapYears = false);
+		Date(const std::string& isoDateString);
 
 		explicit Date(size_t day, 
 									Month month, 
-									int year,
-									bool useLeapYears = false);
+									int year);
 
 		Date(size_t day, 
 				 size_t month, 
 				 int year,
-				 bool useLeapYears = false, 
 				 bool isRelativeDate = false,
 				 size_t relativeBaseYear = defaultRelativeBaseYear);
 
 		static Date relativeDate(size_t day, 
 														 size_t month,
 														 int deltaYears = 0, 
-														 bool useLeapYears = false,
 														 size_t relativeYear = defaultRelativeBaseYear);
 
 		static inline Date julianDate(size_t julianDay, 
 																	size_t year,
-																	bool useLeapYears = false, 
 																	bool isRelativeDate = false,
 																	size_t relativeBaseYear = defaultRelativeBaseYear)
 		{
-			return Date(1, 1, year, useLeapYears, isRelativeDate, relativeBaseYear) + (julianDay - 1);
+			return Date(1, 1, year, isRelativeDate, relativeBaseYear) + (julianDay - 1);
 		}
 
-		static Date fromIsoDateString(const std::string& isoDateString, 
-																	bool useLeapYears = true);
+		static Date fromIsoDateString(const std::string& isoDateString);
 
 		Date(const Date& other);
 
@@ -199,10 +193,9 @@ namespace Tools
 		 * @return how many days has the month in the argument year, month under
 		 * possible leap year conditions
 		 */
-		static size_t daysInMonth(size_t year, size_t month,
-															bool useLeapYears = false)
+		static size_t daysInMonth(size_t year, size_t month)
 		{
-			return Date(1, 1, year, useLeapYears).daysInMonth(month);
+			return Date(1, 1, year).daysInMonth(month);
 		}
 
 
@@ -273,7 +266,7 @@ namespace Tools
 		 */
 		size_t julianDay() const
 		{
-			return dayInYear(year(), day(), month(), _useLeapYears);
+			return dayInYear(year(), day(), month());
 		}
 
 		/*!
@@ -289,7 +282,7 @@ namespace Tools
 		 */
 		size_t dayInYear(size_t day, size_t month) const
 		{
-			return dayInYear(year(), day, month, _useLeapYears);
+			return dayInYear(year(), day, month);
 		}
 
 		/*!
@@ -301,22 +294,10 @@ namespace Tools
 		 * under possible leap year conditions
 		 */
 		static size_t dayInYear(size_t year, size_t day,
-														size_t month,
-														bool useLeapYears = false)
+														size_t month)
 		{
-			return size_t(Date(day, month, year, useLeapYears)
-				- Date(1, jan, year, useLeapYears) + 1);
-		}
-
-		/*!
-		 * @return if 'this' date uses leap years
-		 */
-		bool useLeapYears() const { return _useLeapYears; }
-
-		void setUseLeapYears(bool useLeapYears)
-		{
-			_useLeapYears = useLeapYears;
-      _daysInMonth = _useLeapYears ? _ldim() : _dim();
+			return size_t(Date(day, month, year)
+				- Date(1, jan, year) + 1);
 		}
 
 		/*!
@@ -354,11 +335,9 @@ namespace Tools
 												bool ignoreDeltaYears = false) const;
 
 		Date toRelativeDate(int deltaYears = 0, 
-												bool useLeapYears = false,
 												size_t relativeYear = defaultRelativeBaseYear)
 		{
-			return relativeDate(day(), month(), deltaYears, useLeapYears,
-													relativeYear);
+			return relativeDate(day(), month(), deltaYears, relativeYear);
 		}
 
 		//! is the current year different from base year
@@ -369,7 +348,7 @@ namespace Tools
 
 	private:
 		//! days in month (1-indexed)
-    static const std::vector<size_t>* _dim();
+		static const std::vector<size_t>* _dim();
 		//! days in month in a leap year
     static const std::vector<size_t>* _ldim();
 		//! pointer to correct leap year array, depending of activated leap years
@@ -382,7 +361,7 @@ namespace Tools
 		static const int _aLeapYear = 2008;
 
 		//! member var holding whether leap years are being used or not
-		bool _useLeapYears{false};
+		//bool _useLeapYears{false};
 
 		//! choosen base relative year
 		size_t _relativeBaseYear{0};
@@ -391,14 +370,14 @@ namespace Tools
 		bool _isRelativeDate{false};
 	};
 
-	inline Date fromMysqlString(const char* mysqlDateString, bool useLeapYears = true)
+	inline Date fromMysqlString(const char* mysqlDateString)
 	{
-		return Date::fromIsoDateString(mysqlDateString, useLeapYears);
+		return Date::fromIsoDateString(mysqlDateString);
 	}
 
-	inline Date fromMysqlString(const std::string& mysqlDateString, bool useLeapYears = true)
+	inline Date fromMysqlString(const std::string& mysqlDateString)
 	{
-		return Date::fromIsoDateString(mysqlDateString, useLeapYears);
+		return Date::fromIsoDateString(mysqlDateString);
 	}
 
 	void testDate();

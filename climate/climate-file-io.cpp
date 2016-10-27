@@ -60,10 +60,6 @@ Tools::Errors CSVViaHeaderOptions::merge(json11::Json j)
 			headerNames[p.first] = p.second.string_value();
 	}
 
-	auto uly = j["use-leap-years"];
-	bool useLeapYears = uly.is_null() ? true : uly.bool_value();
-	startDate.setUseLeapYears(useLeapYears);
-	endDate.setUseLeapYears(useLeapYears);
 	set_iso_date_value(startDate, j, "start-date");
 	set_iso_date_value(endDate, j, "end-date");
 
@@ -93,7 +89,6 @@ json11::Json CSVViaHeaderOptions::to_json() const
 	return json11::Json::object{
 		 {"type", "CSVViaHeaderOptions"}
 		,{"csv-separator", separator}
-		,{"use-leap-years", startDate.useLeapYears()}
 		,{"start-date", startDate.toIsoDateString()}
 		,{"end-date", endDate.toIsoDateString()}
 		,{"no-of-climate-file-header-lines", int(noOfHeaderLines)}
@@ -214,18 +209,6 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 		return DataAccessor();
 	}
 		
-	bool useLeapYears = startDate.useLeapYears();
-	if(startDate.useLeapYears() != endDate.useLeapYears())
-	{
-		cerr
-			<< "The start date " << (useLeapYears ? "uses " : "doesn't use ")
-			<< "leap years, but end date "
-			<< (useLeapYears ? "doesn't. " : "does. ")
-			<< "Setting end year to " << (useLeapYears ? "also " : "not ")
-			<< "use leap years." << endl;
-		endDate.setUseLeapYears(startDate.useLeapYears());
-	}
-		
 	if(header.empty())
 		header = defaultHeader();
 
@@ -278,7 +261,7 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 			continue;
 		}
 
-		Date date(useLeapYears);
+		Date date;
 		map<ACD, double> vs;
 		try
 		{
@@ -291,7 +274,7 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 				case day: date.setDay(stoul(r.at(i))); break;
 				case month: date.setMonth(stoul(r.at(i))); break;
 				case year: date.setYear(stoul(r.at(i))); break;
-				case isoDate: date = Date::fromIsoDateString(r.at(i), useLeapYears); break;
+				case isoDate: date = Date::fromIsoDateString(r.at(i)); break;
 				case deDate:
 				{
 					auto dmy = splitString(r.at(i), ".");
@@ -319,11 +302,6 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 				<< s << endl;
 			return DataAccessor();
 		}
-
-		if(!useLeapYears
-			 && date.day() == 29
-			 && date.month() == 2)
-			continue;
 
 		if(isStartDateValid && date < startDate)
 			continue;

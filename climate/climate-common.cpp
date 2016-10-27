@@ -279,11 +279,11 @@ json11::Json DataAccessor::to_json() const
 		acd++;
 	}
 	
-	return J11Object {
-		{"type", "DataAccessor"},
-		{"data", data},
-		{"startDate", startDate().toIsoDateString()},
-		{"endDate", endDate().toIsoDateString()}
+	return J11Object 
+	{{"type", "DataAccessor"}
+	,{"data", data}
+	,{"startDate", startDate().toIsoDateString()}
+	,{"endDate", endDate().toIsoDateString()}
 	};
 }
 

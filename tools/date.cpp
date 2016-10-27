@@ -31,8 +31,8 @@ using namespace std;
 
 const std::vector<size_t>* Date::_dim()
 {
-  static vector<size_t> dim{0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-  return &dim;
+	static vector<size_t> dim{0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+	return &dim;
 }
 
 const std::vector<size_t>* Date::_ldim()
@@ -44,20 +44,18 @@ const std::vector<size_t>* Date::_ldim()
 //const size_t Date::defaultRelativeBaseYear = 2000;
 
 //! default constructor
-Date::Date(bool useLeapYears)
-	: _useLeapYears(useLeapYears)
+Date::Date()
 {
-  _daysInMonth = isLeapYear() && _useLeapYears ? _ldim() : _dim();
+  _daysInMonth = isLeapYear() ? _ldim() : _dim();
 }
 
-Date::Date(const string& isoDateString, bool useLeapYears)
-	: _useLeapYears(useLeapYears)
+Date::Date(const string& isoDateString)
 {
-	Date d = fromIsoDateString(isoDateString, useLeapYears);
+	Date d = fromIsoDateString(isoDateString);
 	_d = d.day();
 	_m = d.month();
 	_y = d.year();
-  _daysInMonth = isLeapYear() && _useLeapYears ? _ldim() : _dim();
+  _daysInMonth = isLeapYear() ? _ldim() : _dim();
 }
 
 /*!
@@ -69,14 +67,12 @@ Date::Date(const string& isoDateString, bool useLeapYears)
  */
 Date::Date(size_t day, 
 					 Month month, 
-					 int year,
-					 bool useLeapYears)
+					 int year)
 	: _d(day)
 	, _m(month)
 	, _y(year)
-	, _useLeapYears(useLeapYears)
 {
-  _daysInMonth = isLeapYear() && _useLeapYears ? _ldim() : _dim();
+  _daysInMonth = isLeapYear() ? _ldim() : _dim();
 	if(day > daysInMonth(month) || day == 0)
 	{
 		_d = _m = _y = 0;
@@ -93,17 +89,15 @@ Date::Date(size_t day,
 Date::Date(size_t day, 
 					 size_t month, 
 					 int year,
-					 bool useLeapYears, 
 					 bool isRelativeDate,
 					 size_t relativeBaseYear)
 	: _d(day)
 	, _m(month)
 	, _y(year)
-	, _useLeapYears(useLeapYears)
 	, _relativeBaseYear(relativeBaseYear)
 	, _isRelativeDate(isRelativeDate)
 {
-  _daysInMonth = isLeapYear() && _useLeapYears ? _ldim() : _dim();
+  _daysInMonth = isLeapYear() ? _ldim() : _dim();
 	if(month > 12 || month == 0 || day > daysInMonth(month) || day == 0)
 	{
 		_d = _m = _y = 0;
@@ -113,15 +107,12 @@ Date::Date(size_t day,
 Date Date::relativeDate(size_t day, 
 												size_t month,
 												int deltaYears, 
-												bool useLeapYears,
 												size_t relativeYear)
 {
-	return Date(day, month, relativeYear + deltaYears, useLeapYears,
-							true, relativeYear);
+	return Date(day, month, relativeYear + deltaYears, true, relativeYear);
 }
 
-Date Date::fromIsoDateString(const std::string& isoDateString, 
-														 bool useLeapYears)
+Date Date::fromIsoDateString(const std::string& isoDateString)
 {
 	if(isoDateString.size() == 10)
 	{
@@ -131,8 +122,8 @@ Date Date::fromIsoDateString(const std::string& isoDateString,
 		//cout << day << "." << month << "." << year << endl;
 
 		return year < 100
-			? relativeDate(day, month, year, useLeapYears)
-			: Date(day, month, year, useLeapYears);
+			? relativeDate(day, month, year)
+			: Date(day, month, year);
 	}
 	return Date();
 }
@@ -144,7 +135,6 @@ Date::Date(const Date& other)
 	, _d(other._d)
 	, _m(other._m)
 	, _y(other._y)
-	, _useLeapYears(other._useLeapYears)
 	, _relativeBaseYear(other._relativeBaseYear)
 	, _isRelativeDate(other._isRelativeDate)
 {}
@@ -160,7 +150,6 @@ Date& Date::operator=(const Date& other)
 	_d = other.day();
 	_m = other.month();
 	_y = other.year();
-	_useLeapYears = other._useLeapYears;
 	_relativeBaseYear = other._relativeBaseYear;
 	_isRelativeDate = other._isRelativeDate;
 	return *this;
@@ -173,7 +162,6 @@ Date& Date::operator=(const Date& other)
  */
 int Date::numberOfDaysTo(const Date& toDate) const
 {
-	assert(useLeapYears() == toDate.useLeapYears());
 	assert((isRelativeDate() && toDate.isRelativeDate())
 				 || (!isRelativeDate() && !toDate.isRelativeDate()));
 
@@ -193,16 +181,15 @@ int Date::numberOfDaysTo(const Date& toDate) const
 			if(y == from.year())
 			{
 				startMonth = from.month() + 1;
-				nods += from.daysInMonth(from.month()) - from.day();
+				nods += daysInMonth(from.month()) - from.day();
 			}
 			if(y == to.year())
 			{
 				endMonth = to.month() - 1;
 				nods += to.day();
 			}
-			Date cy(1, 1, y, useLeapYears()); //current year, needed to count months in leap years correctly
 			for(size_t m = startMonth; m >= 1 && m <= 12 && m <= endMonth; m++)
-				nods += cy.daysInMonth(m);
+				nods += daysInMonth(m);
 		}
 	}
 
@@ -329,11 +316,10 @@ Date Date::operator-(size_t days) const
 			ds -= cd.day();
 
 			if(cd.month() == 1)
-				cd = Date(31, dec, cd.year() - 1, useLeapYears(),
-									isRelativeDate, relativeBaseYear);
+				cd = Date(31, dec, cd.year() - 1, isRelativeDate, relativeBaseYear);
 			else
 				cd = Date(cd.daysInMonth(cd.month() - 1), cd.month() - 1, cd.year(),
-									useLeapYears(), isRelativeDate, relativeBaseYear);
+									isRelativeDate, relativeBaseYear);
 		}
 		else
 		{
@@ -381,11 +367,9 @@ Date Date::operator+(size_t days) const
 			ds -= delta;
 
 			if(cd.month() == 12)
-				cd = Date(1, 1, cd.year() + 1, useLeapYears(),
-									isRelativeDate, relativeBaseYear);
+				cd = Date(1, 1, cd.year() + 1, isRelativeDate, relativeBaseYear);
 			else
-				cd = Date(1, cd.month() + 1, cd.year(), useLeapYears(),
-									isRelativeDate, relativeBaseYear);
+				cd = Date(1, cd.month() + 1, cd.year(), isRelativeDate, relativeBaseYear);
 		}
 		else
 		{
@@ -418,8 +402,7 @@ bool Date::isLeapYear() const
 Date Date::toAbsoluteDate(size_t absYear, bool ignoreDeltaYears) const
 {
 	long int deltaYears = ignoreDeltaYears ? 0 : year() - _relativeBaseYear;
-	return Date(day(), month(), absYear == 0 ? year() : absYear + deltaYears,
-							useLeapYears());
+	return Date(day(), month(), absYear == 0 ? year() : absYear + deltaYears);
 }
 
 //------------------------------------------------------------------------------
@@ -442,46 +425,23 @@ void Tools::testDate()
 	assert(Date(1, 1, 2001) <= Date(1, 1, 2001));
 	assert(Date(1, 1, 2001) <= Date(2, 1, 2001));
 
-	//with leap years
-	Date t(5, 3, 2008, true);
-	assert(t - 5 == Date(29, 2, 2008, true));
-	assert(t - 10 == Date(24, 2, 2008, true));
-	assert(t - 20 == Date(14, 2, 2008, true));
-	assert(t - 30 == Date(4, 2, 2008, true));
-	assert(t - 100 == Date(26, 11, 2007, true));
-	assert(t - 300 == Date(10, 5, 2007, true));
-	assert(t - 400 == Date(30, 1, 2007, true));
-	assert(t - 1000 == Date(9, 6, 2005, true));
-
-	t = Date(25, 2, 2008, true);
-	assert(t + 5 == Date(1, 3, 2008, true));
-	assert(t + 10 == Date(6, 3, 2008, true));
-	assert(t + 20 == Date(16, 3, 2008, true));
-	assert(t + 30 == Date(26, 3, 2008, true));
-	assert(t + 100 == Date(4, 6, 2008, true));
-	assert(t + 300 == Date(21, 12, 2008, true));
-	assert(t + 400 == Date(31, 3, 2009, true));
-	assert(t + 1000 == Date(21, 11, 2010, true));
-
-	//without leap years
-	t = Date(5, 3, 2008);
-	assert(t - 5 == Date(28, 2, 2008));
-	assert(t - 10 == Date(23, 2, 2008));
-	assert(t - 20 == Date(13, 2, 2008));
-	assert(t - 30 == Date(3, 2, 2008));
-	assert(t - 100 == Date(25, 11, 2007));
-	assert(t - 300 == Date(9, 5, 2007));
-	assert(t - 400 == Date(29, 1, 2007));
-	assert(t - 1000 == Date(8, 6, 2005));
+	Date t(5, 3, 200, true);
+	assert(t - 5 == Date(29, 2, 2008));
+	assert(t - 10 == Date(24, 2, 2008));
+	assert(t - 20 == Date(14, 2, 2008));
+	assert(t - 30 == Date(4, 2, 2008));
+	assert(t - 100 == Date(26, 11, 2007));
+	assert(t - 300 == Date(10, 5, 2007));
+	assert(t - 400 == Date(30, 1, 2007));
+	assert(t - 1000 == Date(9, 6, 2005));
 
 	t = Date(25, 2, 2008);
-	assert(t + 5 == Date(2, 3, 2008));
-	assert(t + 10 == Date(7, 3, 2008));
-	assert(t + 20 == Date(17, 3, 2008));
-	assert(t + 30 == Date(27, 3, 2008));
-	assert(t + 100 == Date(5, 6, 2008));
-	assert(t + 300 == Date(22, 12, 2008));
-	assert(t + 400 == Date(1, 4, 2009));
-	assert(t + 1000 == Date(22, 11, 2010));
-
+	assert(t + 5 == Date(1, 3, 2008));
+	assert(t + 10 == Date(6, 3, 2008));
+	assert(t + 20 == Date(16, 3, 2008));
+	assert(t + 30 == Date(26, 3, 2008));
+	assert(t + 100 == Date(4, 6, 2008));
+	assert(t + 300 == Date(21, 12, 2008));
+	assert(t + 400 == Date(31, 3, 2009));
+	assert(t + 1000 == Date(21, 11, 2010));
 }

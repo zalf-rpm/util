@@ -494,7 +494,7 @@ void Tools::set_iso_date_value(Tools::Date& var,
   string defaultMarker = "__DEFAULT__USED__";
   string dateStr = string_valueD(j, key, defaultMarker);
   if(dateStr != defaultMarker)
-    var = Date::fromIsoDateString(dateStr, var.useLeapYears());
+    var = Date::fromIsoDateString(dateStr);
 }
 
 Tools::Date Tools::iso_date_value(const json11::Json& j, const std::string& key)
