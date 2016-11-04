@@ -181,15 +181,16 @@ int Date::numberOfDaysTo(const Date& toDate) const
 			if(y == from.year())
 			{
 				startMonth = from.month() + 1;
-				nods += daysInMonth(from.month()) - from.day();
+				nods += from.daysInMonth(from.month()) - from.day();
 			}
 			if(y == to.year())
 			{
 				endMonth = to.month() - 1;
 				nods += to.day();
 			}
+			Date cy(1, 1, y); //current year, needed to count months in leap years correctly
 			for(size_t m = startMonth; m >= 1 && m <= 12 && m <= endMonth; m++)
-				nods += daysInMonth(m);
+				nods += cy.daysInMonth(m);
 		}
 	}
 
