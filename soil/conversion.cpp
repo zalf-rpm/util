@@ -200,7 +200,7 @@ EResult<double> Soil::KA5texture2sand(string soilType)
     x = 0.30;
   else if(soilType == "Lt3")
     x = 0.20;
-  else if(soilType == "LtS")
+  else if(soilType == "Lts")
     x = 0.42;
   else if(soilType == "Lu")
     x = 0.19;
