@@ -120,16 +120,17 @@ Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
 		auto n2acd = name2acd();
 		for(auto colName : r)
 		{
-			auto replColName = options.headerName2ACDName[colName];
-			auto acd = n2acd[replColName.empty() ? colName : replColName];
+			auto tcn = trim(colName);
+			auto replColName = options.headerName2ACDName[tcn];
+			auto acd = n2acd[replColName.empty() ? tcn : replColName];
 			header.push_back(acd == 0 ? skip : acd);
 
 			if(!options.convert.empty())
 			{
-				auto it = options.convert.find(colName);
+				auto it = options.convert.find(tcn);
 				if(it != options.convert.end())
 				{
-					auto acd = n2acd[replColName.empty() ? colName : replColName];
+					auto acd = n2acd[replColName.empty() ? tcn : replColName];
 					auto op = it->second.first;
 					double value = it->second.second;
 					if(op == "*")
@@ -358,9 +359,10 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 	da.addClimateData(Climate::tmax, daData[tmax]);
 	da.addClimateData(Climate::tavg, daData[tavg]);
 	da.addClimateData(Climate::precip, daData[precip]);
-	da.addClimateData(Climate::globrad, daData[globrad]);
-	//if(daData[globrad].empty() && !daData[sunhours].empty())
-	//	da.addClimateData(Climate::sunhours, daData[sunhours]);
+	if(!daData[globrad].empty())
+		da.addClimateData(Climate::globrad, daData[globrad]);
+	else if(!daData[sunhours].empty())
+		da.addClimateData(Climate::sunhours, daData[sunhours]);
 	da.addClimateData(Climate::relhumid, daData[relhumid]);
 	da.addClimateData(Climate::wind, daData[wind]);
 
