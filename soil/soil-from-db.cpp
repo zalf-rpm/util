@@ -85,17 +85,7 @@ SoilPMsPtr Soil::soilParameters(DBPtr con,
 		if(!row[6].empty())
 			p.vs_SoilpH = satof(row[6]);
 		if(row[7].empty())
-		{
-			auto et = sandAndClay2KA5texture(p.vs_SoilSandContent, p.vs_SoilClayContent);
-			if(et.success())
-				p.vs_SoilTexture = et.result;
-			else
-			{
-				for(auto e : et.errors)
-					cerr << e << endl;
-				return nothing;
-			}
-		}
+			p.vs_SoilTexture = sandAndClay2KA5texture(p.vs_SoilSandContent, p.vs_SoilClayContent);
 		else
 			p.vs_SoilTexture = row[7];
 		p.vs_SoilStoneContent = 0.0;

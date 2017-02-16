@@ -74,11 +74,10 @@ double Soil::sandAndClay2lambda(double sand, double clay)
 	return lambda;
 }
 
-EResult<string> Soil::sandAndClay2KA5texture(double sand, double clay)
+string Soil::sandAndClay2KA5texture(double sand, double clay)
 {
-	EResult<string> res;
 	double silt = 1.0 - sand - clay;
-	string& soilTexture = res.result;
+	string soilTexture;
 
 	if(silt < 0.1 && clay < 0.05)
 		soilTexture = "Ss";
@@ -142,13 +141,8 @@ EResult<string> Soil::sandAndClay2KA5texture(double sand, double clay)
 		soilTexture = "Tu2";
 	else if(clay >= 0.65)
 		soilTexture = "Tt";
-	else
-	{
-		soilTexture = "";
-		res.errors.push_back(string("Soil::sandAndClay2KA5texture: Undefined combination of sand (" + to_string(sand) + ") and clay (" + to_string(clay) + ")!"));
-	}
 
-	return res;
+	return soilTexture;
 }
 
 EResult<double> Soil::KA5texture2sand(string soilType)

@@ -43,7 +43,7 @@ namespace Soil
 	double sandAndClay2lambda(double sand, double clay);
 
 	//! sand and clay [0 - 1]
-	Tools::EResult<std::string> sandAndClay2KA5texture(double sand, double clay);
+	std::string sandAndClay2KA5texture(double sand, double clay);
 
 	Tools::EResult<double> KA5texture2sand(std::string soilType);
 
