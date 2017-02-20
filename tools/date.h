@@ -41,7 +41,7 @@ namespace Tools
 	class  Date
 	{
 	public:
-		static const size_t defaultRelativeBaseYear = 2000;
+		//static const size_t defaultRelativeBaseYear = 2000;
 
 	public:
 		Date();
@@ -52,23 +52,23 @@ namespace Tools
 									Month month, 
 									int year);
 
-		Date(size_t day, 
-				 size_t month, 
+		Date(size_t day,
+				 size_t month,
 				 int year,
-				 bool isRelativeDate = false,
-				 size_t relativeBaseYear = defaultRelativeBaseYear);
+				 bool isRelativeDate = false);// ,
+				 //size_t relativeBaseYear = defaultRelativeBaseYear);
 
-		static Date relativeDate(size_t day, 
+		static Date relativeDate(size_t day,
 														 size_t month,
-														 int deltaYears = 0, 
-														 size_t relativeYear = defaultRelativeBaseYear);
+														 int deltaYears = 0);// ,
+														 //size_t relativeYear = defaultRelativeBaseYear);
 
-		static inline Date julianDate(size_t julianDay, 
+		static inline Date julianDate(size_t julianDay,
 																	size_t year,
-																	bool isRelativeDate = false,
-																	size_t relativeBaseYear = defaultRelativeBaseYear)
+																	bool isRelativeDate = false)// ,
+																	//size_t relativeBaseYear = defaultRelativeBaseYear)
 		{
-			return Date(1, 1, year, isRelativeDate, relativeBaseYear) + (julianDay - 1);
+			return Date(1, 1, year, isRelativeDate/*, relativeBaseYear*/) + (julianDay - 1);
 		}
 
 		static Date fromIsoDateString(const std::string& isoDateString);
@@ -330,21 +330,23 @@ namespace Tools
 		 */
 		bool isRelativeDate() const { return _isRelativeDate; }
 
+		bool isAbsoluteDate() const { return !_isRelativeDate; }
+
 		//! convert this year to an absolute year
-		Date toAbsoluteDate(size_t absYear = 0,
+		Date toAbsoluteDate(size_t absYear,
 												bool ignoreDeltaYears = false) const;
 
-		Date toRelativeDate(int deltaYears = 0, 
-												size_t relativeYear = defaultRelativeBaseYear)
+		Date toRelativeDate(int deltaYears = 0)// ,
+												//size_t relativeYear = defaultRelativeBaseYear)
 		{
-			return relativeDate(day(), month(), deltaYears, relativeYear);
+			return relativeDate(day(), month(), deltaYears);// , relativeYear);
 		}
 
 		//! is the current year different from base year
-		bool isRelativeBaseYear() const { return _relativeBaseYear == year(); }
+		//bool isRelativeBaseYear() const { return _relativeBaseYear == year(); }
 
 		//! get the base year if this is a relative date
-		size_t relativeBaseYear() const { return _relativeBaseYear; }
+		//size_t relativeBaseYear() const { return _relativeBaseYear; }
 
 	private:
 		//! days in month (1-indexed)
@@ -364,7 +366,7 @@ namespace Tools
 		//bool _useLeapYears{false};
 
 		//! choosen base relative year
-		size_t _relativeBaseYear{0};
+		//size_t _relativeBaseYear{0};
 
 		//! is this a relative date = what's the meaning of the year
 		bool _isRelativeDate{false};

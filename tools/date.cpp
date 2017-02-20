@@ -89,12 +89,12 @@ Date::Date(size_t day,
 Date::Date(size_t day, 
 					 size_t month, 
 					 int year,
-					 bool isRelativeDate,
-					 size_t relativeBaseYear)
+					 bool isRelativeDate)//,
+					 //size_t relativeBaseYear)
 	: _d(day)
 	, _m(month)
 	, _y(year)
-	, _relativeBaseYear(relativeBaseYear)
+	//, _relativeBaseYear(relativeBaseYear)
 	, _isRelativeDate(isRelativeDate)
 {
   _daysInMonth = isLeapYear() ? _ldim() : _dim();
@@ -106,10 +106,11 @@ Date::Date(size_t day,
 
 Date Date::relativeDate(size_t day, 
 												size_t month,
-												int deltaYears, 
-												size_t relativeYear)
+												int deltaYears)//, 
+												//size_t relativeYear)
 {
-	return Date(day, month, relativeYear + deltaYears, true, relativeYear);
+	//return Date(day, month, relativeYear + deltaYears, true, relativeYear);
+	return Date(day, month, deltaYears, true);
 }
 
 Date Date::fromIsoDateString(const std::string& isoDateString)
@@ -135,7 +136,7 @@ Date::Date(const Date& other)
 	, _d(other._d)
 	, _m(other._m)
 	, _y(other._y)
-	, _relativeBaseYear(other._relativeBaseYear)
+	//, _relativeBaseYear(other._relativeBaseYear)
 	, _isRelativeDate(other._isRelativeDate)
 {}
 
@@ -150,7 +151,7 @@ Date& Date::operator=(const Date& other)
 	_d = other.day();
 	_m = other.month();
 	_y = other.year();
-	_relativeBaseYear = other._relativeBaseYear;
+	//_relativeBaseYear = other._relativeBaseYear;
 	_isRelativeDate = other._isRelativeDate;
 	return *this;
 }
@@ -250,7 +251,7 @@ bool Date::operator<(const Date& other) const
 std::string Date::toIsoDateString(const std::string& wrapInto) const
 {
 	ostringstream s;
-	auto y = year() - (isRelativeDate() ? relativeBaseYear() : 0);
+	auto y = year();// -(isRelativeDate() ? relativeBaseYear() : 0);
 	
 	s << wrapInto;
 	if(isRelativeDate())
@@ -283,7 +284,7 @@ std::string Date::toString(const std::string& separator,
 	{
 		if(isRelativeDate())
 		{
-			size_t deltaYears = year() - _relativeBaseYear;
+			size_t deltaYears = year();// -_relativeBaseYear;
 			s << separator << "year"
 				<< (deltaYears > 0 ? "+" : "");
 			if(deltaYears != 0)
@@ -308,7 +309,7 @@ Date Date::operator-(size_t days) const
 	size_t ds = days; //days
 
 	bool isRelativeDate = cd.isRelativeDate();
-	size_t relativeBaseYear = cd.relativeBaseYear();
+	//size_t relativeBaseYear = cd.relativeBaseYear();
 
 	while(true)
 	{
@@ -317,10 +318,10 @@ Date Date::operator-(size_t days) const
 			ds -= cd.day();
 
 			if(cd.month() == 1)
-				cd = Date(31, dec, cd.year() - 1, isRelativeDate, relativeBaseYear);
+				cd = Date(31, dec, cd.year() - 1, isRelativeDate);// , relativeBaseYear);
 			else
 				cd = Date(cd.daysInMonth(cd.month() - 1), cd.month() - 1, cd.year(),
-									isRelativeDate, relativeBaseYear);
+									isRelativeDate);// , relativeBaseYear);
 		}
 		else
 		{
@@ -358,7 +359,7 @@ Date Date::operator+(size_t days) const
 	size_t ds = days; //days
 
 	bool isRelativeDate = cd.isRelativeDate();
-	size_t relativeBaseYear = cd.relativeBaseYear();
+	//size_t relativeBaseYear = cd.relativeBaseYear();
 
 	while(true)
 	{
@@ -368,9 +369,9 @@ Date Date::operator+(size_t days) const
 			ds -= delta;
 
 			if(cd.month() == 12)
-				cd = Date(1, 1, cd.year() + 1, isRelativeDate, relativeBaseYear);
+				cd = Date(1, 1, cd.year() + 1, isRelativeDate);// , relativeBaseYear);
 			else
-				cd = Date(1, cd.month() + 1, cd.year(), isRelativeDate, relativeBaseYear);
+				cd = Date(1, cd.month() + 1, cd.year(), isRelativeDate);// , relativeBaseYear);
 		}
 		else
 		{
@@ -402,16 +403,12 @@ bool Date::isLeapYear() const
 
 Date Date::toAbsoluteDate(size_t absYear, bool ignoreDeltaYears) const
 {
-	long int deltaYears = ignoreDeltaYears ? 0 : year() - _relativeBaseYear;
-	return Date(day(), month(), absYear == 0 ? year() : absYear + deltaYears);
+	return Date(day(), month(), ignoreDeltaYears ? absYear : absYear + year());
 }
 
 //------------------------------------------------------------------------------
 
-
-/*!
- * function testing the date class
- */
+//! function testing the date class
 void Tools::testDate()
 {
 	assert(Date(1, 1, 2001).numberOfDaysTo(Date(2, 1, 2001)) == 1);
