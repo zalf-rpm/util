@@ -41,7 +41,7 @@ namespace Tools
 
   struct DLL_API Json11Serializable
   {
-    virtual Errors merge(json11::Json j) = 0;
+		virtual Errors merge(json11::Json j);
 
     virtual json11::Json to_json() const = 0;
 

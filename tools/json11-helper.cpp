@@ -20,6 +20,9 @@ using namespace Tools;
 using namespace std;
 using namespace json11;
 
+
+
+
 EResult<Json> Tools::readAndParseJsonFile(string path)
 {
 	auto r = readFile(path);
@@ -35,6 +38,20 @@ EResult<Json> Tools::parseJsonString(string jsonString)
 	if(!err.empty())
 		return{j, string("Error parsing JSON object: '") + jsonString + "' "};
 	return{j};
+}
+
+//-----------------------------------------------------------------------------
+
+Errors Json11Serializable::merge(json11::Json j)
+{
+	Errors res;
+
+	if(j["DEFAULT"].is_object())
+		res = merge(j["DEFAULT"]);
+	if(j["="].is_object())
+		res = merge(j["="]);
+
+	return res;
 }
 
 //-----------------------------------------------------------------------------
