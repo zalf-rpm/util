@@ -78,7 +78,7 @@ namespace Tools
 		/*!
 		 * @return true if this is a valid date (not default constructed)
 		 */
-		bool isValid() const { return _d > 0 && _y > 0; }
+		bool isValid() const { return _d > 0; }
 
 		Date & operator=(const Date& other);
 
