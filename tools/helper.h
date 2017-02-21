@@ -83,7 +83,7 @@ namespace Tools
 		Maybe(const Maybe& b) : _value(b._value), _isNothing(b._isNothing) {}
 		
 		T value() const { return _value; }
-		void setValue(const T& v) { _value = v; }
+		void setValue(const T& v) { _value = v; _isNothing = false; }
 		bool isValue() const { return !isNothing(); }
 		bool isNothing() const { return _isNothing; }
 		
