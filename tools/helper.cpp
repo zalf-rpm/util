@@ -79,8 +79,10 @@ EResult<string> Tools::readFile(string path)
 pair<string, string> Tools::splitPathToFile(const string& pathToFile)
 {
 	size_t found = pathToFile.find_last_of("/\\");
-	return make_pair(pathToFile.substr(0,found+1),
-	                 pathToFile.substr(found+1));
+	return found == string::npos 
+		? make_pair("", pathToFile)
+		: make_pair(pathToFile.substr(0, found + 1),
+								pathToFile.substr(found + 1));
 }
 
 bool Tools::isAbsolutePath(const std::string& path)
