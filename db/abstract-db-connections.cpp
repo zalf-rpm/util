@@ -17,6 +17,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <iostream>
 
 #include "db/abstract-db-connections.h"
+#include "tools/helper.h"
 
 using namespace std;
 using namespace Tools;
@@ -34,10 +35,11 @@ DBConData Db::dbConData(const IniParameterMap& dbParams,
 	string dbSection = dbParams.value("abstract-schema", abstractSchema);
 
 	DBConData d;
-	//if not empty is a sqlite db and we're done
+	d.abstractSchemaName = abstractSchema;
+	
+	//if not empty is a sqlite db
 	d.filename = dbParams.value(dbSection, "filename");
-  d.abstractSchemaName = abstractSchema;
-	//else threat it as mysql db with all the connection parameters
+	// threat it as mysql db with all the connection parameters
 	if(d.filename.empty())
 	{
 		d.host = dbParams.value(dbSection, "host");
@@ -53,6 +55,15 @@ DBConData Db::dbConData(const IniParameterMap& dbParams,
       d.schema = dbParams.value(dbSection + ".schema", abstractSchema);
 
 		d.maxNoOfConnections = dbParams.valueAsInt(dbSection, "maxNoOfConnections", 1);
+	}
+	else
+	{
+		if(!isAbsolutePath(d.filename))
+		{
+			auto p = splitPathToFile(dbParams.pathToIniFile());
+			if(!p.first.empty())
+				d.filename = fixSystemSeparator(p.first + "/" + d.filename);
+		}
 	}
 
 	return d;
