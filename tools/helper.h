@@ -401,6 +401,8 @@ namespace Tools
 	std::string fixSystemSeparator(std::string path);
 
   std::string ensureDirExists(const std::string& path);
+
+	std::string replaceEnvVars(std::string path);
 }
 
 

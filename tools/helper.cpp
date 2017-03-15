@@ -157,3 +157,29 @@ string Tools::replace(std::string s, std::string findStr, std::string replStr)
 	return s;
 }
 
+std::string Tools::replaceEnvVars(std::string path)
+{
+	string startToken = "${";
+	string endToken = "}";
+	auto startPos = path.find(startToken);
+	while(startPos != std::string::npos)
+	{
+		auto endPos = path.find(endToken, startPos + 1);
+		if(endPos != std::string::npos)
+		{
+			auto nameStart = startPos + 2;
+			auto envVarName = path.substr(nameStart, endPos - nameStart);
+			auto envVarContent = getenv(envVarName.c_str());
+			if(envVarContent)
+			{
+				path.replace(startPos, endPos + 1 - startPos, envVarContent);
+				startPos = path.find(startToken);
+			}
+			else
+				startPos = path.find(startToken, endPos + 1);
+		}
+	}
+
+	return path;
+}
+
