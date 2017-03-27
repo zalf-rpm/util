@@ -18,8 +18,10 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <sstream>
 #include <algorithm>
 #include <assert.h>
+#include <limits>
 
 #include "climate/climate-common.h"
+#include "tools/algorithms.h"
 
 using namespace std;
 using namespace Climate;
@@ -168,6 +170,7 @@ std::string Climate::availableClimateData2Name(AvailableClimateData col)
 	case cloudamount: return "Bewölkungsgrad";
 	case vaporpress: return "Dampfdruck";
 	case wind: return "Windgeschwindigkeit";
+	case co2: return "CO2";
 	default: ;
 	}
 	return "unknown";
@@ -186,11 +189,13 @@ std::string Climate::availableClimateData2unit(AvailableClimateData col)
 	case precipOrig: return "mm";
 	case sunhours: return "h";
 	case wind: return "m/s";
+	case co2: return "ppm";
 	default: ;
 	}
 	return "";
 }
 
+/*
 const ACDV& acds()
 {
 	static ACDV v;
@@ -198,12 +203,13 @@ const ACDV& acds()
   if(!isInitialized)
   {
 		ACD t[] = { day, month, year, tmin, tavg, tmax, precip, precipOrig, globrad,
-		            wind, sunhours, cloudamount, relhumid, airpress, vaporpress };
+		            wind, sunhours, cloudamount, relhumid, airpress, vaporpress, co2 };
 		v.insert(v.end(), t, t + availableClimateDataSize());
 		isInitialized = true;
 	}
 	return v;
 }
+*/
 
 //------------------------------------------------------------------------------
 
@@ -288,10 +294,44 @@ json11::Json DataAccessor::to_json() const
 }
 
 double DataAccessor::dataForTimestep(AvailableClimateData acd,
-                                     size_t stepNo) const
+                                     size_t stepNo,
+																		 double def) const
 {
   short cacheIndex = _acd2dataIndex.at(int(acd));
-  return cacheIndex < 0 ? 0.0 : _data->at(cacheIndex).at(_fromStep + stepNo);
+  return cacheIndex < 0 ? def : _data->at(cacheIndex).at(_fromStep + stepNo);
+}
+
+Maybe<double> DataAccessor::dataForTimestepM(AvailableClimateData acd,
+																						 size_t stepNo) const
+{
+	short cacheIndex = _acd2dataIndex.at(int(acd));
+	return cacheIndex < 0 ? Maybe<double>() : _data->at(cacheIndex).at(_fromStep + stepNo);
+}
+
+map<Climate::ACD, double>
+DataAccessor::allDataForStep(size_t stepNo,
+														 double latitude) const
+{
+	map<ACD, double> m;
+
+	for(size_t k = 0, size = _acd2dataIndex.size(); k < size; k++)
+	{
+		ACD acd = ACD(int(k));
+		auto v = dataForTimestepM(acd, stepNo);
+		if(v.isValue())
+			m[acd] = v.value();
+		else if(acd == globrad)
+		{
+			auto v2 = dataForTimestepM(sunhours, stepNo);
+			if(v2.isValue())
+				m[acd] = Tools::sunshine2globalRadiation(dateForStep(stepNo).julianDay(),
+																								 v2.value(),
+																								 latitude,
+																								 true);
+		}
+	}
+
+	return m;
 }
 
 vector<double> DataAccessor::dataAsVector(AvailableClimateData acd) const
@@ -348,4 +388,9 @@ void DataAccessor::addOrReplaceClimateData(AvailableClimateData acd,
 		(*_data)[index] = data;
 	}
 }
+
+
+
+
+
 

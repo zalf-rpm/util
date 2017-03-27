@@ -26,6 +26,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 #include "tools/date.h"
 #include "tools/json11-helper.h"
+#include "tools/helper.h"
 
 //! All climate data related classes.
 namespace Climate
@@ -38,8 +39,25 @@ namespace Climate
 	 */
   enum AvailableClimateData
   {
-		day = 1, month, year, tmin, tavg, tmax, precip, precipOrig, globrad, wind,
-		sunhours, cloudamount, relhumid, airpress, vaporpress, isoDate, deDate, skip
+		day = 1, 
+		month, 
+		year, 
+		tmin, 
+		tavg, 
+		tmax, 
+		precip, 
+		precipOrig, 
+		globrad, 
+		wind,
+		sunhours, 
+		cloudamount, 
+		relhumid, 
+		airpress, 
+		vaporpress, 
+		isoDate, 
+		deDate, 
+		co2,
+		skip
 	};
 
 	//! just a shortcut to the quite long name
@@ -47,25 +65,27 @@ namespace Climate
 
 	inline std::map<std::string, ACD> name2acd()
 	{
-		return {
-			{"day", day},
-			{"month", month},
-			{"year", year},
-			{"tmin", tmin},
-			{"tavg", tavg},
-			{"tmax", tmax},
-			{"precip", precip},
-			{"precip-orig", precipOrig},
-			{"globrad", globrad},
-			{"wind", wind}, {"windspeed", wind},
-			{"sunhours", sunhours},
-			{"cloudamount", cloudamount},
-			{"relhumid", relhumid},
-			{"airpress", airpress},
-			{"vaporpress", vaporpress},
-			{"iso-date", isoDate},
-			{"de-date", deDate},
-			{"skip", skip}
+		return 
+		{{"day", day}
+		,{"month", month}
+		,{"year", year}
+		,{"tmin", tmin}
+		,{"tavg", tavg}
+		,{"tmax", tmax}
+		,{"precip", precip}
+		,{"precip-orig", precipOrig}
+		,{"globrad", globrad}
+		,{"wind", wind}
+		,{"windspeed", wind}
+		,{"sunhours", sunhours}
+		,{"cloudamount", cloudamount}
+		,{"relhumid", relhumid}
+		,{"airpress", airpress}
+		,{"vaporpress", vaporpress}
+		,{"co2", co2}
+		,{"iso-date", isoDate}
+		,{"de-date", deDate}
+		,{"skip", skip}
 		};
 	};
 
@@ -78,16 +98,10 @@ namespace Climate
 	 * last element -> to not pollute the enum)
 	 * @return number of elements in the AvailableClimateData enumeration
 	 */
-	inline unsigned int availableClimateDataSize() { return int(vaporpress) + 1; }
+	inline unsigned int availableClimateDataSize() { return int(co2) + 1; }
 
 	//! just a shortcut for a list (vector) of climate data elements
 	typedef std::vector<AvailableClimateData> ACDV;
-
-	/*!
-	 * helper function
-	 * @return a vector of all climate data elements
-	 */
-	//const ACDV& acds();
 
 	/*!
 	 * helper function
@@ -125,8 +139,6 @@ namespace Climate
   {
 		return availableClimateData2WettRegDBColName(col);
 	}
-
-
 
 	/*!
 	 * helper function and just a different name for the WettReg mapping right now
@@ -179,7 +191,15 @@ namespace Climate
 
     bool isValid() const { return noOfStepsPossible() > 0; }
 
-    double dataForTimestep(AvailableClimateData acd, std::size_t stepNo) const;
+    double dataForTimestep(AvailableClimateData acd, 
+													 std::size_t stepNo,
+													 double default_ = 0.0) const;
+
+		Tools::Maybe<double> dataForTimestepM(AvailableClimateData acd,
+																					std::size_t stepNo) const;
+
+		std::map<Climate::ACD, double> allDataForStep(size_t stepNo,
+																									double latitude) const;
 
 		std::vector<double> dataAsVector(AvailableClimateData acd) const;
 

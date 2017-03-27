@@ -210,8 +210,8 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 		return DataAccessor();
 	}
 		
-	if(header.empty())
-		header = defaultHeader();
+	//if(header.empty())
+	//	header = defaultHeader();
 
 	bool isStartDateValid = startDate.isValid();
 	bool isEndDateValid = endDate.isValid();
@@ -355,16 +355,18 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 	}
 
 	Climate::DataAccessor da(startDate, endDate);
-	da.addClimateData(Climate::tmin, daData[tmin]);
-	da.addClimateData(Climate::tmax, daData[tmax]);
-	da.addClimateData(Climate::tavg, daData[tavg]);
-	da.addClimateData(Climate::precip, daData[precip]);
+	da.addClimateData(tmin, daData[tmin]);
+	da.addClimateData(tmax, daData[tmax]);
+	da.addClimateData(tavg, daData[tavg]);
+	da.addClimateData(precip, daData[precip]);
 	if(!daData[globrad].empty())
-		da.addClimateData(Climate::globrad, daData[globrad]);
+		da.addClimateData(globrad, daData[globrad]);
 	else if(!daData[sunhours].empty())
-		da.addClimateData(Climate::sunhours, daData[sunhours]);
-	da.addClimateData(Climate::relhumid, daData[relhumid]);
-	da.addClimateData(Climate::wind, daData[wind]);
+		da.addClimateData(sunhours, daData[sunhours]);
+	da.addClimateData(relhumid, daData[relhumid]);
+	da.addClimateData(wind, daData[wind]);
+	if(!daData[co2].empty())
+		da.addClimateData(co2, daData[co2]);
 
 	return da;
 }

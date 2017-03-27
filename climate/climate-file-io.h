@@ -25,10 +25,10 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 namespace Climate
 {
-	inline std::vector<ACD> defaultHeader()
-	{
-		return{deDate, tmin, tavg, tmax, precip, globrad, relhumid, wind};
-	}
+	//inline std::vector<ACD> defaultHeader()
+	//{
+	//	return{deDate, tmin, tavg, tmax, precip, globrad, relhumid, wind};
+	//}
 
 	struct CSVViaHeaderOptions : public Tools::Json11Serializable
 	{
