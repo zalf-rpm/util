@@ -50,13 +50,14 @@ namespace Tools
 
 		explicit Date(size_t day, 
 									Month month, 
-									int year);
+									int year,
+									bool createValidDate = false);
 
 		Date(size_t day,
 				 size_t month,
 				 int year,
-				 bool isRelativeDate = false);// ,
-				 //size_t relativeBaseYear = defaultRelativeBaseYear);
+				 bool isRelativeDate = false,
+				 bool createValidDate = false);
 
 		static Date relativeDate(size_t day,
 														 size_t month,
@@ -210,22 +211,24 @@ namespace Tools
 		 * set 'this' dates day
 		 * @param day
 		 */
-		void setDay(size_t day) { _d = day; }
+		void setDay(size_t day,
+								bool createValidDate = false);
 
-		Date withDay(size_t day);
+		Date withDay(size_t day, bool createValidDate = false);
 
 		/*!
 		 * @return 'this' dates month
 		 */
 		size_t month() const { return _m; }
 
-		Date withMonth(size_t month);
+		Date withMonth(size_t month, bool createValidDate = false);
 
 		/*!
 		 * set 'this' dates month
 		 * @param month
 		 */
-		void setMonth(size_t month) { _m = month; }
+		void setMonth(size_t month, 
+									bool createValidDate = false);
 
 		/*!
 		 * @return 'this' dates year

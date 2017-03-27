@@ -67,13 +67,22 @@ Date::Date(const string& isoDateString)
  */
 Date::Date(size_t day, 
 					 Month month, 
-					 int year)
+					 int year,
+					 bool createValidDate)
 	: _d(day)
 	, _m(month)
 	, _y(year)
 {
   _daysInMonth = isLeapYear() ? _ldim() : _dim();
-	if(day > daysInMonth(month) || day == 0)
+	auto dim = daysInMonth(month);
+	if(createValidDate)
+	{
+		if(day == 0)
+			_d = 1;
+		else if(day > dim)
+			_d = dim;
+	}
+	else if(day > dim || day == 0)
 	{
 		_d = _m = _y = 0;
 	}
@@ -89,16 +98,28 @@ Date::Date(size_t day,
 Date::Date(size_t day, 
 					 size_t month, 
 					 int year,
-					 bool isRelativeDate)//,
-					 //size_t relativeBaseYear)
+					 bool isRelativeDate,
+					 bool createValidDate)
 	: _d(day)
 	, _m(month)
 	, _y(year)
-	//, _relativeBaseYear(relativeBaseYear)
 	, _isRelativeDate(isRelativeDate)
 {
   _daysInMonth = isLeapYear() ? _ldim() : _dim();
-	if(month > 12 || month == 0 || day > daysInMonth(month) || day == 0)
+	auto dim = daysInMonth(month);
+	if(createValidDate)
+	{
+		if(day == 0)
+			_d = 1;
+		else if(day > dim)
+			_d = dim;
+
+		if(month == 0)
+			_m = 1;
+		else if(month > 12)
+			_m = 12;
+	}
+	else if(month > 12 || month == 0 || day > dim || day == 0)
 	{
 		_d = _m = _y = 0;
 	}
@@ -136,7 +157,6 @@ Date::Date(const Date& other)
 	, _d(other._d)
 	, _m(other._m)
 	, _y(other._y)
-	//, _relativeBaseYear(other._relativeBaseYear)
 	, _isRelativeDate(other._isRelativeDate)
 {}
 
@@ -198,19 +218,45 @@ int Date::numberOfDaysTo(const Date& toDate) const
 	return nods * (reverse ? -1 : 1);
 }
 
-Date Date::withDay(size_t d)
+Date Date::withDay(size_t d, bool createValidDate)
 {
 	Date t(*this);
-	t.setDay(d);
+	t.setDay(d, createValidDate);
 	return t;
 }
 
-Date Date::withMonth(size_t m)
+void Date::setDay(size_t day, bool createValidDate) 
+{ 
+	_d = day;
+	if(createValidDate)
+	{
+		if(_d == 0)
+			_d = 1;
+		else if(_d > daysInMonth())
+			_d = daysInMonth();
+	}
+}
+
+Date Date::withMonth(size_t m, bool createValidDate)
 {
 	Date t(*this);
-	t.setMonth(m);
+	t.setMonth(m, createValidDate);
 	return t;
 }
+
+
+void Date::setMonth(size_t month, bool createValidDate) 
+{ 
+	_m = month;
+	if(createValidDate)
+	{
+		if(_m == 0)
+			_m = 1;
+		else if(_m > 12)
+			_m = 12;
+	}
+}
+
 
 Date Date::withYear(size_t y)
 {
