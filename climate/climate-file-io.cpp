@@ -64,7 +64,7 @@ Tools::Errors CSVViaHeaderOptions::merge(json11::Json j)
 	set_iso_date_value(endDate, j, "end-date");
 
 	set_string_valueD(separator, j, "csv-separator", ",");
-	noOfHeaderLines = size_t(int_valueD(j, "no-of-climate-file-header-lines", 2));
+	noOfHeaderLines = size_t(int_valueD(j, "no-of-climate-file-header-lines", noOfHeaderLines));
 	headerName2ACDName = headerNames;
 
 	return{};

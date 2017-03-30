@@ -43,7 +43,7 @@ namespace Climate
 		std::string separator;
 		Tools::Date startDate;
 		Tools::Date endDate;
-		size_t noOfHeaderLines{2};
+		size_t noOfHeaderLines{1};
 		std::map<std::string, std::string> headerName2ACDName;
 		std::map<std::string, std::pair<std::string, double>> convert;
 	};
