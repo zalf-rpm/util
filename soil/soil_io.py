@@ -21,26 +21,27 @@ def soil_parameters(con, profile_id):
     query = """
         select 
             id, 
-            layer_depth_cm, 
-            soil_organic_carbon_percent, 
-            soil_raw_density_kg_per_m3,
-            soil_bulk_density_kg_per_m3, 
-            sand_content_percent, 
-            clay_content_percent, 
-            ph_value, 
-            soil_type,
-            permanent_wilting_point_m3_per_m3,
-            field_capacity_m3_per_m3,
-            saturation_m3_per_m3,
+            layer_depth, 
+            soil_organic_carbon, 
+            soil_organic_matter, 
+            bulk_density, 
+            raw_density,
+            sand, 
+            clay, 
+            ph, 
+            KA5_texture_class,
+            permanent_wilting_point,
+            field_capacity,
+            saturation,
             soil_water_conductivity_coefficient,
-            sceleton_kg_per_kg,
-            soil_ammonium_kg_NH4_N_per_m3,
-            soil_nitrate_kg_NO3_N_per_m3,
-            soil_CN_ratio,
-            initial_soil_moisture_percent_field_capacity
+            sceleton,
+            soil_ammonium,
+            soil_nitrate,
+            c_n,
+            initial_soil_moisture
         from soil_profile 
         where id = ? 
-        order by id, layer_depth_cm
+        order by id, layer_depth
     """
 
     layers = []
@@ -49,42 +50,61 @@ def soil_parameters(con, profile_id):
     con.row_factory = sqlite3.Row
     for row in con.cursor().execute(query, (profile_id,)):
         layer = {"type": "SoilParameters"}
-        if row["layer_depth_cm"]:
-            depth = float(row["layer_depth_cm"])
-            layer["Thickness"] = [(depth - prev_depth)/100.0, "m"]
+
+        if row["layer_depth"]:
+            depth = float(row["layer_depth"])
+            layer["Thickness"] = [depth - prev_depth, "m"]
             prev_depth = depth
-        if row["soil_type"]:
-            layer["KA5TextureClass"] = row["KA5TextureClass"]
-        if row["sand_content_percent"]:
-            layer["Sand"] = [float(row["sand_content_percent"]) / 100.0, "%"]
-        if row["clay_content_percent"]:
-            layer["Clay"] = [float(row["clay_content_percent"]) / 100.0, "%"]
-        if row["ph_value"]:
-            layer["pH"] = float(row["ph_value"])
-        if row["sceleton_kg_per_kg"]:
-            layer["Sceleton"] = [float(row["sceleton_kg_per_kg"]), "kg kg-3"]
-        if row["soil_organic_carbon_percent"]:
-            layer["SoilOrganicCarbon"] = [float(row["soil_organic_carbon_percent"]), "%"]
-        if row["soil_bulk_density_kg_per_m3"]:
-            layer["SoilBulkDensity"] = [float(row["soil_bulk_density_kg_per_m3"]), "kg m-3"]
-        elif row["soil_raw_density_kg_per_m3"]:
-            layer["SoilRawDensity"] = [float(row["soil_raw_density_kg_per_m3"]), "kg m-3"]
-        if row["field_capacity_m3_per_m3"]:
-            layer["FieldCapacity"] = [float(row["field_capacity_m3_per_m3"]), "m3 m-3"]
-        if row["permanent_wilting_point_m3_per_m3"]:
-            layer["PermanentWiltingPoint"] = [float(row["permanent_wilting_point_m3_per_m3"]), "m3 m-3"]
-        if row["saturation_m3_per_m3"]:
-            layer["PoreVolume"] = [float(row["saturation_m3_per_m3"]), "m3 m-3"]
-        if row["initial_soil_moisture_percent_field_capacity"]:
-            layer["SoilMoisturePercentFC"] = [float(row["initial_soil_moisture_percent_field_capacity"]), "% [0-100]"]
+
+        if row["KA5_texture_class"]:
+            layer["KA5TextureClass"] = row["KA5_texture_class"]
+
+        if row["sand"]:
+            layer["Sand"] = [float(row["sand"]) / 100.0, "% [0-1]"]
+
+        if row["clay"]:
+            layer["Clay"] = [float(row["clay"]) / 100.0, "% [0-1]"]
+
+        if row["ph"]:
+            layer["pH"] = float(row["ph"])
+
+        if row["sceleton"]:
+            layer["Sceleton"] = [float(row["sceleton"]) / 100.0, "vol% [0-1]"]
+
+        if row["soil_organic_carbon"]:
+            layer["SoilOrganicCarbon"] = [float(row["soil_organic_carbon"]), "mass% [0-100]"]
+        elif row["soil_organic_matter"]:
+            layer["SoilOrganicMatter"] = [float(row["soil_organic_matter"]) / 100.0, "mass% [0-1]"]
+
+
+        if row["bulk_density"]:
+            layer["SoilBulkDensity"] = [float(row["bulk_density"]), "kg m-3"]
+        elif row["raw_density"]:
+            layer["SoilRawDensity"] = [float(row["raw_density"]), "kg m-3"]
+
+        if row["field_capacity"]:
+            layer["FieldCapacity"] = [float(row["field_capacity"]) / 100.0, "vol% [0-1]"]
+
+        if row["permanent_wilting_point"]:
+            layer["PermanentWiltingPoint"] = [float(row["permanent_wilting_point"]) / 100.0, "vol% [0-1]"]
+
+        if row["saturation"]:
+            layer["PoreVolume"] = [float(row["saturation"]) / 100.0, "vol% [0-1]"]
+
+        if row["initial_soil_moisture"]:
+            layer["SoilMoisturePercentFC"] = [float(row["initial_soil_moisture"]), "% [0-100]"]
+
         if row["soil_water_conductivity_coefficient"]:
             layer["Lambda"] = float(row["soil_water_conductivity_coefficient"])
-        if row["soil_ammonium_kg_NH4_N_per_m3"]:
-            layer["SoilAmmonium"] = [float(row["soil_ammonium_kg_NH4_N_per_m3"]), "kg NH4-N m-3"]
-        if row["soil_nitrate_kg_NO3_N_per_m3"]:
-            layer["SoilNitrate"] = [float(row["soil_nitrate_kg_NO3_N_per_m3"]), "kg NO3-N m-3"]
-        if row["soil_CN_ratio"]:
-            layer["CN"] = float(row["soil_CN_ratio"])
+
+        if row["soil_ammonium"]:
+            layer["SoilAmmonium"] = [float(row["soil_ammonium"]), "kg NH4-N m-3"]
+
+        if row["soil_nitrate"]:
+            layer["SoilNitrate"] = [float(row["soil_nitrate"]), "kg NO3-N m-3"]
+
+        if row["c_n"]:
+            layer["CN"] = float(row["c_n"])
 
         keyset = layer.keys()
         layerok = set(["Thickness", "SoilOrganicCarbon"]).issubset(keyset)

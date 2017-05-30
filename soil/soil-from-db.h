@@ -21,9 +21,20 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 #include "soil.h"
 #include "db/db.h"
+#include "json11/json11.hpp"
 
 namespace Soil
 {
+	json11::Json jsonSoilParameters(Db::DBPtr dbConnection,
+																	int profileId,
+																	int layerThicknessCm = 10,
+																	int maxDepthCm = 200);
+
+	json11::Json jsonSoilParameters(const std::string& abstractDbSchema,
+																	int profileId,
+																	int layerThicknessCm = 10,
+																	int maxDepthCm = 200);
+
 	Soil::SoilPMsPtr soilParameters(Db::DBPtr dbConnection,
 	                                int profileId,
 	                                int layerThicknessCm = 10,
