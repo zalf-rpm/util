@@ -73,7 +73,7 @@ namespace Soil
 		double vs_SoilSandContent{-1.0}; //!< Soil layer's sand content [kg kg-1] //{0.4}
 		double vs_SoilClayContent{-1.0}; //!< Soil layer's clay content [kg kg-1] (Ton) //{0.05}
 		double vs_SoilpH{6.9}; //!< Soil pH value [] //{7.0}
-		double vs_SoilStoneContent{0.0}; //!< Soil layer's stone content in soil [kg kg-1]
+		double vs_SoilStoneContent{0.0}; //!< Soil layer's stone content in soil [m3 m-3]
 		double vs_Lambda{-1.0}; //!< Soil water conductivity coefficient [] //{0.5}
 		double vs_FieldCapacity{-1.0}; //{0.21} //!< [m3 m-3]
 		double vs_Saturation{-1.0}; //{0.43} //!< [m3 m-3]
@@ -87,8 +87,8 @@ namespace Soil
 	private:
 		double _vs_SoilRawDensity{-1.0}; //!< [kg m-3]
 		double _vs_SoilBulkDensity{-1.0}; //!< [kg m-3]
-		double _vs_SoilOrganicCarbon{-1.0};
-		double _vs_SoilOrganicMatter{-1.0};
+		double _vs_SoilOrganicCarbon{-1.0}; //!< [kg kg-1]
+		double _vs_SoilOrganicMatter{-1.0}; //!< [kg kg-1]
 	};
 
 	/**
@@ -119,6 +119,8 @@ namespace Soil
 
 	typedef std::vector<SoilParameters> SoilPMs;
 	typedef std::shared_ptr<SoilPMs> SoilPMsPtr;
+
+	std::pair<SoilPMsPtr, Tools::Errors> createSoilPMs(const Tools::J11Array& jsonSoilPMs);
 
 	//! creates a concatenated string of the KA5 soil-textures making up the soil-profile with the given id
 	std::string soilProfileId2KA5Layers(const std::string& abstractDbSchema,
