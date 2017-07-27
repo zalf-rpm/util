@@ -321,7 +321,7 @@ void Tools::set_int_valueD(int& var, const json11::Json& j, const std::string& k
   else if(j.has_shape({{key, json11::Json::ARRAY}}, err))
   {
     auto a = j[key];
-    if(a.array_items().size() > 1 && a[1].is_string())
+    if(a.array_items().size() >= 1) //&& a[1].is_string())
     {
       auto v = a[0];
       if(v.is_number())
@@ -338,7 +338,7 @@ int Tools::int_valueD(const json11::Json& j, int def)
 {
   if(j.is_number())
     return j.int_value();
-  else if(j.is_array() && j.array_items().size() > 1 && j[1].is_string())
+  else if(j.is_array() && j.array_items().size() >= 1) // && j[1].is_string())
   {
     auto v = j[0];
     if(v.is_number())
@@ -372,7 +372,7 @@ void Tools::set_double_valueD(double& var,
   else if(j.has_shape({{key, json11::Json::ARRAY}}, err))
   {
     auto a = j[key];
-    if(a.array_items().size() > 1 && a[1].is_string())
+    if(a.array_items().size() >= 1) // && a[1].is_string())
     {
       auto v = a[0];
       if(v.is_number())
@@ -389,7 +389,7 @@ double Tools::double_valueD(const json11::Json& j, double def)
 {
   if(j.is_number())
     return j.number_value();
-  else if(j.is_array() && j.array_items().size() > 1 && j[1].is_string())
+  else if(j.is_array() && j.array_items().size() >= 1) // && j[1].is_string())
   {
     auto v = j[0];
     if(v.is_number())
@@ -420,7 +420,7 @@ void Tools::set_bool_valueD(bool& var, const json11::Json& j, const std::string&
   else if(j.has_shape({{key, json11::Json::ARRAY}}, err))
   {
     auto a = j[key];
-    if(a.array_items().size() > 1 && a[1].is_string())
+    if(a.array_items().size() >= 1) // && a[1].is_string())
     {
       auto v = a[0];
       if(v.is_bool())
@@ -437,7 +437,7 @@ bool Tools::bool_valueD(const json11::Json& j, bool def)
 {
   if(j.is_bool())
     return j.bool_value();
-  else if(j.is_array() && j.array_items().size() > 1 && j[1].is_string())
+  else if(j.is_array() && j.array_items().size() >= 1) // && j[1].is_string())
   {
     auto v = j[0];
     if(v.is_bool())
@@ -466,7 +466,7 @@ void Tools::set_string_valueD(string& var, const json11::Json& j, const std::str
   else if(j.has_shape({{key, json11::Json::ARRAY}}, err))
   {
     auto a = j[key];
-    if(a.array_items().size() > 1 && a[1].is_string())
+    if(a.array_items().size() >= 1) // && a[1].is_string())
     {
       auto v = a[0];
       if(v.is_string())
@@ -483,7 +483,7 @@ string Tools::string_valueD(const json11::Json& j, const string& def)
 {
   if(j.is_string())
     return j.string_value();
-  else if(j.is_array() && j.array_items().size() > 1 && j[1].is_string())
+  else if(j.is_array() && j.array_items().size() >= 1) // && j[1].is_string())
   {
     auto v = j[0];
     if(v.is_string())
