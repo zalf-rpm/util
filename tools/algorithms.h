@@ -93,6 +93,12 @@ namespace Tools
 		double heightNN, //[m]
 		bool asMJpm2pd = true);
 
+	//returns hourly temperature value from daily variables
+	double hourlyT(double tmin, double tmax, int h, int sunrise_h);
+
+	//returns hourly global radiation
+	double hourlyRad(double globrad, double lat, int doy, int h);
+
   /*!
   * capitalize a copy of the input
   * @param s the input string
