@@ -39,7 +39,7 @@ Msg Tools::receiveMsg(zmq::socket_t& socket, int topicCharCount, bool nonBlockin
     const Json& jsonMsg = Json::parse(strMsg, err);
     return Msg{jsonMsg, err, topic, (err.empty() ? "" : strMsg), true};
   }
-  return Msg{Json(), "", "", false};
+  return Msg{Json(), "", "", "", false};
 }
 #endif
 
