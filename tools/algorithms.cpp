@@ -29,6 +29,8 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include "algorithms.h"
 #include "tools/date.h"
 #include "tools/helper.h"
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 using namespace std;
 using namespace Tools;
@@ -261,6 +263,52 @@ double Tools::cloudAmount2globalRadiation(int doy,
   //1cm²=1/(100*100)m², 1J = 1/1000000MJ
   //-> (t * 100.0 * 100.0) / 1000000.0 -> t / 100
   return asMJpm2pd ? rg_nn/100.0 : rg_nn;
+}
+
+double Tools::hourlyT(double tmin, double tmax, int h, int sunrise_h)
+{
+	double tave = (tmin + tmax) / 2;
+	double amp_ = (tmax - tmin) / 2;
+	double H_1;
+	double hourly_T;
+	h = (double)h; //avoid unexpected behaviour (int/int)
+	sunrise_h = (double)sunrise_h;
+
+	if (h < sunrise_h)
+	{
+		H_1 = h + 10.0;
+	}
+	else if (h > 14.0)
+	{
+		H_1 = h - 14.0;
+	}	
+		
+	if (h < sunrise_h || h > 14.0)
+	{
+		hourly_T = tave + amp_ * (cos(M_PI * H_1 / (10.0 + sunrise_h)));
+	}
+	else
+	{
+		hourly_T = tave - amp_ * (cos(M_PI * (h - sunrise_h) / (14.0 - sunrise_h)));
+	}
+	
+	return hourly_T;
+}
+
+double Tools::hourlyRad(double globrad, double lat, int doy, int h)
+{
+	double dDecl = -0.4093 * cos(2 * M_PI * (doy + 10) / 365.0);
+
+	double dA = sin(dDecl) * sin(lat);
+	double dB = cos(dDecl) * cos(lat);
+	double dAoB = dA / dB;
+	double dPhi = (M_PI * globrad / 86400.0) / (dA * acos(-dAoB) + dB * sqrt(1 - dAoB * dAoB));
+	double dCoefA = -dB * dPhi;
+	double dCoefB = dA*dPhi;
+
+	double dTotrad = std::max((dCoefA * cos(M_PI * h / 12.0) + dCoefB) * 3600, 0.0);
+
+	return dTotrad;
 }
 
 HistogramData Tools::histogramDataByStepSize(const vector<double>& ys,
