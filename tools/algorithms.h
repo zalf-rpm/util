@@ -93,6 +93,12 @@ namespace Tools
 		double heightNN, //[m]
 		bool asMJpm2pd = true);
 
+	double hourlyVaporPressureDeficit(double hourlyTemperature, double dailyTmin, double dailyTavg, double dailyTmax);
+
+	double solarDeclination(int dayOfTheYear);
+
+	double solarElevation(int hour, double latitude, int dayOfTheYear);
+
 	//returns hourly temperature value from daily variables
 	double hourlyT(double tmin, double tmax, int h, int sunrise_h);
 

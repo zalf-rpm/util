@@ -295,6 +295,31 @@ double Tools::hourlyT(double tmin, double tmax, int h, int sunrise_h)
 	return hourly_T;
 }
 
+double Tools::hourlyVaporPressureDeficit(double hourlyTemperature, double dailyTmin, double dailyTavg, double dailyTmax)
+{
+	double saturationVapourPressureHourly = 0.6108 * exp(17.27 * hourlyTemperature / (hourlyTemperature + 237.3));
+
+	double dewPointTemperatureHourly = -0.0360 * dailyTavg + 0.9679 * dailyTmin + 0.0072 * (dailyTmax - dailyTmin) + 1.0019;
+
+	double actualVapourPressureHourly = 0.6108 * exp(17.27 * dewPointTemperatureHourly / (dewPointTemperatureHourly + 237.3));
+
+	return saturationVapourPressureHourly - actualVapourPressureHourly;
+}
+
+double Tools::solarDeclination(int dayOfTheYear)
+{
+	return (-0.4093 * cos(2.0 * M_PI * (double(dayOfTheYear) + 10.0) / 365.0));
+}
+
+double Tools::solarElevation(int hour, double latitude, int dayOfTheYear)
+{
+	double dDecl = solarDeclination(dayOfTheYear);
+	double dA = sin(dDecl) * sin(latitude);
+	double dB = cos(dDecl) * cos(latitude);
+	double dHa = M_PI * (double(hour) - 12) / 12;
+	return (asin(dA + dB * cos(dHa)));  // can be -ve
+}
+
 double Tools::hourlyRad(double globrad, double lat, int doy, int h)
 {
 	double dDecl = -0.4093 * cos(2 * M_PI * (doy + 10) / 365.0);
