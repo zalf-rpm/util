@@ -27,7 +27,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <utility>
 
 #include "algorithms.h"
-#include "tools/date.h"
+//#include "tools/date.h"
 #include "tools/helper.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
