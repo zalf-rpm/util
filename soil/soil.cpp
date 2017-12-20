@@ -91,7 +91,7 @@ Errors SoilParameters::merge(json11::Json j)
 
 	// restrict sceleton to 80%, else FC, PWP and SAT could be calculated too low, so that the water transport algorithm gets instable
 	if(vs_SoilStoneContent > 0)
-		vs_SoilStoneContent = max(vs_SoilStoneContent, 0.8);
+		vs_SoilStoneContent = min(vs_SoilStoneContent, 0.8);
 
 	auto res = vs_SoilTexture == ""
 		? fcSatPwpFromVanGenuchten(vs_SoilSandContent,
