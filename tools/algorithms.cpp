@@ -322,10 +322,11 @@ double Tools::solarElevation(int hour, double latitude, int dayOfTheYear)
 
 double Tools::hourlyRad(double globrad, double lat, int doy, int h)
 {
-	double dDecl = -0.4093 * cos(2 * M_PI * (doy + 10) / 365.0);
+	double dDecl = solarDeclination(doy);
+	double lat_rad = lat * M_PI / 180.0;
 
-	double dA = sin(dDecl) * sin(lat);
-	double dB = cos(dDecl) * cos(lat);
+	double dA = sin(dDecl) * sin(lat_rad);
+	double dB = cos(dDecl) * cos(lat_rad);
 	double dAoB = dA / dB;
 	double dPhi = (M_PI * globrad / 86400.0) / (dA * acos(-dAoB) + dB * sqrt(1 - dAoB * dAoB));
 	double dCoefA = -dB * dPhi;
