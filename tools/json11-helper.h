@@ -80,29 +80,29 @@ namespace Tools
     return ts;
   }
 
-//  inline std::vector<double> toDoubleVector(const json11::Json& arr)
-//  {
-//    std::vector<double> ds;
-//    for(json11::Json j : arr.array_items())
-//      ds.push_back(j.number_value());
-//    return ds;
-//  }
+	inline std::vector<double> toDoubleVector(const json11::Json& arr)
+  {
+    std::vector<double> ds;
+    for(json11::Json j : arr.array_items())
+      ds.push_back(j.number_value());
+    return ds;
+  }
 
-//  inline std::vector<int> toIntVector(const json11::Json& arr)
-//  {
-//    std::vector<int> is;
-//    for(json11::Json j : arr.array_items())
-//      is.push_back(j.int_value());
-//    return is;
-//  }
+  inline std::vector<int> toIntVector(const json11::Json& arr)
+  {
+    std::vector<int> is;
+    for(json11::Json j : arr.array_items())
+      is.push_back(j.int_value());
+    return is;
+  }
 
-//  inline std::vector<std::string> toStringVector(const json11::Json& arr)
-//  {
-//    std::vector<std::string> ss;
-//    for(json11::Json j : arr.array_items())
-//      ss.push_back(j.string_value());
-//    return ss;
-//  }
+  inline std::vector<std::string> toStringVector(const json11::Json& arr)
+  {
+    std::vector<std::string> ss;
+    for(json11::Json j : arr.array_items())
+      ss.push_back(j.string_value());
+    return ss;
+  }
 
   //---------------------------------------------------------------------------------------
 

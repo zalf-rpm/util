@@ -100,7 +100,8 @@ json11::Json CSVViaHeaderOptions::to_json() const
 
 Climate::DataAccessor
 Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
-																										 CSVViaHeaderOptions options)
+																										 CSVViaHeaderOptions options, 
+																										 bool strictDateChecking)
 {
 	if(!is.good())
 	{
@@ -161,7 +162,8 @@ Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
 																					 options.startDate,
 																					 options.endDate,
 																					 options.noOfHeaderLines,
-																					 convert);
+																					 convert,
+																					 strictDateChecking);
 }
 
 Climate::DataAccessor
@@ -177,6 +179,48 @@ Climate::readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
 	}
 
 	return readClimateDataFromCSVInputStreamViaHeaders(ifs, options);
+}
+
+
+Climate::DataAccessor
+Climate::readClimateDataFromCSVFilesViaHeaders(std::vector<std::string> pathsToFiles,
+																							 CSVViaHeaderOptions options)
+{
+	Climate::DataAccessor finalDA;
+
+	for(auto pathToFile : pathsToFiles)
+	{
+		pathToFile = fixSystemSeparator(pathToFile);
+		ifstream ifs(pathToFile.c_str());
+		if(!ifs.good())
+		{
+			cerr << "Could not open climate file " << pathToFile << "." << endl;
+			return DataAccessor();
+		}
+
+		auto da = readClimateDataFromCSVInputStreamViaHeaders(ifs, options, false);
+
+		if(!finalDA.isValid())
+			finalDA = da;
+		else
+			finalDA.prependOrAppendClimateData(da, true);
+	}
+
+	if(options.startDate.isValid() && options.endDate.isValid())
+	{
+		int noOfDays = options.endDate - options.startDate + 1;
+		if(finalDA.noOfStepsPossible() < size_t(noOfDays))
+		{
+			cout
+				<< "Read timeseries data between " << options.startDate.toIsoDateString()
+				<< " and " << options.endDate.toIsoDateString()
+				<< " (" << noOfDays << " days) is incomplete. There are just "
+				<< finalDA.noOfStepsPossible() << " days in read dataset." << endl;
+			return DataAccessor();
+		}
+	}
+
+	return finalDA;
 }
 
 Climate::DataAccessor
@@ -202,7 +246,8 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 																					 Tools::Date startDate,
 																					 Tools::Date endDate,
 																					 size_t noOfHeaderLines, 
-																					 std::map<ACD, std::function<double(double)>> convert)
+																					 std::map<ACD, std::function<double(double)>> convert,
+																					 bool strictDateChecking)
 {
 	if(!is.good())
 	{
@@ -327,7 +372,7 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 		endDate = data.rbegin()->first;
 
 	int noOfDays = endDate - startDate + 1;
-	if(data.size() < size_t(noOfDays))
+	if(strictDateChecking && data.size() < size_t(noOfDays))
 	{
 		cout
 			<< "Read timeseries data between " << startDate.toIsoDateString()
@@ -371,7 +416,7 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 	return da;
 }
 
-
+/*
 Climate::DataAccessor 
 Climate::readClimateDataFromCSVFile(std::string pathToFile,
 																		std::string separator,
@@ -396,7 +441,59 @@ Climate::readClimateDataFromCSVFile(std::string pathToFile,
 																					 endDate, 
 																					 noOfHeaderLines);
 }
+*/
 
+/*
+Climate::DataAccessor
+Climate::readClimateDataFromCSVFiles(std::vector<std::string> pathsToFiles,
+																		std::string separator,
+																		std::vector<ACD> header,
+																		Tools::Date startDate,
+																		Tools::Date endDate,
+																		size_t noOfHeaderLines,
+																		std::map<ACD, std::function<double(double)>> convert)
+{
+	Climate::DataAccessor finalDA;
+
+	for(auto pathToFile : pathsToFiles)
+	{
+		pathToFile = fixSystemSeparator(pathToFile);
+		ifstream ifs(pathToFile.c_str());
+		if(!ifs.good())
+		{
+			cerr << "Could not open climate file " << pathToFile << "." << endl;
+			return DataAccessor();
+		}
+
+		auto da =  readClimateDataFromCSVInputStream(ifs,
+																								 separator,
+																								 header,
+																								 startDate,
+																								 endDate,
+																								 noOfHeaderLines);
+
+		if(!finalDA.isValid())
+			finalDA = da;
+		else
+		{
+			finalDA.prependOrAppendClimateData(da, true);
+		}
+	}
+
+	int noOfDays = endDate - startDate + 1;
+	if(finalDA.noOfStepsPossible() < size_t(noOfDays))
+	{
+		cout
+			<< "Read timeseries data between " << startDate.toIsoDateString()
+			<< " and " << endDate.toIsoDateString()
+			<< " (" << noOfDays << " days) is incomplete. There are just "
+			<< finalDA.noOfStepsPossible() << " days in read dataset." << endl;
+		return DataAccessor();
+	}
+}
+*/
+
+/*
 Climate::DataAccessor
 Climate::readClimateDataFromCSVString(std::string csvString,
 																			std::string separator,
@@ -420,4 +517,5 @@ Climate::readClimateDataFromCSVString(std::string csvString,
 																					 endDate, 
 																					 noOfHeaderLines);
 }
+*/
 

@@ -18,6 +18,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #define CLIMATE_FILE_IO_H_
 
 #include <string>
+#include <vector>
 #include <istream>
 
 #include "tools/json11-helper.h"
@@ -49,11 +50,16 @@ namespace Climate
 	};
 	Climate::DataAccessor
 		readClimateDataFromCSVInputStreamViaHeaders(std::istream& inputStream,
-																								CSVViaHeaderOptions options = CSVViaHeaderOptions());
+																								CSVViaHeaderOptions options = CSVViaHeaderOptions(),
+																								bool strictDateChecking = true);
 
 	Climate::DataAccessor
 		readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
 		                                     CSVViaHeaderOptions options = CSVViaHeaderOptions());
+
+	Climate::DataAccessor
+		readClimateDataFromCSVFilesViaHeaders(std::vector<std::string> pathsToFiles,
+																					CSVViaHeaderOptions options = CSVViaHeaderOptions());
 
 	Climate::DataAccessor
 		readClimateDataFromCSVStringViaHeaders(std::string csvString,
@@ -67,27 +73,38 @@ namespace Climate
 																			Tools::Date endDate = Tools::Date(),
 																			size_t noOfHeaderLines = 2,
 																			std::map<ACD, std::function<double(double)>> convert 
-																			= std::map<ACD, std::function<double(double)>>());
+																			= std::map<ACD, std::function<double(double)>>(),
+																			bool strictDateChecking = true);
 
-	Climate::DataAccessor
-		readClimateDataFromCSVFile(std::string pathToFile,
-															 std::string separator = ",",
-															 std::vector<ACD> header = std::vector<ACD>(),
-															 Tools::Date startDate = Tools::Date(),
-															 Tools::Date endDate = Tools::Date(),
-															 size_t noOfHeaderLines = 2,
-															 std::map<ACD, std::function<double(double)>> convert
-															 = std::map<ACD, std::function<double(double)>>());
+	//Climate::DataAccessor
+	//	readClimateDataFromCSVFile(std::string pathToFile,
+	//														 std::string separator = ",",
+	//														 std::vector<ACD> header = std::vector<ACD>(),
+	//														 Tools::Date startDate = Tools::Date(),
+	//														 Tools::Date endDate = Tools::Date(),
+	//														 size_t noOfHeaderLines = 2,
+	//														 std::map<ACD, std::function<double(double)>> convert
+	//														 = std::map<ACD, std::function<double(double)>>());
 
-	Climate::DataAccessor
-		readClimateDataFromCSVString(std::string csvString,
-																 std::string separator = ",",
-																 std::vector<ACD> header = std::vector<ACD>(),
-																 Tools::Date startDate = Tools::Date(),
-																 Tools::Date endDate = Tools::Date(),
-																 size_t noOfHeaderLines = 2,
-																 std::map<ACD, std::function<double(double)>> convert
-																 = std::map<ACD, std::function<double(double)>>());
+	//Climate::DataAccessor
+	//	readClimateDataFromCSVFiles(std::vector<std::string> pathsToFiles,
+	//														 std::string separator = ",",
+	//														 std::vector<ACD> header = std::vector<ACD>(),
+	//														 Tools::Date startDate = Tools::Date(),
+	//														 Tools::Date endDate = Tools::Date(),
+	//														 size_t noOfHeaderLines = 2,
+	//														 std::map<ACD, std::function<double(double)>> convert
+	//														 = std::map<ACD, std::function<double(double)>>());
+
+	//Climate::DataAccessor
+	//	readClimateDataFromCSVString(std::string csvString,
+	//															 std::string separator = ",",
+	//															 std::vector<ACD> header = std::vector<ACD>(),
+	//															 Tools::Date startDate = Tools::Date(),
+	//															 Tools::Date endDate = Tools::Date(),
+	//															 size_t noOfHeaderLines = 2,
+	//															 std::map<ACD, std::function<double(double)>> convert
+	//															 = std::map<ACD, std::function<double(double)>>());
 }
 
 #endif
