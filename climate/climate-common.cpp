@@ -430,11 +430,11 @@ void DataAccessor::prependOrAppendClimateData(DataAccessor other,
 		(*this) = other;
 		return;
 	}
-	else if(startDate() < other.endDate() + 1)
+	else 
 	{
-		int noOfElementsBefore = startDate() - other.startDate();
-		int noOfElementsAfter = other.endDate() - startDate() + 1;
-
+		int prependCount = startDate() - other.startDate();
+		int appendCount = other.endDate() - endDate();
+		
 		for(int i = 0; i < _acd2dataIndex.size(); i++)
 		{
 			auto acd = ACD(i);
@@ -445,37 +445,25 @@ void DataAccessor::prependOrAppendClimateData(DataAccessor other,
 			const auto& odai = other._data->at(index);
 
 			// insert the new elements before
-			di.insert(di.begin(), odai.begin(), odai.begin() + noOfElementsBefore);
-			// overwrite the old elements by the rest of the new
-			if(replaceOverlappingData)
-				for(int k = noOfElementsBefore; k < noOfElementsBefore + noOfElementsAfter; k++)
-					di[k] = odai.at(k);
-		}
-		_startDate = other.startDate();
-		_numberOfSteps = _data->empty() ? 0 : _data->front().size();
-	}
-	else if(endDate() + 1 > other.startDate())
-	{
-		int startIndexOfOldElements = other.startDate() - startDate();
-		int noOfElementsBefore = endDate() - other.startDate() + 1;
+			if(prependCount > 0)
+				di.insert(di.begin(), odai.begin(), odai.begin() + prependCount);
 
-		for(int i = 0; i < _acd2dataIndex.size(); i++)
-		{
-			auto acd = ACD(i);
-			short index = _acd2dataIndex[i];
-			if(index < 0)
-				continue;
-			auto& di = (*_data)[index];
-			const auto& odai = other._data->at(index);
-
-			// overwrite the old elements by the first of the new
 			if(replaceOverlappingData)
-				for(int k = startIndexOfOldElements, j = 0; k < startIndexOfOldElements + noOfElementsBefore; k++, j++)
-					di[k] = odai.at(j);
+			{
+				auto dii = di.begin() + abs(prependCount);
+				auto odaii = odai.begin() + (prependCount < 0 ? 0 : prependCount);
+				for(; dii != di.end() && odaii != odai.end(); dii++, odaii++)
+					*dii = *odaii;
+			}
+
 			// insert the new elements after the old ones
-			di.insert(di.end(), odai.begin() + noOfElementsBefore, odai.end());
+			if(appendCount > 0)
+				di.insert(di.end(), odai.begin() + odai.size() - appendCount, odai.end());
 		}
-		_endDate = other.endDate();
+		if(prependCount > 0)
+			_startDate = other.startDate();
+		if(appendCount > 0)
+			_endDate = other.endDate();
 		_numberOfSteps = _data->empty() ? 0 : _data->front().size();
 	}
 }
