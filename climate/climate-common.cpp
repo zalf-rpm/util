@@ -375,6 +375,9 @@ void DataAccessor::addClimateData(AvailableClimateData acd,
 void DataAccessor::prependOrAppendClimateData(DataAccessor other,
 																							bool replaceOverlappingData)
 {
+	if(!other.isValid())
+		return;
+
 	if(_data->empty())
 	{
 		(*this) = other;

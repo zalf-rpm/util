@@ -365,10 +365,13 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 		data[date] = vs;
 	}
 
-	if(!isStartDateValid && !data.empty())
+	if(data.empty())
+		return DataAccessor();
+	
+	//if we have no dates or don't do strict date checking for multiple files, set the start/end data according to read data
+	if(!isStartDateValid || !strictDateChecking)
 		startDate = data.begin()->first;
-
-	if(!isEndDateValid && !data.empty())
+	if(!isEndDateValid || !strictDateChecking)
 		endDate = data.rbegin()->first;
 
 	int noOfDays = endDate - startDate + 1;
@@ -382,11 +385,13 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 		return DataAccessor();
 	}
 		
+  // rewrite data into vectors of single elements
 	map<ACD, vector<double>> daData;
 	for(Date d = startDate, ed = endDate; d <= ed; d++)
 		for(auto p : data[d])
 			daData[p.first].push_back(p.second);
 
+	// check if all vectors have the same length
 	size_t sizes = 0;
 	for(const auto& p : daData)
 		sizes += p.second.size();
