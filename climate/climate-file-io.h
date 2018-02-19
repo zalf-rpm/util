@@ -45,8 +45,10 @@ namespace Climate
 		Tools::Date startDate;
 		Tools::Date endDate;
 		size_t noOfHeaderLines{1};
+		double latitude{0};
 		std::map<std::string, std::string> headerName2ACDName;
 		std::map<std::string, std::pair<std::string, double>> convert;
+		std::map<Climate::ACD, std::function<double(double)>> convertFn;
 	};
 	Climate::DataAccessor
 		readClimateDataFromCSVInputStreamViaHeaders(std::istream& inputStream,
@@ -67,44 +69,9 @@ namespace Climate
 
 	Climate::DataAccessor
 		readClimateDataFromCSVInputStream(std::istream& inputStream,
-																			std::string separator = ",",
-																			std::vector<ACD> header = std::vector<ACD>(),
-																			Tools::Date startDate = Tools::Date(),
-																			Tools::Date endDate = Tools::Date(),
-																			size_t noOfHeaderLines = 2,
-																			std::map<ACD, std::function<double(double)>> convert 
-																			= std::map<ACD, std::function<double(double)>>(),
+																			std::vector<ACD> header,
+																			CSVViaHeaderOptions options,
 																			bool strictDateChecking = true);
-
-	//Climate::DataAccessor
-	//	readClimateDataFromCSVFile(std::string pathToFile,
-	//														 std::string separator = ",",
-	//														 std::vector<ACD> header = std::vector<ACD>(),
-	//														 Tools::Date startDate = Tools::Date(),
-	//														 Tools::Date endDate = Tools::Date(),
-	//														 size_t noOfHeaderLines = 2,
-	//														 std::map<ACD, std::function<double(double)>> convert
-	//														 = std::map<ACD, std::function<double(double)>>());
-
-	//Climate::DataAccessor
-	//	readClimateDataFromCSVFiles(std::vector<std::string> pathsToFiles,
-	//														 std::string separator = ",",
-	//														 std::vector<ACD> header = std::vector<ACD>(),
-	//														 Tools::Date startDate = Tools::Date(),
-	//														 Tools::Date endDate = Tools::Date(),
-	//														 size_t noOfHeaderLines = 2,
-	//														 std::map<ACD, std::function<double(double)>> convert
-	//														 = std::map<ACD, std::function<double(double)>>());
-
-	//Climate::DataAccessor
-	//	readClimateDataFromCSVString(std::string csvString,
-	//															 std::string separator = ",",
-	//															 std::vector<ACD> header = std::vector<ACD>(),
-	//															 Tools::Date startDate = Tools::Date(),
-	//															 Tools::Date endDate = Tools::Date(),
-	//															 size_t noOfHeaderLines = 2,
-	//															 std::map<ACD, std::function<double(double)>> convert
-	//															 = std::map<ACD, std::function<double(double)>>());
 }
 
 #endif

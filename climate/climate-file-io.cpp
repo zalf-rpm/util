@@ -63,6 +63,8 @@ Tools::Errors CSVViaHeaderOptions::merge(json11::Json j)
 	set_iso_date_value(startDate, j, "start-date");
 	set_iso_date_value(endDate, j, "end-date");
 
+	set_double_value(latitude, j, "latitude");
+
 	set_string_valueD(separator, j, "csv-separator", ",");
 	noOfHeaderLines = size_t(int_valueD(j, "no-of-climate-file-header-lines", noOfHeaderLines));
 	headerName2ACDName = headerNames;
@@ -86,13 +88,14 @@ json11::Json CSVViaHeaderOptions::to_json() const
 	for(auto p : convert)
 		convert_[p.first] = J11Array{p.second.first, p.second.second};
 
-	return json11::Json::object{
-		 {"type", "CSVViaHeaderOptions"}
-		,{"csv-separator", separator}
-		,{"start-date", startDate.toIsoDateString()}
-		,{"end-date", endDate.toIsoDateString()}
-		,{"no-of-climate-file-header-lines", int(noOfHeaderLines)}
-		,{"header-to-acd-names", headerNames}
+	return json11::Json::object
+	{{"type", "CSVViaHeaderOptions"}
+	,{"csv-separator", separator}
+	,{"start-date", startDate.toIsoDateString()}
+	,{"end-date", endDate.toIsoDateString()}
+	,{"no-of-climate-file-header-lines", int(noOfHeaderLines)}
+	,{"header-to-acd-names", headerNames}
+	,{"latitude", latitude}
 	};
 }
 
@@ -110,11 +113,13 @@ Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
 	}
 		
 	vector<ACD> header;
-	map<ACD, function<double(double)>> convert;
 	string s;
 	if(options.noOfHeaderLines > 0 && getline(is, s))
 	{
 		vector<string> r = splitString(s, options.separator);
+		if(r.back().empty())
+			r.pop_back();
+
 		//remove possible \r at the end of the last element, when reading windows files under linux
 		if(r.back().back() == '\r')
 			r.back().pop_back();
@@ -135,13 +140,13 @@ Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
 					auto op = it->second.first;
 					double value = it->second.second;
 					if(op == "*")
-						convert[acd] = [=](double d){ return d * value; };
+						options.convertFn[acd] = [=](double d){ return d * value; };
 					else if(op == "/")
-						convert[acd] = [=](double d){ return d / value; };
+						options.convertFn[acd] = [=](double d){ return d / value; };
 					else if(op == "+")
-						convert[acd] = [=](double d){ return d + value; };
+						options.convertFn[acd] = [=](double d){ return d + value; };
 					else if(op == "-")
-						convert[acd] = [=](double d){ return d - value; };
+						options.convertFn[acd] = [=](double d){ return d - value; };
 				}
 			}
 		}
@@ -157,12 +162,8 @@ Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
 	}
 
 	return readClimateDataFromCSVInputStream(is.seekg(0),
-																					 options.separator,
 																					 header,
-																					 options.startDate,
-																					 options.endDate,
-																					 options.noOfHeaderLines,
-																					 convert,
+																					 options,
 																					 strictDateChecking);
 }
 
@@ -241,17 +242,19 @@ Climate::readClimateDataFromCSVStringViaHeaders(std::string csvString,
 
 Climate::DataAccessor
 Climate::readClimateDataFromCSVInputStream(std::istream& is,
-																					 std::string separator,
 																					 std::vector<ACD> header,
-																					 Tools::Date startDate,
-																					 Tools::Date endDate,
-																					 size_t noOfHeaderLines, 
-																					 std::map<ACD, std::function<double(double)>> convert,
+																					 CSVViaHeaderOptions options,
 																					 bool strictDateChecking)
 {
+	string separator = options.separator;
+	Date startDate = options.startDate;
+	Date endDate = options.endDate;
+	size_t noOfHeaderLines = options.noOfHeaderLines;
+	std::map<ACD, std::function<double(double)>> convert = options.convertFn;
+
 	if(!is.good())
 	{
-		cerr << "Input stream not good!" << endl;
+		cerr << "Climate data error: Couldn't read climate data! (Input stream not good.)" << endl;
 		return DataAccessor();
 	}
 		
@@ -292,6 +295,8 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 			continue;
 
 		vector<string> r = splitString(s, separator);
+		if(r.back().empty())
+			r.pop_back();
 		//remove possible \r at the end of the last element, when reading windows files under linux
 		if(r.back().back() == '\r')
 			r.back().pop_back();
@@ -300,7 +305,7 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 		if(rSize < header.size())
 		{
 			debug()
-				<< "Skipping line: " << endl
+				<< "Climate data: Skipping line: " << endl
 				<< s << endl
 				<< "because of less (" << r.size() << ") than expected ("
 				<< header.size() << ") elements." << endl;
@@ -308,7 +313,9 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 		}
 
 		Date date;
-		map<ACD, double> vs;
+		//map<ACD, double> vs;
+		vector<bool> usedVs(availableClimateDataSize(), false);
+		vector<double> vs(availableClimateDataSize(), false);
 		try
 		{
 			for(size_t i = 0; i < hSize; i++)
@@ -337,14 +344,14 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 				{
 					auto v = stod(r.at(i));
 					vs[acdi] = doConvert ? convert[acdi](v) : v;
+					usedVs[acdi] = true;
 				}
 				}
 			}
 		}
 		catch(invalid_argument e)
 		{
-			cerr
-				<< "Error converting one of the (climate) elements in the line: " << endl
+			cerr << "Climate data error: Error converting one of the (climate) elements in the line: " << endl
 				<< s << endl;
 			return DataAccessor();
 		}
@@ -362,11 +369,60 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 		//	cout << "(" << availableClimateData2Name(p.first) << ", " << p.second << ") ";
 		//cout << "]" << endl;
 
-		data[date] = vs;
+		if(!date.isValid())
+		{
+			debug() << "Climate data error: Date is missing or not valid. Ignoring line: "
+				<< endl << s << endl;
+			continue;
+		}
+
+		if(!usedVs[tmin] ||
+			 !usedVs[tmax] ||
+			 !usedVs[precip] ||
+			 !usedVs[relhumid] ||
+			 !usedVs[wind])
+		{
+			debug() << "Climate data error: One of [tmin, tmax, precip, relhumid, wind] is missing. Ignoring line: " 
+				<< endl << s << endl;
+			continue;
+		}
+
+		//if we miss the average air temperature, but have the daily minimum and maximum, then calculate the average from these
+		if(!usedVs[tavg])
+		{
+			vs[tavg] = (vs[tmin] + vs[tmax]) / 2.0;
+			usedVs[tavg] = true;
+		}
+		
+		if(!usedVs[globrad] && usedVs[sunhours])
+		{
+			vs[globrad] = Tools::sunshine2globalRadiation(date.julianDay(), vs[sunhours],
+																										options.latitude, true);
+			usedVs[globrad] = true;
+		}
+		else if(!usedVs[globrad])
+		{
+			debug() << "Climate data error: Globrad and sunhours is missing. Ignoring line: "
+				<< endl << s << endl;
+			continue;
+		}
+
+		map<ACD, double> vsm;
+		for(size_t i = 0, size = usedVs.size(); i < size; i++)
+		{
+			if(usedVs[i])
+				vsm[ACD(i)] = vs[i];
+		}
+		
+		assert(vsm.size() >= 7);
+		data[date] = vsm;
 	}
 
 	if(data.empty())
+	{
+		cerr << "Climate data error: No data could be read from file!" << endl;
 		return DataAccessor();
+	}
 	
 	//if we have no dates or don't do strict date checking for multiple files, set the start/end data according to read data
 	if(!isStartDateValid || !strictDateChecking)
@@ -378,10 +434,10 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 	if(strictDateChecking && data.size() < size_t(noOfDays))
 	{
 		cout
-			<< "Read timeseries data between " << startDate.toIsoDateString()
+			<< "Climate data error: Read timeseries data between " << startDate.toIsoDateString()
 			<< " and " << endDate.toIsoDateString()
 			<< " (" << noOfDays << " days) is incomplete. There are just "
-			<< data.size() << " days in read dataset." << endl;
+			<< data.size() << " days in read dataset!" << endl;
 		return DataAccessor();
 	}
 		
@@ -396,10 +452,10 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 	for(const auto& p : daData)
 		sizes += p.second.size();
 
-	if(sizes % daData.size() != 0)
+	if(daData.size() > 0 && sizes % daData.size() != 0)
 	{
 		cerr
-			<< "At least one of the climate elements has less elements than the others."
+			<< "Climate data error: At least one of the climate elements has less elements than the others!"
 			<< endl;
 		return DataAccessor();
 	}
