@@ -313,9 +313,11 @@ double Tools::solarDeclination(int dayOfTheYear)
 
 double Tools::solarElevation(int hour, double latitude, int dayOfTheYear)
 {
+	double lat_rad = latitude * M_PI / 180.0;
+
 	double dDecl = solarDeclination(dayOfTheYear);
-	double dA = sin(dDecl) * sin(latitude);
-	double dB = cos(dDecl) * cos(latitude);
+	double dA = sin(dDecl) * sin(lat_rad);
+	double dB = cos(dDecl) * cos(lat_rad);
 	double dHa = M_PI * (double(hour) - 12) / 12;
 	return (asin(dA + dB * cos(dHa)));  // can be -ve
 }
