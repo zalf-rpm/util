@@ -134,6 +134,26 @@ namespace Tools
     return std::stod(s);
   }
 
+	template<typename T>
+	bool flt_equal_eps(T f1, T f2, T eps = std::numeric_limits<T>::epsilon())
+	{
+		return ((std::fabs(f1) < eps) && (std::fabs(f2) < eps))
+			|| std::fabs(T(f1 - f2)) < eps;
+	}
+
+	template<typename T> bool flt_equal_zero(T f, T eps = std::numeric_limits<T>::epsilon())
+	{
+		return  flt_equal_eps(T(0.0), f, eps);
+	}
+
+	template<typename T>
+	inline T const& bound_max(T const& val, T const& max)
+	{
+		return val > max ? max : val;
+	}
+
+	template<typename T> inline T sqr(T const& n) { return  n * n; }
+
   inline bool fuzzyIsNull(double d)
   {
     return std::abs(d) <= 0.000000000001;

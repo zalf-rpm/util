@@ -39,7 +39,7 @@ namespace Climate
 	 */
   enum AvailableClimateData
   {
-		day = 1, 
+		day = 0, 
 		month, 
 		year, 
 		tmin, 
@@ -98,7 +98,7 @@ namespace Climate
 	 * last element -> to not pollute the enum)
 	 * @return number of elements in the AvailableClimateData enumeration
 	 */
-	inline unsigned int availableClimateDataSize() { return int(co2) + 1; }
+	inline unsigned int availableClimateDataSize() { return int(skip) + 1; }
 
 	//! just a shortcut for a list (vector) of climate data elements
 	typedef std::vector<AvailableClimateData> ACDV;
@@ -218,6 +218,9 @@ namespace Climate
 
 		void addClimateData(AvailableClimateData acd,
 		                    const std::vector<double>& data);
+
+		void prependOrAppendClimateData(DataAccessor other,
+																		bool replaceOverlappingData = true);
 
     void addOrReplaceClimateData(AvailableClimateData acd,
                                  const std::vector<double>& data);

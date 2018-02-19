@@ -89,6 +89,10 @@ Errors SoilParameters::merge(json11::Json j)
 			es.append(res);
 	}
 
+	// restrict sceleton to 80%, else FC, PWP and SAT could be calculated too low, so that the water transport algorithm gets instable
+	if(vs_SoilStoneContent > 0)
+		vs_SoilStoneContent = min(vs_SoilStoneContent, 0.8);
+
 	auto res = vs_SoilTexture == ""
 		? fcSatPwpFromVanGenuchten(vs_SoilSandContent,
 															 vs_SoilClayContent,
@@ -105,6 +109,11 @@ Errors SoilParameters::merge(json11::Json j)
 		vs_Saturation = res.sat;
 	if(vs_PermanentWiltingPoint < 0)
 		vs_PermanentWiltingPoint = res.pwp;
+
+	// restrict FC, PWP and SAT else the water transport algorithm gets instable
+	vs_FieldCapacity = max(0.08, vs_FieldCapacity);
+	vs_PermanentWiltingPoint = max(0.05, vs_PermanentWiltingPoint);
+	vs_Saturation = max(0.1, vs_Saturation);
 
 	if(vs_Lambda < 0)
 		vs_Lambda = sandAndClay2lambda(vs_SoilSandContent, vs_SoilClayContent);
@@ -360,9 +369,9 @@ std::pair<SoilPMsPtr, Errors> Soil::createSoilPMs(const J11Array& jsonSoilPMs)
 		//repeat layers if there is an associated Thickness parameter
 		string err;
 		int repeatLayer = 1;
-		if(sp.has_shape({{"Thickness", Json::NUMBER}}, err)
-			 || sp.has_shape({{"Thickness", Json::ARRAY}}, err))
-			repeatLayer = min(20 - int(layerCount), max(1, Tools::roundRT<int>(double_valueD(sp, "Thickness", 0.1)*10.0, 0)));
+		if(!sp["Thickness"].is_null())
+			repeatLayer = min(20 - int(layerCount), 
+												max(1, Tools::roundRT<int>(double_valueD(sp, "Thickness", 0.1)*10.0, 0)));
 
 		//simply repeat the last layer as often as necessary to fill the 20 layers
 		if(spi + 1 == spsCount)

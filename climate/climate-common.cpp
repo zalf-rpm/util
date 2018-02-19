@@ -284,8 +284,8 @@ json11::Json DataAccessor::to_json() const
 		}
 		acd++;
 	}
-	
-	return J11Object 
+
+	return J11Object
 	{{"type", "DataAccessor"}
 	,{"data", data}
 	,{"startDate", startDate().toIsoDateString()}
@@ -294,11 +294,11 @@ json11::Json DataAccessor::to_json() const
 }
 
 double DataAccessor::dataForTimestep(AvailableClimateData acd,
-                                     size_t stepNo,
+																		 size_t stepNo,
 																		 double def) const
 {
-  short cacheIndex = _acd2dataIndex.at(int(acd));
-  return cacheIndex < 0 ? def : _data->at(cacheIndex).at(_fromStep + stepNo);
+	short cacheIndex = _acd2dataIndex.at(int(acd));
+	return cacheIndex < 0 ? def : _data->at(cacheIndex).at(_fromStep + stepNo);
 }
 
 Maybe<double> DataAccessor::dataForTimestepM(AvailableClimateData acd,
@@ -336,40 +336,139 @@ DataAccessor::allDataForStep(size_t stepNo,
 
 vector<double> DataAccessor::dataAsVector(AvailableClimateData acd) const
 {
-  short cacheIndex = _acd2dataIndex.at(int(acd));
-  return cacheIndex < 0 
+	short cacheIndex = _acd2dataIndex.at(int(acd));
+	return cacheIndex < 0
 		? vector<double>()
 		: vector<double>(_data->at(cacheIndex).begin() + _fromStep,
 										 _data->at(cacheIndex).begin() + _fromStep + noOfStepsPossible());
 }
 
 DataAccessor DataAccessor::cloneForRange(size_t fromStep,
-                                         size_t numberOfSteps) const
+																				 size_t numberOfSteps) const
 {
 	//cout << "cloneForRange fromStep: " << fromStep <<
 	//" numberOfSteps: " << numberOfSteps << endl;
-  if(!isValid()
-     || fromStep > noOfStepsPossible()
-     || (fromStep + numberOfSteps) > noOfStepsPossible())
-    return DataAccessor(); //numberOfSteps = fromStep = 0;
+	if(!isValid()
+		 || fromStep > noOfStepsPossible()
+		 || (fromStep + numberOfSteps) > noOfStepsPossible())
+		return DataAccessor(); //numberOfSteps = fromStep = 0;
 
-  DataAccessor clone(*this);
-  clone._fromStep += fromStep;
+	DataAccessor clone(*this);
+	clone._fromStep += fromStep;
 	clone._numberOfSteps = numberOfSteps;
-  clone._startDate = clone._startDate + clone._fromStep;
-  clone._endDate = clone._startDate + numberOfSteps - 1;
-  return clone;
+	clone._startDate = clone._startDate + clone._fromStep;
+	clone._endDate = clone._startDate + numberOfSteps - 1;
+	return clone;
 }
 
 void DataAccessor::addClimateData(AvailableClimateData acd,
-                                  const vector<double>& data)
+																	const vector<double>& data)
 {
 	if(!_data->empty())
-    assert(_numberOfSteps = data.size());
+		assert(_numberOfSteps = data.size());
 
 	_data->push_back(data);
 	_acd2dataIndex[int(acd)] = short(_data->size() - 1);
 	_numberOfSteps = _data->empty() ? 0 : _data->front().size();
+}
+
+void DataAccessor::prependOrAppendClimateData(DataAccessor other,
+																							bool replaceOverlappingData)
+{
+	if(!other.isValid())
+		return;
+
+	if(_data->empty())
+	{
+		(*this) = other;
+		return;
+	}
+
+	if((startDate() > other.endDate() + 1) ||
+		 (endDate() < other.startDate() - 1))
+	{
+		cout
+			<< "Can't prepend or append climate data because together data don't give a continuous timeseries. "
+			<< "current: (" << startDate().toIsoDateString() << " - " << endDate().toIsoDateString() << ") " 
+			<< "new: (" << other.startDate().toIsoDateString() << " - " << other.endDate().toIsoDateString() << ")."
+			<< "New climate data won't be appended or prepended." << endl;
+	}
+	//insert all of others data before this' data
+	else if(startDate() == other.endDate() + 1)
+	{
+		for(int i = 0; i < _acd2dataIndex.size(); i++)
+		{
+			auto acd = ACD(i);
+			short index = _acd2dataIndex[i];
+			if(index < 0)
+				continue;
+			auto& di = (*_data)[index];
+			const auto& odai = other._data->at(index);
+
+			di.insert(di.begin(), odai.begin(), odai.end());
+		}
+		_startDate = other.startDate();
+		_numberOfSteps = _data->empty() ? 0 : _data->front().size();
+	}
+	//insert all of others data after this' data
+	else if(endDate() + 1 == other.startDate())
+	{
+		for(int i = 0; i < _acd2dataIndex.size(); i++)
+		{
+			auto acd = ACD(i);
+			short index = _acd2dataIndex[i];
+			if(index < 0)
+				continue;
+			auto& di = (*_data)[index];
+			const auto& odai = other._data->at(index);
+
+			di.insert(di.end(), odai.begin(), odai.end());
+		}
+		_endDate = other.endDate();
+		_numberOfSteps = _data->empty() ? 0 : _data->front().size();
+	}
+	//all of this' data will be overwritten
+	else if(startDate() >= other.startDate() && endDate() <= other.endDate())
+	{
+		(*this) = other;
+		return;
+	}
+	else 
+	{
+		int prependCount = startDate() - other.startDate();
+		int appendCount = other.endDate() - endDate();
+		
+		for(int i = 0; i < _acd2dataIndex.size(); i++)
+		{
+			auto acd = ACD(i);
+			short index = _acd2dataIndex[i];
+			if(index < 0)
+				continue;
+			auto& di = (*_data)[index];
+			const auto& odai = other._data->at(index);
+
+			// insert the new elements before
+			if(prependCount > 0)
+				di.insert(di.begin(), odai.begin(), odai.begin() + prependCount);
+
+			if(replaceOverlappingData)
+			{
+				auto dii = di.begin() + abs(prependCount);
+				auto odaii = odai.begin() + (prependCount < 0 ? 0 : prependCount);
+				for(; dii != di.end() && odaii != odai.end(); dii++, odaii++)
+					*dii = *odaii;
+			}
+
+			// insert the new elements after the old ones
+			if(appendCount > 0)
+				di.insert(di.end(), odai.begin() + odai.size() - appendCount, odai.end());
+		}
+		if(prependCount > 0)
+			_startDate = other.startDate();
+		if(appendCount > 0)
+			_endDate = other.endDate();
+		_numberOfSteps = _data->empty() ? 0 : _data->front().size();
+	}
 }
 
 void DataAccessor::addOrReplaceClimateData(AvailableClimateData acd,
