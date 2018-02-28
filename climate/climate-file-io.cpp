@@ -128,8 +128,8 @@ Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
 		{
 			auto tcn = trim(colName);
 			auto replColName = options.headerName2ACDName[tcn];
-			auto acd = n2acd[replColName.empty() ? tcn : replColName];
-			header.push_back(acd == 0 ? skip : acd);
+			auto acdi = n2acd.find(replColName.empty() ? tcn : replColName);
+			header.push_back(acdi == n2acd.end() ? skip : acdi->second);
 
 			if(!options.convert.empty())
 			{
