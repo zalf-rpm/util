@@ -20,6 +20,12 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <string>
 #include <vector>
 
+#ifdef DSS_NO_LEAP_YEAR_BY_DEFAULT
+#define DEFAULT_USE_LEAP_YEARS false
+#else
+#define DEFAULT_USE_LEAP_YEARS true
+#endif
+
 namespace Tools
 {
 	//enum Month
@@ -40,40 +46,40 @@ namespace Tools
 		//static const size_t defaultRelativeBaseYear = 2000;
 
 	public:
-		Date(bool useLeapYears = true);
+		Date(bool useLeapYears = DEFAULT_USE_LEAP_YEARS);
 
 		Date(const std::string& isoDateString,
-				 bool useLeapYears = true);
+				 bool useLeapYears = DEFAULT_USE_LEAP_YEARS);
 
 		//explicit Date(size_t day,
 		//							Month month,
 		//							int year,
 		//							bool createValidDate = false,
-		//							bool useLeapYears = true);
+		//							bool useLeapYears = DEFAULT_USE_LEAP_YEARS);
 
 		Date(size_t day,
 				 size_t month,
 				 int year,
 				 bool isRelativeDate = false,
 				 bool createValidDate = false,
-				 bool useLeapYears = true);
+				 bool useLeapYears = DEFAULT_USE_LEAP_YEARS);
 
 		static Date relativeDate(size_t day,
 														 size_t month,
 														 int deltaYears = 0,
-														 bool useLeapYears = true);
+														 bool useLeapYears = DEFAULT_USE_LEAP_YEARS);
 
 		static inline Date julianDate(size_t julianDay,
 																	size_t year,
 																	bool isRelativeDate = false,
-																	bool useLeapYears = true)
+																	bool useLeapYears = DEFAULT_USE_LEAP_YEARS)
 		{
 			return Date(1, 1, year, isRelativeDate, false, useLeapYears)
 					+ (julianDay - 1);
 		}
 
 		static Date fromIsoDateString(const std::string& isoDateString,
-																	bool useLeapYears = true);
+																	bool useLeapYears = DEFAULT_USE_LEAP_YEARS);
 
 		Date(const Date& other);
 
@@ -197,7 +203,7 @@ namespace Tools
 		 */
 		static size_t daysInMonth(size_t year,
 															size_t month,
-															bool useLeapYears = true)
+															bool useLeapYears = DEFAULT_USE_LEAP_YEARS)
 		{
 			return Date(1, 1, year, false, false, useLeapYears).daysInMonth(month);
 		}
@@ -302,7 +308,7 @@ namespace Tools
 		static size_t dayInYear(size_t year,
 														size_t day,
 														size_t month,
-														bool useLeapYears = true)
+														bool useLeapYears = DEFAULT_USE_LEAP_YEARS)
 		{
 			return size_t(Date(day, month, year, false, false, useLeapYears)
 				- Date(1, 1, year, false, false, useLeapYears) + 1);
@@ -345,7 +351,7 @@ namespace Tools
 												bool ignoreDeltaYears = false) const;
 
 		Date toRelativeDate(int deltaYears = 0,
-												bool useLeapYears = true)
+												bool useLeapYears = DEFAULT_USE_LEAP_YEARS)
 		{
 			return relativeDate(day(), month(), deltaYears, useLeapYears);
 		}
@@ -373,7 +379,7 @@ namespace Tools
 		static const int _aLeapYear = 2008;
 
 		//! member var holding whether leap years are being used or not
-		bool _useLeapYears{true};
+		bool _useLeapYears{DEFAULT_USE_LEAP_YEARS};
 
 		//! is this a relative date = what's the meaning of the year
 		bool _isRelativeDate{false};
