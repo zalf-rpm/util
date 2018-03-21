@@ -1596,6 +1596,11 @@ DDClimateDataServerRealization::executeQuery(const ACDV& acds,
 				fs.push_back(new CalcRemoGlobrad(posCloudAmount, posDoy,
 																				 cs.geoCoord().lat, cs.nn()));
 			}
+			else if(_setupData.simulationId() == "raklida5")
+			{
+				query << "f.rgj / 100.0 as globrad";
+				fs.push_back(new ParseAsDouble(c++));
+			}
 			else
 			{
         query << "f.sd, dayofyear(" << dbDate << ") as dy";
@@ -1609,6 +1614,11 @@ DDClimateDataServerRealization::executeQuery(const ACDV& acds,
 			if(_setupData.simulationId() == "remo")
 			{
         query << "f.rr_drift";
+				fs.push_back(new ParseAsDouble(c++));
+			}
+			else if(_setupData.simulationId() == "raklida5")
+			{
+				query << "f.rr_corr";
 				fs.push_back(new ParseAsDouble(c++));
 			}
 			else
