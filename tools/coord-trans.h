@@ -22,6 +22,8 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <cassert>
 #include <memory>
 #include <climits>
+#include <iostream>
+#include <map>
 
 #include "proj_api.h"
 
@@ -317,8 +319,17 @@ template<typename SCT, typename TCT>
 std::vector<TCT>
 Tools::sourceProj2targetProj(const std::vector<SCT>& scs, CoordinateSystem targetCS)
 {
-  if(scs.empty())
-    return std::vector<TCT>();
+	if(scs.empty())
+		return std::vector<TCT>();
+
+	struct AutoDeleter
+	{
+		std::map<std::string, projPJ> cache;
+		AutoDeleter() {}
+		~AutoDeleter() { for(auto p : cache) pj_free(p.second); }
+	};
+	static AutoDeleter ad;
+	auto& cache = ad.cache;
 
   CoordConversionParams sccp = coordConversionParams(scs.front().coordinateSystem);
   CoordConversionParams tccp = coordConversionParams(targetCS);
@@ -339,8 +350,24 @@ Tools::sourceProj2targetProj(const std::vector<SCT>& scs, CoordinateSystem targe
     zs[i] = 0;
   }
 
-  projPJ sourcePJ = pj_init_plus(sccp.projectionParams.c_str());
-  projPJ targetPJ = pj_init_plus(tccp.projectionParams.c_str());
+	auto sci = cache.find(sccp.projectionParams);
+	if(sci == cache.end())
+	{
+		cache[sccp.projectionParams] = pj_init_plus(sccp.projectionParams.c_str());
+		sci = cache.find(sccp.projectionParams);
+	}
+	auto tci = cache.find(tccp.projectionParams);
+	if(tci == cache.end())
+	{
+		cache[tccp.projectionParams] = pj_init_plus(tccp.projectionParams.c_str());
+		tci = cache.find(tccp.projectionParams);
+	}
+
+	projPJ sourcePJ = sci->second;
+	projPJ targetPJ = tci->second;
+
+	//projPJ sourcePJ = pj_init_plus(sccp.projectionParams.c_str());
+	//projPJ targetPJ = pj_init_plus(tccp.projectionParams.c_str());
 
   if(sourcePJ && targetPJ){
     int error = pj_transform(sourcePJ, targetPJ, nocs, 0, xs, ys, zs);
@@ -358,14 +385,19 @@ Tools::sourceProj2targetProj(const std::vector<SCT>& scs, CoordinateSystem targe
     tcs[i] = ts2Dc ? TCT(targetCS, ys[i]*tcv, xs[i]*tcv)
                    : TCT(targetCS, xs[i]*tcv, ys[i]*tcv);
 
-  if(sourcePJ)
-    pj_free(sourcePJ);
-  if(targetPJ)
-    pj_free(targetPJ);
+	//if(sourcePJ)
+	//  pj_free(sourcePJ);
+	//if(targetPJ)
+	//  pj_free(targetPJ);
 
   delete[] xs;
   delete[] ys;
   delete[] zs;
+
+	//static int count = 0;
+	//count++;
+	//if(count % 1000 == 0)
+	//	std::cout << count << " ";
 
   return !sourcePJ || !targetPJ ? std::vector<TCT>() : tcs;
 }
