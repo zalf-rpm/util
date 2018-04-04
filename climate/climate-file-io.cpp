@@ -467,7 +467,8 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 	da.addClimateData(precip, daData[precip]);
 	if(!daData[globrad].empty())
 		da.addClimateData(globrad, daData[globrad]);
-	else if(!daData[sunhours].empty())
+	//else if(!daData[sunhours].empty())
+	if (!daData[sunhours].empty())
 		da.addClimateData(sunhours, daData[sunhours]);
 	da.addClimateData(relhumid, daData[relhumid]);
 	da.addClimateData(wind, daData[wind]);
