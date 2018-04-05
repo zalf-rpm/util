@@ -110,7 +110,7 @@ def soil_parameters(con, profile_id):
             layer["CN"] = float(row["c_n"])
 
         if row["layer_description"] is not None:
-            layer["desciption"] = row["layer_description"]
+            layer["description"] = row["layer_description"]
 
         if row["is_in_groundwater"] is not None:
             layer["is_in_groundwater"] = int(row["is_in_groundwater"]) == 1
