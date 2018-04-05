@@ -36,12 +36,8 @@ using namespace Tools;
 using namespace json11;
 
 json11::Json Soil::jsonSoilParameters(DBPtr con,
-																			int profileId,
-																			int layerThicknessCm,
-																			int maxDepthCm)
+																			int profileId)
 {
-	int maxNoOfLayers = int(double(maxDepthCm) / double(layerThicknessCm));
-
 	DBRow row;
 
 	enum { 
@@ -63,7 +59,10 @@ json11::Json Soil::jsonSoilParameters(DBPtr con,
 		soil_ammonium, 
 		soil_nitrate, 
 		c_n, 
-		initial_soil_moisture 
+		initial_soil_moisture ,
+		layer_description,
+		is_in_groundwater,
+		is_impenetrable
 	};
 
 	ostringstream oss;
@@ -87,7 +86,10 @@ json11::Json Soil::jsonSoilParameters(DBPtr con,
 		"soil_ammonium, "
 		"soil_nitrate, "
 		"c_n, "
-		"initial_soil_moisture "
+		"initial_soil_moisture, "
+		"layer_description, "
+		"is_in_groundwater, "
+		"is_impenetrable "
 		"from soil_profile "
 		"where id = " << profileId << " "
 		"order by id, layer_depth";
@@ -156,6 +158,15 @@ json11::Json Soil::jsonSoilParameters(DBPtr con,
 		if(!row[c_n].empty())
 			layer["CN"] = stof(row[c_n]);
 
+		if(!row[layer_description].empty())
+			layer["description"] = row[layer_description];
+
+		if(!row[is_in_groundwater].empty())
+			layer["is_in_groundwater"] = stoi(row[is_in_groundwater]) == 1;
+
+		if(!row[is_impenetrable].empty())
+			layer["is_impenetrable"] = stoi(row[is_impenetrable]) == 1;
+
 		//keyset = layer.keys()
 		auto found = [&layer](string key){ return layer.find(key) != layer.end(); };
 		bool layerIsOk =
@@ -181,22 +192,16 @@ json11::Json Soil::jsonSoilParameters(DBPtr con,
 }
 
 json11::Json Soil::jsonSoilParameters(const string& abstractDbSchema,
-																		int profileId,
-																		int layerThicknessCm,
-																		int maxDepthCm)
+																		int profileId)
 {
 	return jsonSoilParameters(DBPtr(newConnection(abstractDbSchema)),
-														profileId,
-														layerThicknessCm,
-														maxDepthCm);
+														profileId);
 }
 
 SoilPMsPtr Soil::soilParameters(DBPtr con,
-                                int profileId,
-                                int layerThicknessCm,
-                                int maxDepthCm)
+																int profileId)
 {
-	Json j = jsonSoilParameters(con, profileId, layerThicknessCm, maxDepthCm);
+	Json j = jsonSoilParameters(con, profileId);
 	auto p = createSoilPMs(j.array_items());
 
 	if(p.second.failure())
@@ -207,100 +212,15 @@ SoilPMsPtr Soil::soilParameters(DBPtr con,
 	}
 
 	return p.first;
-
-	/*
-	static SoilPMsPtr nothing = make_shared<SoilPMs>();
-
-	int maxNoOfLayers = int(double(maxDepthCm) / double(layerThicknessCm));
-
-	DBRow row;
-
-	ostringstream oss;
-	oss << 
-		"select "
-		"id, "
-		"layer_depth_cm, "
-		"soil_organic_carbon_percent, "
-		"soil_raw_density_kg_per_m3, "
-		"soil_bulk_density_kg_per_m3, "
-		"sand_content_percent, "
-		"clay_content_percent, "
-		"ph_value, "
-		"soil_type "
-		"permanent_wilting_point_m3_per_m3, "
-		"field_capacity_m3_per_m3, "
-		"saturation_m3_per_m3, "
-		"soil_water_conductivity_coefficient, "
-		"sceleton_m3_per_m3, "
-		"soil_ammonium_kg_NH4_N_per_m3, "
-		"soil_nitrate_kg_NO3_N_per_m3, "
-		"soil_CN_ratio, "
-		"initial_soil_moisture_percent_field_capacity "
-		"from soil_profile "
-		"where id = " << profileId << " "
-		"order by id, layer_depth_cm";
-
-	con->select(oss.str());
-	//cout << "query: " << oss.str() << endl;
-	auto sps = make_shared<SoilPMs>();
-	size_t currenth = 0;
-	size_t hcount = con->getNumberOfRows();
-	while(!(row = con->getRow()).empty())
-	{
-		int id = satoi(row[0]);
-		currenth++;
-
-		int ho = int(sps->size()) * layerThicknessCm;
-		int hu = !row[1].empty() ? satoi(row[1]) : maxDepthCm;
-		int hsize = max(0, hu - ho);
-		int subhcount = Tools::roundRT<int>(double(hsize) / double(layerThicknessCm), 0);
-		if(currenth == hcount && (sps->size() + subhcount) < maxNoOfLayers)
-			subhcount += maxNoOfLayers - sps->size() - subhcount;
-
-		//cout << "id: " << id << " ho: " << ho << " hu: " << hu << " hsize: " << hsize
-		//<< " subhcount: " << subhcount << " currenth: " << currenth << endl;
-
-		SoilParameters p;
-		p.set_vs_SoilOrganicCarbon(satof(row[2]) / 100.);
-		p.set_vs_SoilRawDensity(satof(row[3]));
-		p.vs_SoilSandContent = satof(row[4]) / 100.0;
-		p.vs_SoilClayContent = satof(row[5]) / 100.0;
-		if(!row[6].empty())
-			p.vs_SoilpH = satof(row[6]);
-		if(row[7].empty())
-			p.vs_SoilTexture = sandAndClay2KA5texture(p.vs_SoilSandContent, p.vs_SoilClayContent);
-		else
-			p.vs_SoilTexture = row[7];
-		p.vs_SoilStoneContent = 0.0;
-		p.vs_Lambda = sandAndClay2lambda(p.vs_SoilSandContent, p.vs_SoilClayContent);
-
-		// initialization of saturation, field capacity and perm. wilting point
-		soilCharacteristicsKA5(p);
-		if(!p.isValid())
-		{
-			cerr << "Error in soil parameters for profileId: " << id << "!" << endl;
-			return nothing;
-		}
-
-		for(int i = 0; i < subhcount; i++)
-			sps->push_back(p);
-	}
-
-	return sps;
-	*/
 }
 
 //------------------------------------------------------------------------------
 
 SoilPMsPtr Soil::soilParameters(const string& abstractDbSchema,
-                                int profileId,
-                                int layerThicknessCm,
-                                int maxDepthCm)
+																int profileId)
 {
 	return soilParameters(DBPtr(newConnection(abstractDbSchema)),
-	                      profileId, 
-												layerThicknessCm,
-												maxDepthCm);
+												profileId);
 }
 
 //------------------------------------------------------------------------------

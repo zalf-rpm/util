@@ -26,24 +26,16 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 namespace Soil
 {
 	json11::Json jsonSoilParameters(Db::DBPtr dbConnection,
-																	int profileId,
-																	int layerThicknessCm = 10,
-																	int maxDepthCm = 200);
+																	int profileId);
 
 	json11::Json jsonSoilParameters(const std::string& abstractDbSchema,
-																	int profileId,
-																	int layerThicknessCm = 10,
-																	int maxDepthCm = 200);
+																	int profileId);
 
 	Soil::SoilPMsPtr soilParameters(Db::DBPtr dbConnection,
-	                                int profileId,
-	                                int layerThicknessCm = 10,
-	                                int maxDepthCm = 200);
+																	int profileId);
 
 	Soil::SoilPMsPtr soilParameters(const std::string& abstractDbSchema,
-	                                int profileId,
-	                                int layerThicknessCm = 10,
-	                                int maxDepthCm = 200);
+																	int profileId);
 }
 
 #endif //MONICA_SOIL_FROM_DB_H
