@@ -57,6 +57,7 @@ namespace Climate
 		isoDate, 
 		deDate, 
 		co2,
+		o3,
 		skip
 	};
 
@@ -83,6 +84,7 @@ namespace Climate
 		,{"airpress", airpress}
 		,{"vaporpress", vaporpress}
 		,{"co2", co2}
+		,{"o3", o3}
 		,{"iso-date", isoDate}
 		,{"de-date", deDate}
 		,{"skip", skip}

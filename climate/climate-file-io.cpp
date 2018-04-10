@@ -396,8 +396,10 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 		
 		if(!usedVs[globrad] && usedVs[sunhours])
 		{
-			vs[globrad] = Tools::sunshine2globalRadiation(date.julianDay(), vs[sunhours],
-																										options.latitude, true);
+			vs[globrad] = Tools::sunshine2globalRadiation(date.julianDay(), 
+																										vs[sunhours],
+																										options.latitude, 
+																										true);
 			usedVs[globrad] = true;
 		}
 		else if(!usedVs[globrad])
@@ -461,19 +463,9 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 	}
 
 	Climate::DataAccessor da(startDate, endDate);
-	da.addClimateData(tmin, daData[tmin]);
-	da.addClimateData(tmax, daData[tmax]);
-	da.addClimateData(tavg, daData[tavg]);
-	da.addClimateData(precip, daData[precip]);
-	if(!daData[globrad].empty())
-		da.addClimateData(globrad, daData[globrad]);
-	//else if(!daData[sunhours].empty())
-	if (!daData[sunhours].empty())
-		da.addClimateData(sunhours, daData[sunhours]);
-	da.addClimateData(relhumid, daData[relhumid]);
-	da.addClimateData(wind, daData[wind]);
-	if(!daData[co2].empty())
-		da.addClimateData(co2, daData[co2]);
+	for(const auto& p : daData)
+		if(!p.second.empty())
+			da.addClimateData(p.first, p.second);
 
 	return da;
 }
