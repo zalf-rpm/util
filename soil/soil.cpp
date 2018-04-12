@@ -420,9 +420,9 @@ string Soil::soilProfileId2KA5Layers(const string& abstractDbSchema,
 
 			Map& m2 = m[abstractDbSchema];
 
-			con->select("SELECT id, soil_type "
+			con->select("SELECT id, KA5_texture_class "
                   "from soil_profile "
-									"order by id, layer_depth_cm");
+									"order by id, layer_depth");
 			while(!(row = con->getRow()).empty())
 			{
 				string pre = m2[satoi(row[0])].empty() ? "" : "|";
