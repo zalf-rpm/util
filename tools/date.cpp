@@ -301,6 +301,13 @@ bool Date::operator<(const Date& other) const
 	return false;
 }
 
+Date Date::withAddedYears(int years) const
+{
+	Date d(*this);
+	d.setYear(year() + years);
+	return d;
+}
+
 std::string Date::toIsoDateString(const std::string& wrapInto) const
 {
 	ostringstream s;

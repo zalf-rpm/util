@@ -254,6 +254,8 @@ namespace Tools
 
 		void addYears(int years) { setYear(year() + years); }
 
+		Date withAddedYears(int years) const;
+
 		//return mysql compatible string representation of 'this' date
 		std::string toMysqlString(const std::string& wrapInto = "'") const
 		{
