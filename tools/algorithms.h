@@ -32,6 +32,13 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <functional>
 #include <limits>
 
+#ifdef max
+	#undef max
+#endif
+#ifdef min
+	#undef min
+#endif
+
 namespace Tools
 {
 	std::vector<std::string> splitString(std::string s, 

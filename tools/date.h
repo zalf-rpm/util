@@ -19,6 +19,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 #include <string>
 #include <vector>
+#include "common/common-typedefs.h"
 
 #ifdef DSS_NO_LEAP_YEAR_BY_DEFAULT
 #define DEFAULT_USE_LEAP_YEARS false
@@ -43,7 +44,7 @@ namespace Tools
 	class  Date
 	{
 	public:
-		//static const size_t defaultRelativeBaseYear = 2000;
+		//static const uint defaultRelativeBaseYear = 2000;
 
 	public:
 		Date(bool useLeapYears = DEFAULT_USE_LEAP_YEARS);
@@ -51,26 +52,26 @@ namespace Tools
 		Date(const std::string& isoDateString,
 				 bool useLeapYears = DEFAULT_USE_LEAP_YEARS);
 
-		//explicit Date(size_t day,
+		//explicit Date(uint day,
 		//							Month month,
 		//							int year,
 		//							bool createValidDate = false,
 		//							bool useLeapYears = DEFAULT_USE_LEAP_YEARS);
 
-		Date(size_t day,
-				 size_t month,
+		Date(uint day,
+				 uint month,
 				 int year,
 				 bool isRelativeDate = false,
 				 bool createValidDate = false,
 				 bool useLeapYears = DEFAULT_USE_LEAP_YEARS);
 
-		static Date relativeDate(size_t day,
-														 size_t month,
+		static Date relativeDate(uint day,
+														 uint month,
 														 int deltaYears = 0,
 														 bool useLeapYears = DEFAULT_USE_LEAP_YEARS);
 
-		static inline Date julianDate(size_t julianDay,
-																	size_t year,
+		static inline Date julianDate(uint julianDay,
+																	uint year,
 																	bool isRelativeDate = false,
 																	bool useLeapYears = DEFAULT_USE_LEAP_YEARS)
 		{
@@ -137,13 +138,13 @@ namespace Tools
 			return !((*this) < other);
 		}
 
-		Date operator-(size_t days) const;
+		Date operator-(uint days) const;
 
 		/*!
 		 * @param days
 		 * @return change 'this' date to 'days' before
 		 */
-		Date & operator-=(size_t days) { return (*this) = (*this) - days; }
+		Date & operator-=(uint days) { return (*this) = (*this) - days; }
 
 		/*!
 		 * prefix --
@@ -153,13 +154,13 @@ namespace Tools
 
 		Date operator--(int);
 
-		Date operator+(size_t days) const;
+		Date operator+(uint days) const;
 
 		/*!
 		 * @param days
 		 * @return 'this' date changed to 'days' ahead
 		 */
-		Date & operator+=(size_t days) { return (*this) = (*this) + days; }
+		Date & operator+=(uint days) { return (*this) = (*this) + days; }
 
 		/*!
 		 *
@@ -189,7 +190,7 @@ namespace Tools
 		 * @param month
 		 * @return how many days has the argument month
 		 */
-		size_t daysInMonth(size_t month = 0) const
+		uint daysInMonth(uint month = 0) const
 		{
 			return _daysInMonth->at(month == 0 ? this->month() : month);
 		}
@@ -201,8 +202,8 @@ namespace Tools
 		 * @return how many days has the month in the argument year, month under
 		 * possible leap year conditions
 		 */
-		static size_t daysInMonth(size_t year,
-															size_t month,
+		static uint daysInMonth(uint year,
+															uint month,
 															bool useLeapYears = DEFAULT_USE_LEAP_YEARS)
 		{
 			return Date(1, 1, year, false, false, useLeapYears).daysInMonth(month);
@@ -214,29 +215,29 @@ namespace Tools
 		/*!
 		 * @return 'this' dates day
 		 */
-		size_t day() const { return _d; }
+		uint day() const { return _d; }
 
 		/*!
 		 * set 'this' dates day
 		 * @param day
 		 */
-		void setDay(size_t day,
+		void setDay(uint day,
 								bool createValidDate = false);
 
-		Date withDay(size_t day, bool createValidDate = false);
+		Date withDay(uint day, bool createValidDate = false);
 
 		/*!
 		 * @return 'this' dates month
 		 */
-		size_t month() const { return _m; }
+		uint month() const { return _m; }
 
-		Date withMonth(size_t month, bool createValidDate = false);
+		Date withMonth(uint month, bool createValidDate = false);
 
 		/*!
 		 * set 'this' dates month
 		 * @param month
 		 */
-		void setMonth(size_t month, 
+		void setMonth(uint month, 
 									bool createValidDate = false);
 
 		/*!
@@ -248,9 +249,9 @@ namespace Tools
 		 * set 'this' dates year
 		 * @param year
 		 */
-		void setYear(size_t year) { _y = year; }
+		void setYear(uint year) { _y = year; }
 
-		Date withYear(size_t year);
+		Date withYear(uint year);
 
 		void addYears(int years) { setYear(year() + years); }
 
@@ -278,7 +279,7 @@ namespace Tools
 		 * @ see dayInYear(int year, int day, int month, bool useLeapYears)
 		 * @return julian day of day in 'this' date
 		 */
-		size_t julianDay() const
+		uint julianDay() const
 		{
 			return dayInYear(year(), day(), month(), _useLeapYears);
 		}
@@ -287,14 +288,14 @@ namespace Tools
 		 * @see julianDay()
 		 * @return day in year of day in 'this' date
 		 */
-		size_t dayOfYear() const { return julianDay(); }
+		uint dayOfYear() const { return julianDay(); }
 
 		/*!
 		 * @param day
 		 * @param month
 		 * @return day in year of argument day in argument month in 'this' dates year
 		 */
-		size_t dayInYear(size_t day, size_t month) const
+		uint dayInYear(uint day, uint month) const
 		{
 			return dayInYear(year(), day, month, _useLeapYears);
 		}
@@ -307,12 +308,12 @@ namespace Tools
 		 * @return day in year of argument day in argument month in argument year
 		 * under possible leap year conditions
 		 */
-		static size_t dayInYear(size_t year,
-														size_t day,
-														size_t month,
+		static uint dayInYear(uint year,
+														uint day,
+														uint month,
 														bool useLeapYears = DEFAULT_USE_LEAP_YEARS)
 		{
-			return size_t(Date(day, month, year, false, false, useLeapYears)
+			return uint(Date(day, month, year, false, false, useLeapYears)
 				- Date(1, 1, year, false, false, useLeapYears) + 1);
 		}
 
@@ -349,7 +350,7 @@ namespace Tools
 		bool isAbsoluteDate() const { return !_isRelativeDate; }
 
 		//! convert this year to an absolute year
-		Date toAbsoluteDate(size_t absYear,
+		Date toAbsoluteDate(uint absYear,
 												bool ignoreDeltaYears = false) const;
 
 		Date toRelativeDate(int deltaYears = 0,
@@ -368,14 +369,14 @@ namespace Tools
 
 	private:
 		//! days in month (1-indexed)
-		static const std::vector<size_t>* _dim();
+		static const std::vector<uint>* _dim();
 		//! days in month in a leap year
-    static const std::vector<size_t>* _ldim();
+    static const std::vector<uint>* _ldim();
 		//! pointer to correct leap year array, depending of activated leap years
-		const std::vector<size_t>* _daysInMonth{nullptr};
+		const std::vector<uint>* _daysInMonth{nullptr};
 
 		//! members variables for day, month, year
-		size_t _d{0}, _m{0};
+		uint _d{0}, _m{0};
 		int _y{0};
 		//! the choosen arbitrary leap year
 		static const int _aLeapYear = 2008;

@@ -396,7 +396,7 @@ void DataAccessor::prependOrAppendClimateData(DataAccessor other,
 	//insert all of others data before this' data
 	else if(startDate() == other.endDate() + 1)
 	{
-		for(int i = 0; i < _acd2dataIndex.size(); i++)
+		for(uint i = 0; i < _acd2dataIndex.size(); i++)
 		{
 			auto acd = ACD(i);
 			short index = _acd2dataIndex[i];
@@ -413,7 +413,7 @@ void DataAccessor::prependOrAppendClimateData(DataAccessor other,
 	//insert all of others data after this' data
 	else if(endDate() + 1 == other.startDate())
 	{
-		for(int i = 0; i < _acd2dataIndex.size(); i++)
+		for(uint i = 0; i < _acd2dataIndex.size(); i++)
 		{
 			auto acd = ACD(i);
 			short index = _acd2dataIndex[i];
@@ -438,7 +438,7 @@ void DataAccessor::prependOrAppendClimateData(DataAccessor other,
 		int prependCount = startDate() - other.startDate();
 		int appendCount = other.endDate() - endDate();
 		
-		for(int i = 0; i < _acd2dataIndex.size(); i++)
+		for(uint i = 0; i < _acd2dataIndex.size(); i++)
 		{
 			auto acd = ACD(i);
 			short index = _acd2dataIndex[i];

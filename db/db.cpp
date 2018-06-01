@@ -304,7 +304,7 @@ size_t SqliteDB::getNumberOfRows()
 
 	sqlite3_reset(_ppStmt);
 	//restore old cursor position 
-	for(int i = 1; i <= _currentRowNo; i++)
+	for(uint i = 1; i <= _currentRowNo; i++)
 		sqlite3_step(_ppStmt);
 	
 	return noOfRows;

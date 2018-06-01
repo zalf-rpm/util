@@ -271,8 +271,6 @@ double Tools::hourlyT(double tmin, double tmax, int h, int sunrise_h)
 	double amp_ = (tmax - tmin) / 2;
 	double H_1;
 	double hourly_T;
-	h = (double)h; //avoid unexpected behaviour (int/int)
-	sunrise_h = (double)sunrise_h;
 
 	if (h < sunrise_h)
 	{
