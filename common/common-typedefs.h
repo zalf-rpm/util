@@ -27,4 +27,16 @@ typedef std::string STT;
 
 typedef int Year;
 
+//------------------------------------------------------------------------------
+/**
+@class tools/types.h
+
+define type shortcuts
+*/
+typedef unsigned long  ulong;       // 32 bit on ia32, llp64, 64 bit on lp64
+typedef unsigned int   uint;        // 32 bit
+typedef unsigned short ushort;      // 16 bit
+typedef unsigned char  uchar;
+typedef unsigned char  ubyte;
+
 #endif // TYPEDEFS_H
