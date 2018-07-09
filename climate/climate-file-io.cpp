@@ -58,6 +58,8 @@ Tools::Errors CSVViaHeaderOptions::merge(json11::Json j)
 		}
 		else
 			headerNames[p.first] = p.second.string_value();
+
+		
 	}
 
 	set_iso_date_value(startDate, j, "start-date");
@@ -81,7 +83,7 @@ json11::Json CSVViaHeaderOptions::to_json() const
 		if(it != convert.end())
 			headerNames[p.first] = J11Array{p.second, it->second.first, it->second.second};
 		else
-			headerNames[p.first] = p.second;
+			headerNames[p.first] = p.second;		
 	}
 
 	J11Object convert_;
@@ -129,7 +131,7 @@ Climate::readClimateDataFromCSVInputStreamViaHeaders(istream& is,
 			auto tcn = trim(colName);
 			auto replColName = options.headerName2ACDName[tcn];
 			auto acdi = n2acd.find(replColName.empty() ? tcn : replColName);
-			header.push_back(acdi == n2acd.end() ? skip : acdi->second);
+			header.push_back(acdi == n2acd.end() ? skip : acdi->second);			
 
 			if(!options.convert.empty())
 			{
@@ -319,33 +321,33 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 		try
 		{
 			for(size_t i = 0; i < hSize; i++)
-			{
+			{				
 				ACD acdi = header.at(i);
 				bool doConvert = !convert.empty() && convert[acdi];
 				switch(acdi)
 				{
-				case day: date.setDay(stoul(r.at(i))); break;
-				case month: date.setMonth(stoul(r.at(i))); break;
-				case year: date.setYear(stoul(r.at(i))); break;
-				case isoDate: date = Date::fromIsoDateString(r.at(i)); break;
-				case deDate:
-				{
-					auto dmy = splitString(r.at(i), ".");
-					if(dmy.size() == 3)
+					case day: date.setDay(stoul(r.at(i))); break;
+					case month: date.setMonth(stoul(r.at(i))); break;
+					case year: date.setYear(stoul(r.at(i))); break;
+					case isoDate: date = Date::fromIsoDateString(r.at(i)); break;
+					case deDate:
 					{
-						date.setDay(stoul(dmy.at(0)));
-						date.setMonth(stoul(dmy.at(1)));
-						date.setYear(stoul(dmy.at(2)));
+						auto dmy = splitString(r.at(i), ".");
+						if(dmy.size() == 3)
+						{
+							date.setDay(stoul(dmy.at(0)));
+							date.setMonth(stoul(dmy.at(1)));
+							date.setYear(stoul(dmy.at(2)));
+						}
+						break;
 					}
-					break;
-				}
-				case skip: break; //ignore element
-				default:
-				{
-					auto v = stod(r.at(i));
-					vs[acdi] = doConvert ? convert[acdi](v) : v;
-					usedVs[acdi] = true;
-				}
+					case skip: break; //ignore element
+					default:
+					{
+						auto v = stod(r.at(i));
+						vs[acdi] = doConvert ? convert[acdi](v) : v;
+						usedVs[acdi] = true;
+ 					}
 				}
 			}
 		}
@@ -376,13 +378,12 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 			continue;
 		}
 
+		//std::cout << usedVs[tmin]  << "\t" << usedVs[tmax] << "\t" << usedVs[wind] << "\t" << usedVs[globrad] << "\t" << usedVs[et0] << "\t" << usedVs[relhumid] << endl;
 		if(!usedVs[tmin] ||
 			 !usedVs[tmax] ||
-			 !usedVs[precip] ||
-			 !usedVs[relhumid] ||
-			 !usedVs[wind])
+			 !usedVs[precip])
 		{
-			debug() << "Climate data error: One of [tmin, tmax, precip, relhumid, wind] is missing. Ignoring line: " 
+			debug() << "Climate data error: One of [tmin, tmax, precip] is missing. Ignoring line: " 
 				<< endl << s << endl;
 			continue;
 		}
@@ -396,10 +397,7 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 		
 		if(!usedVs[globrad] && usedVs[sunhours])
 		{
-			vs[globrad] = Tools::sunshine2globalRadiation(date.julianDay(), 
-																										vs[sunhours],
-																										options.latitude, 
-																										true);
+			vs[globrad] = Tools::sunshine2globalRadiation(date.julianDay(), vs[sunhours], options.latitude, true);
 			usedVs[globrad] = true;
 		}
 		else if(!usedVs[globrad])
@@ -408,18 +406,18 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 				<< endl << s << endl;
 			continue;
 		}
-
+		
 		map<ACD, double> vsm;
 		for(size_t i = 0, size = usedVs.size(); i < size; i++)
-		{
+		{						
 			if(usedVs[i])
 				vsm[ACD(i)] = vs[i];
 		}
 		
-		assert(vsm.size() >= 7);
+		assert(vsm.size() >= 5);
 		data[date] = vsm;
 	}
-
+	
 	if(data.empty())
 	{
 		cerr << "Climate data error: No data could be read from file!" << endl;

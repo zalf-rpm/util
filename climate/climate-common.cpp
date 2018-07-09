@@ -171,6 +171,7 @@ std::string Climate::availableClimateData2Name(AvailableClimateData col)
 	case vaporpress: return "Dampfdruck";
 	case wind: return "Windgeschwindigkeit";
 	case co2: return "CO2";
+	case et0: return "Reference-Evapotranspiration";
 	default: ;
 	}
 	return "unknown";
@@ -190,6 +191,7 @@ std::string Climate::availableClimateData2unit(AvailableClimateData col)
 	case sunhours: return "h";
 	case wind: return "m/s";
 	case co2: return "ppm";
+	case et0: return "mm";
 	default: ;
 	}
 	return "";

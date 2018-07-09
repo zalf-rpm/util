@@ -36,6 +36,9 @@ namespace Climate
 	 * Climate classes. A user of the classes has to specify its requested
 	 * climate elements in terms of these enumeration values. Usually
 	 * with single elements or a list (vector) of elements.
+	 *
+	 * Attention: skip should always be the last element in this list as the index of skipped
+	 * is used for the calculation of the ACDSize. 
 	 */
   enum AvailableClimateData
   {
@@ -58,7 +61,8 @@ namespace Climate
 		deDate, 
 		co2,
 		o3,
-		skip
+		et0,
+		skip		
 	};
 
 	//! just a shortcut to the quite long name
@@ -88,6 +92,7 @@ namespace Climate
 		,{"iso-date", isoDate}
 		,{"de-date", deDate}
 		,{"skip", skip}
+		,{"et0", et0}
 		};
 	};
 
