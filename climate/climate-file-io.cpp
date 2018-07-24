@@ -68,7 +68,7 @@ Tools::Errors CSVViaHeaderOptions::merge(json11::Json j)
 	set_double_value(latitude, j, "latitude");
 
 	set_string_valueD(separator, j, "csv-separator", ",");
-	noOfHeaderLines = size_t(int_valueD(j, "no-of-climate-file-header-lines", noOfHeaderLines));
+	noOfHeaderLines = int_valueD(j, "no-of-climate-file-header-lines", noOfHeaderLines);
 	headerName2ACDName = headerNames;
 
 	return{};

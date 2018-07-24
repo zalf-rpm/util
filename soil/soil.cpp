@@ -361,7 +361,7 @@ std::pair<SoilPMsPtr, Errors> Soil::createSoilPMs(const J11Array& jsonSoilPMs)
 	Errors errors;
 
 	auto soilPMs = make_shared<SoilPMs>();
-	size_t layerCount = 0;
+	int layerCount = 0;
 	for(size_t spi = 0, spsCount = jsonSoilPMs.size(); spi < spsCount; spi++)
 	{
 		Json sp = jsonSoilPMs.at(spi);
@@ -370,8 +370,8 @@ std::pair<SoilPMsPtr, Errors> Soil::createSoilPMs(const J11Array& jsonSoilPMs)
 		string err;
 		int repeatLayer = 1;
 		if(!sp["Thickness"].is_null())
-			repeatLayer = min(20 - int(layerCount), 
-												max(1, Tools::roundRT<int>(double_valueD(sp, "Thickness", 0.1)*10.0, 0)));
+			repeatLayer = min(20 - layerCount, 
+							  max(1, Tools::roundRT<int>(double_valueD(sp, "Thickness", 0.1)*10.0, 0)));
 
 		//simply repeat the last layer as often as necessary to fill the 20 layers
 		if(spi + 1 == spsCount)
@@ -506,12 +506,13 @@ const SoilPMsPtr Soil::soilParametersFromHermesFile(int soilId,
 				{
 					sps = spsi->second;
 				}
-
-				int ho = sps->size()*layerThicknessCm;
+				assert(sps->size() <= INT_MAX); // assert that size of the vector can be converted into an int 
+				int numSoilPMs = (int)sps->size();
+				int ho = numSoilPMs * layerThicknessCm;
 				int hsize = max(0, hu - ho);
 				int subhcount = int(Tools::round(double(hsize) / double(layerThicknessCm)));
-				if(currenth == hcount && (int(sps->size()) + subhcount) < maxNoOfLayers)
-					subhcount += maxNoOfLayers - sps->size() - subhcount;
+				if(currenth == hcount && (numSoilPMs + subhcount) < maxNoOfLayers)
+					subhcount += maxNoOfLayers - numSoilPMs - subhcount;
 
 				if((ba != "Ss") && (ba != "Sl2") && (ba != "Sl3") && (ba != "Sl4") &&
 					 (ba != "Slu") && (ba != "St2") && (ba != "St3") && (ba != "Su2") &&

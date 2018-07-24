@@ -358,8 +358,8 @@ DataAccessor DataAccessor::cloneForRange(size_t fromStep,
 	DataAccessor clone(*this);
 	clone._fromStep += fromStep;
 	clone._numberOfSteps = numberOfSteps;
-	clone._startDate = clone._startDate + clone._fromStep;
-	clone._endDate = clone._startDate + numberOfSteps - 1;
+	clone._startDate = clone._startDate + (uint)clone._fromStep;
+	clone._endDate = clone._startDate + (uint)numberOfSteps - 1;
 	return clone;
 }
 

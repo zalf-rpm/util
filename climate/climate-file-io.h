@@ -44,7 +44,7 @@ namespace Climate
 		std::string separator;
 		Tools::Date startDate;
 		Tools::Date endDate;
-		size_t noOfHeaderLines{1};
+		int noOfHeaderLines{1};
 		double latitude{0};
 		std::map<std::string, std::string> headerName2ACDName;
 		std::map<std::string, std::pair<std::string, double>> convert;

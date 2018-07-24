@@ -313,7 +313,7 @@ namespace Tools
   template<class Collection>
   double median(const Collection& orderedData, int roundToDigits = 1)
   {
-    int size = orderedData.size();
+    int size = (int)orderedData.size();
     if(size == 0)
       return 0;
     return isEven(size)

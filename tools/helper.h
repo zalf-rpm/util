@@ -420,7 +420,11 @@ namespace Tools
 
 	std::string fixSystemSeparator(std::string path);
 
-  std::string ensureDirExists(const std::string& path);
+	bool ensureDirExists(const std::string& path);
+
+	bool directoryExist(const std::string& path);
+
+	std::string rimRight(const std::string& str, const std::string& charSet);
 
 	std::string replaceEnvVars(std::string path);
 }
