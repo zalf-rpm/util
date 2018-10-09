@@ -22,6 +22,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <sys/stat.h> // stat
 #ifdef WIN32
 #include <direct.h>   // _mkdir
+#include <Windows.h>
 #endif
 
 #include "helper.h"
@@ -62,6 +63,8 @@ bool Tools::stob(const std::string& s, bool def)
 	}
 }
 
+//-----------------------------------------------------------------------------
+
 EResult<string> Tools::readFile(string path)
 {
 	EResult<string> res;
@@ -81,6 +84,8 @@ EResult<string> Tools::readFile(string path)
 	return res;
 }
 
+//-----------------------------------------------------------------------------
+
 pair<string, string> Tools::splitPathToFile(const string& pathToFile)
 {
 	size_t found = pathToFile.find_last_of("/\\");
@@ -89,6 +94,8 @@ pair<string, string> Tools::splitPathToFile(const string& pathToFile)
 		: make_pair(pathToFile.substr(0, found + 1),
 			pathToFile.substr(found + 1));
 }
+
+//-----------------------------------------------------------------------------
 
 bool Tools::isAbsolutePath(const std::string& path)
 {
@@ -105,6 +112,8 @@ bool Tools::isAbsolutePath(const std::string& path)
 
 	return false;
 }
+
+//-----------------------------------------------------------------------------
 
 string Tools::fixSystemSeparator(string path)
 {
@@ -131,6 +140,7 @@ string Tools::fixSystemSeparator(string path)
 #endif
 	return path;
 }
+
 //-----------------------------------------------------------------------------
 
 bool Tools::ensureDirExists(const string& path)
@@ -268,6 +278,37 @@ string Tools::replace(std::string s, std::string findStr, std::string replStr)
 	}
 	return s;
 }
+
+//-----------------------------------------------------------------------------
+
+std::string Tools::winStringSystemCodepageToutf8(const std::string& codepage_str)
+{
+#ifdef WIN32
+	int cplen = (int)codepage_str.length();
+	int size = MultiByteToWideChar(CP_ACP, 0, codepage_str.c_str(),
+		cplen, nullptr, 0);
+	std::wstring utf16_str(size, '\0');
+	MultiByteToWideChar(CP_ACP, 0, codepage_str.c_str(),
+		cplen, &utf16_str[0], size);
+
+	int utf16Len = (int)utf16_str.length();
+	int utf8_size = WideCharToMultiByte(CP_UTF8, 0, utf16_str.c_str(),
+		utf16Len, nullptr, 0,
+		nullptr, nullptr);
+	std::string utf8_str(utf8_size, '\0');
+	WideCharToMultiByte(CP_UTF8, 0, utf16_str.c_str(),
+		utf16Len, &utf8_str[0], utf8_size,
+		nullptr, nullptr);
+
+	return utf8_str;
+#else
+	std::string error;
+	return error;
+#endif
+	
+}
+
+//-----------------------------------------------------------------------------
 
 std::string Tools::replaceEnvVars(std::string path)
 {
