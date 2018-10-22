@@ -23,6 +23,8 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 #include "tools/json11-helper.h"
 #include "climate-common.h"
+#include "common/dll-exports.h"
+
 
 namespace Climate
 {
@@ -73,5 +75,8 @@ namespace Climate
 																			CSVViaHeaderOptions options,
 																			bool strictDateChecking = true);
 }
+
+extern "C" DLL_API char* Climate_readClimateDataFromCSVStringViaHeaders(const char* csvString, const char* options);
+extern "C" DLL_API void Climate_freeCString(char* str);
 
 #endif

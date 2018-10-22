@@ -468,6 +468,17 @@ Climate::readClimateDataFromCSVInputStream(std::istream& is,
 	return da;
 }
 
+char* Climate_readClimateDataFromCSVStringViaHeaders(const char* csvString, const char* options)
+{
+	string resStr = Climate::readClimateDataFromCSVStringViaHeaders(csvString, CSVViaHeaderOptions(parseJsonString(options).result)).to_json().dump();
+	return strdup(resStr.c_str());
+}
+
+void Climate_freeCString(char* str)
+{
+	free(str);
+}
+
 /*
 Climate::DataAccessor 
 Climate::readClimateDataFromCSVFile(std::string pathToFile,

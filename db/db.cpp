@@ -18,6 +18,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <cstring>
 #include <algorithm>
 #include <sstream>
+#include "tools/helper.h"
 
 #include "db.h"
 
@@ -220,7 +221,11 @@ void SqliteDB::lazyInit()
 
 void SqliteDB::init()
 {
-	int rc = sqlite3_open_v2(_filename.c_str(), &_db, SQLITE_OPEN_READWRITE, NULL);
+	string utf8filename = _filename; // linux default codepage is utf-8 
+#ifdef WIN32
+	utf8filename = Tools::winStringSystemCodepageToutf8(_filename);
+#endif
+	int rc = sqlite3_open_v2(utf8filename.c_str(), &_db, SQLITE_OPEN_READONLY, NULL);
 	_isConnected = rc == SQLITE_OK;
 	if(rc)
 	{
