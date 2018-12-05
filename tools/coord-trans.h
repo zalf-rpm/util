@@ -102,7 +102,7 @@ CoordinateSystem shortStringToCoordinateSystem(std::string cs, CoordinateSystem 
 template<typename T>
 struct Coord2D
 {
-  Coord2D() : coordinateSystem(CoordinateSystem) {}
+  Coord2D() : coordinateSystem(CoordinateSystem()) {}
   Coord2D(CoordinateSystem cs) : coordinateSystem(cs) {}
   virtual T firstDimension() const = 0;
   virtual T secondDimension() const = 0;
@@ -237,7 +237,7 @@ struct LatLngCoord : public Coord2D<double>
 
 
 template<typename SourceCoordType, typename TargetCoordType>
-std::vector<typename TargetCoordType>
+std::vector<TargetCoordType>
 sourceProj2targetProj(const std::vector<SourceCoordType>& sourceCoords,
                       CoordinateSystem targetCoordinateSystem);
 
