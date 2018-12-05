@@ -430,6 +430,16 @@ namespace Tools
 	std::string replaceEnvVars(std::string path);
 
 	std::string winStringSystemCodepageToutf8(const std::string& str);
+
+	inline std::string pathSeparator()
+	{
+		return
+#ifdef __unix__
+			"/";
+#else
+			"\\";
+#endif
+	}
 }
 
 
