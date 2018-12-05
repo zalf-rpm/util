@@ -887,6 +887,7 @@ namespace Climate
 
 	//----------------------------------------------------------------------------
 
+	/*
 	inline double potentialEvaporationTW(double globRad_Jpcm2,
                                        double tavg, double fk = 1)
   {
@@ -898,6 +899,7 @@ namespace Climate
   {
 		return precip_mm - potentialEvaporationTW(globRad_Jpcm2, tavg, fk);
 	}
+	*/
 
 	//----------------------------------------------------------------------------
 

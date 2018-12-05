@@ -251,6 +251,19 @@ namespace Climate
     std::size_t _numberOfSteps;
 	};
 
+
+	inline double potentialEvaporationTW(double globRad_Jpcm2,
+																			 double tavg, double fk = 1)
+	{
+		return (globRad_Jpcm2 + 93 * fk)*(tavg + 22) / (150 * (tavg + 123));
+	}
+
+	inline double climaticWaterBalanceTW(double precip_mm, double globRad_Jpcm2,
+																			 double tavg, double fk = 1)
+	{
+		return precip_mm - potentialEvaporationTW(globRad_Jpcm2, tavg, fk);
+	}
+
 }
 
 #endif
