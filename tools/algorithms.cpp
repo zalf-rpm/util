@@ -699,11 +699,11 @@ int Tools::roundShiftedInt(double value, int roundToDigits)
 
 	//round to full integers or digits after the decimal point
 	if (roundToDigits >= 0)
-		return integerRound1stDigit(shiftDecimalPointRight<int>(value, shiftDigits)) / 10;
+		return integerRound1stDigit(shiftDecimalPointRight<int>(value, uint(shiftDigits))) / 10;
 
 	//round to full 100s
 	if (roundToDigits < -1)
-		return integerRound1stDigit(shiftDecimalPointLeft<int>(value, -shiftDigits)) / 10;
+		return integerRound1stDigit(shiftDecimalPointLeft<int>(value, uint(-shiftDigits))) / 10;
 
 	//round to full 10s
 	return integerRound1stDigit(int(value));

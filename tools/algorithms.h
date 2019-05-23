@@ -32,6 +32,8 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <functional>
 #include <limits>
 
+#include "common/common-typedefs.h"
+
 #ifdef max
 	#undef max
 #endif
@@ -337,19 +339,15 @@ namespace Tools
 	int integerRound1stDigit(int value);
 
 	template<typename ReturnType>
-	inline ReturnType shiftDecimalPointRight(double value, int digits)
+	inline ReturnType shiftDecimalPointRight(double value, uint digits)
 	{
-		for(int d = 0; d < digits; d++)
-			value *= 10;
-		return ReturnType(value);
+		return ReturnType(value * pow(10.0, digits));
 	}
 	
 	template<typename ReturnType>
-	inline ReturnType shiftDecimalPointLeft(double value, int digits)
+	inline ReturnType shiftDecimalPointLeft(double value, uint digits)
 	{
-		for(int d = 0; d < digits; d++)
-			value /= 10.0;
-		return ReturnType(value);
+		return ReturnType(value / pow(10.0, digits));
 	}
 	
 	//round to int but keep shifted to roundToDigits
@@ -364,11 +362,11 @@ namespace Tools
 		
 		//round to full integers or digits after the decimal point
 		if(roundToDigits >= 0) 
-			return shiftDecimalPointLeft<ReturnType>(rsi, roundToDigits);
+			return shiftDecimalPointLeft<ReturnType>(rsi, uint(roundToDigits));
 		
 		//round to full 100s
 		if(roundToDigits < -1) 
-			return shiftDecimalPointRight<ReturnType>(rsi, -roundToDigits);
+			return shiftDecimalPointRight<ReturnType>(rsi, uint(-roundToDigits));
 		
 		//round to full 10s
 		return ReturnType(rsi);
