@@ -226,6 +226,9 @@ namespace Climate
 		void addClimateData(AvailableClimateData acd,
 		                    const std::vector<double>& data);
 
+		void addClimateData(AvailableClimateData acd,
+			const std::vector<double>&& data);
+
 		void prependOrAppendClimateData(DataAccessor other,
 																		bool replaceOverlappingData = true);
 

@@ -374,6 +374,17 @@ void DataAccessor::addClimateData(AvailableClimateData acd,
 	_numberOfSteps = _data->empty() ? 0 : _data->front().size();
 }
 
+void DataAccessor::addClimateData(AvailableClimateData acd,
+	const vector<double>&& data)
+{
+	if (!_data->empty())
+		assert(_numberOfSteps = data.size());
+
+	_data->push_back(data);
+	_acd2dataIndex[int(acd)] = short(_data->size() - 1);
+	_numberOfSteps = _data->empty() ? 0 : _data->front().size();
+}
+
 void DataAccessor::prependOrAppendClimateData(DataAccessor other,
 																							bool replaceOverlappingData)
 {
