@@ -31,7 +31,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include "soil.h"
 #include "tools/debug.h"
 #include "constants.h"
-#include "tools/json11-helper.h"
+#include "json11/json11-helper.h"
 
 using namespace Db;
 using namespace std;

@@ -21,7 +21,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <vector>
 #include <istream>
 
-#include "tools/json11-helper.h"
+#include "json11/json11-helper.h"
 #include "climate-common.h"
 #include "common/dll-exports.h"
 

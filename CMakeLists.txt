@@ -1,0 +1,21 @@
+project(Util)
+
+message(STATUS "-> Util")
+
+add_subdirectory(tools)
+if(NOT TARGET json11_lib)
+	message(STATUS "target: json11_lib")
+	add_subdirectory(json11)
+endif()
+add_subdirectory(db)
+add_subdirectory(climate)
+if(NOT TARGET soil_lib)
+	message(STATUS "target: soil_lib")
+	add_subdirectory(soil)
+endif()
+if(NOT TARGET zmq_lib)
+	message(STATUS "target: zmq_lib")
+	add_subdirectory(zeromq)
+endif()
+
+message(STATUS "<- Util")
