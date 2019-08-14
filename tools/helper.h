@@ -45,6 +45,9 @@ namespace Tools
 			warnings.insert(warnings.end(), es.warnings.begin(), es.warnings.end());
 		}
 
+    void appendError(std::string err) { errors.push_back(err); }
+    void appendWarning(std::string warn) { warnings.push_back(warn); }
+
 		std::vector<std::string> errors;
 		std::vector<std::string> warnings;
 	};
@@ -57,6 +60,7 @@ namespace Tools
 		EResult(T result, std::string e) : Errors(e), result(result) {}
 		EResult(T result, Type t, std::string m) : Errors(t, m), result(result) { }
 		EResult(T result, std::vector<std::string> es) : Errors(es), result(result) {}
+    EResult(T result, Errors es) : Errors(es), result(result) {}
 
 		T result;
 	};

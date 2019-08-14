@@ -22,6 +22,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <istream>
 
 #include "json11/json11-helper.h"
+#include "tools/helper.h"
 #include "climate-common.h"
 #include "common/dll-exports.h"
 
@@ -52,24 +53,25 @@ namespace Climate
 		std::map<std::string, std::pair<std::string, double>> convert;
 		std::map<Climate::ACD, std::function<double(double)>> convertFn;
 	};
-	Climate::DataAccessor
+
+	Tools::EResult<Climate::DataAccessor>
 		readClimateDataFromCSVInputStreamViaHeaders(std::istream& inputStream,
 																								CSVViaHeaderOptions options = CSVViaHeaderOptions(),
 																								bool strictDateChecking = true);
 
-	Climate::DataAccessor
+  Tools::EResult<Climate::DataAccessor>
 		readClimateDataFromCSVFileViaHeaders(std::string pathToFile,
 		                                     CSVViaHeaderOptions options = CSVViaHeaderOptions());
 
-	Climate::DataAccessor
+  Tools::EResult<Climate::DataAccessor>
 		readClimateDataFromCSVFilesViaHeaders(std::vector<std::string> pathsToFiles,
 																					CSVViaHeaderOptions options = CSVViaHeaderOptions());
 
-	Climate::DataAccessor
+  Tools::EResult<Climate::DataAccessor>
 		readClimateDataFromCSVStringViaHeaders(std::string csvString,
 																					 CSVViaHeaderOptions options = CSVViaHeaderOptions());
 
-	Climate::DataAccessor
+  Tools::EResult<Climate::DataAccessor>
 		readClimateDataFromCSVInputStream(std::istream& inputStream,
 																			std::vector<ACD> header,
 																			CSVViaHeaderOptions options,
