@@ -13,9 +13,8 @@ This file is part of the util library used by models created at the Institute of
 Landscape Systems Analysis at the ZALF.
 Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 */
+#pragma once
 
-#ifndef JSON11_HELPER_H_
-#define JSON11_HELPER_H_
 
 #include <string>
 #include <functional>
@@ -471,4 +470,3 @@ namespace Tools
 
 }
 
-#endif
