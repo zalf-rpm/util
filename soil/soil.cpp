@@ -89,6 +89,9 @@ Errors SoilParameters::merge(json11::Json j)
 			es.append(res);
 	}
 
+	if (vs_SoilClayContent > 0 && vs_SoilSandContent > 0 && vs_SoilTexture == "")
+		vs_SoilTexture = sandAndClay2KA5texture(vs_SoilSandContent, vs_SoilClayContent);
+
 	// restrict sceleton to 80%, else FC, PWP and SAT could be calculated too low, so that the water transport algorithm gets instable
 	if(vs_SoilStoneContent > 0)
 		vs_SoilStoneContent = min(vs_SoilStoneContent, 0.8);
@@ -146,7 +149,7 @@ json11::Json SoilParameters::to_json() const
 
 //----------------------------------------------------------------------------------
 
-void CapillaryRiseRates::addRate(std::string bodart, int distance, double value)
+void CapillaryRiseRates::addRate(std::string bodart, size_t distance, double value)
 {
 	//        std::cout << "Add cap rate: " << bodart.c_str() << "\tdist: " << distance << "\tvalue: " << value << std::endl;
 	//cap_rates_map.insert(std::pair<std::string,std::map<int,double> >(bodart,std::pair<int,double>(distance,value)));
@@ -156,9 +159,9 @@ void CapillaryRiseRates::addRate(std::string bodart, int distance, double value)
 /**
 	 * Returns capillary rise rate for given soil type and distance to ground water.
 	 */
-double CapillaryRiseRates::getRate(std::string bodart, int distance) const
+double CapillaryRiseRates::getRate(std::string bodart, size_t distance) const
 {
-	typedef std::map<int, double> T_BodArtMap;
+	typedef std::map<size_t, double> T_BodArtMap;
 	//        std::cout << "Get capillary rise rate: " << bodart.c_str() << "\t" << distance << std::endl;
 	T_BodArtMap map = getMap(bodart);
 	if(map.size() <= 0)
@@ -174,9 +177,9 @@ double CapillaryRiseRates::getRate(std::string bodart, int distance) const
 	return 0.0;
 }
 
-std::map<int, double> CapillaryRiseRates::getMap(std::string bodart) const
+std::map<size_t, double> CapillaryRiseRates::getMap(std::string bodart) const
 {
-	typedef std::map<int, double> T_BodArtMap;
+	typedef std::map<size_t, double> T_BodArtMap;
 	typedef std::map<std::string, T_BodArtMap> T_CapRatesMap;
 
 	T_CapRatesMap::const_iterator it2 = cap_rates_map.find(bodart);
@@ -972,7 +975,7 @@ FcSatPwp Soil::fcSatPwpFromVanGenuchten(double sandContent,
 	double thetaR = res.pwp;
 	double thetaS = res.sat;
 
-	double vanGenuchtenAlpha = exp(-2.486
+  double vanGenuchtenAlpha = exp(-2.486
 																 + 2.5*sandContent
 																 - 35.1*soilOrganicCarbon
 																 - 2.617*(soilBulkDensity / 1000.0)
@@ -989,35 +992,35 @@ FcSatPwp Soil::fcSatPwpFromVanGenuchten(double sandContent,
 	//***** moisture equivalent (Field capacity definition KA5)
 
 	double fieldCapacity_pF = 2.1;
-	if((sandContent > 0.48) && (sandContent <= 0.9) && (clayContent <= 0.12))
+	if(sandContent > 0.48 && sandContent <= 0.9 && clayContent <= 0.12)
 		fieldCapacity_pF = 2.1 - (0.476 * (sandContent - 0.48));
-	else if((sandContent > 0.9) && (clayContent <= 0.05))
+	else if(sandContent > 0.9 && clayContent <= 0.05)
 		fieldCapacity_pF = 1.9;
 	else if(clayContent > 0.45)
 		fieldCapacity_pF = 2.5;
-	else if((clayContent > 0.30) && (sandContent < 0.2))
+	else if(clayContent > 0.30 && sandContent < 0.2)
 		fieldCapacity_pF = 2.4;
 	else if(clayContent > 0.35)
 		fieldCapacity_pF = 2.3;
-	else if((clayContent > 0.25) && (sandContent < 0.1))
+	else if(clayContent > 0.25 && sandContent < 0.1)
 		fieldCapacity_pF = 2.3;
-	else if((clayContent > 0.17) && (sandContent > 0.68))
+	else if(clayContent > 0.17 && sandContent > 0.68)
 		fieldCapacity_pF = 2.2;
-	else if((clayContent > 0.17) && (sandContent < 0.33))
+	else if(clayContent > 0.17 && sandContent < 0.33)
 		fieldCapacity_pF = 2.2;
-	else if((clayContent > 0.08) && (sandContent < 0.27))
+	else if(clayContent > 0.08 && sandContent < 0.27)
 		fieldCapacity_pF = 2.2;
-	else if((clayContent > 0.25) && (sandContent < 0.25))
+	else if(clayContent > 0.25 && sandContent < 0.25)
 		fieldCapacity_pF = 2.2;
 
 	double matricHead = pow(10, fieldCapacity_pF);
 
-	res.fc = (thetaR
-						+ ((thetaS - thetaR)
-							 / (pow(1.0 + pow(vanGenuchtenAlpha * matricHead,
-																vanGenuchtenN),
-											vanGenuchtenM))))
-		* (1.0 - stoneContent);
+  res.fc = (
+    thetaR + (
+      (thetaS - thetaR)
+      / (pow(1.0 + pow(vanGenuchtenAlpha * matricHead, vanGenuchtenN), vanGenuchtenM))
+			)
+    ) * (1.0 - stoneContent);
 
 	return res;
 }

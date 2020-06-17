@@ -100,18 +100,18 @@ namespace Soil
 		~CapillaryRiseRates() {}
 
 		//Adds a capillary rise rate to data structure.
-		void addRate(std::string bodart, int distance, double value);
+		void addRate(std::string bodart, size_t distance, double value);
 
 		//Returns capillary rise rate for given soil type and distance to ground water.
-		double getRate(std::string bodart, int distance) const;
+		double getRate(std::string bodart, size_t distance) const;
 
-		std::map<int, double> getMap(std::string bodart) const;
+		std::map<size_t, double> getMap(std::string bodart) const;
 
 		//Returns number of elements of internal map data structure.
 		size_t size() const { return cap_rates_map.size(); }
 
 	private:
-		std::map<std::string, std::map<int, double>> cap_rates_map;
+		std::map<std::string, std::map<size_t, double>> cap_rates_map;
 	};
 
 	const CapillaryRiseRates& readCapillaryRiseRates();
