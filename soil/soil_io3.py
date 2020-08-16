@@ -16,7 +16,11 @@ import sqlite3
 
 print("local soil_io3.py")
 
+
 def soil_parameters(con, profile_id):
+    return get_soil_profile(con, profile_id)
+
+def get_soil_profile(con, profile_id):
     "return soil parameters from the database connection for given profile id"
     query = """
         select 
@@ -139,11 +143,109 @@ def soil_parameters(con, profile_id):
 
     return layers
 
+
+def available_soil_parameters(con):
+    "return only soil parameters which are actually available in this dataset"
+    query = """
+        select 
+            id, 
+            layer_depth, 
+            soil_organic_carbon, 
+            soil_organic_matter, 
+            bulk_density, 
+            raw_density,
+            sand, 
+            clay, 
+            ph, 
+            KA5_texture_class,
+            permanent_wilting_point,
+            field_capacity,
+            saturation,
+            soil_water_conductivity_coefficient,
+            sceleton,
+            soil_ammonium,
+            soil_nitrate,
+            c_n,
+            initial_soil_moisture,
+            layer_description,
+            is_in_groundwater,
+            is_impenetrable
+        from soil_profile 
+        order by id, layer_depth
+        limit 1
+    """
+
+    params = []
+
+    con.row_factory = sqlite3.Row
+    for row in con.cursor().execute(query):
+        if row["layer_depth"] is not None:
+            params.append("Thickness")
+
+        if row["KA5_texture_class"] is not None:
+            params.append("KA5TextureClass")
+
+        if row["sand"] is not None:
+            params.append("Sand")
+
+        if row["clay"] is not None:
+            params.append("Clay")
+
+        if row["ph"] is not None:
+            params.append("pH")
+
+        if row["sceleton"] is not None:
+            params.append("Sceleton")
+
+        if row["soil_organic_carbon"] is not None:
+            params.append("SoilOrganicCarbon")
+        elif row["soil_organic_matter"] is not None:
+            params.append("SoilOrganicMatter")
+
+        if row["bulk_density"] is not None:
+            params.append("SoilBulkDensity")
+        elif row["raw_density"] is not None:
+            params.append("SoilRawDensity")
+
+        if row["field_capacity"] is not None:
+            params.append("FieldCapacity")
+
+        if row["permanent_wilting_point"] is not None:
+            params.append("PermanentWiltingPoint")
+
+        if row["saturation"] is not None:
+            params.append("PoreVolume")
+
+        if row["initial_soil_moisture"] is not None:
+            params.append("SoilMoisturePercentFC")
+
+        if row["soil_water_conductivity_coefficient"] is not None:
+            params.append("Lambda")
+
+        if row["soil_ammonium"] is not None:
+            params.append("SoilAmmonium")
+
+        if row["soil_nitrate"] is not None:
+            params.append("SoilNitrate")
+
+        if row["c_n"] is not None:
+            params.append("CN")
+
+        if row["layer_description"] is not None:
+            params.append("description")
+
+        if row["is_in_groundwater"] is not None:
+            params.append("is_in_groundwater")
+
+        if row["is_impenetrable"] is not None:
+            params.append("is_impenetrable")
+
+    return params
+
+
 #con = sqlite3.connect("soil.sqlite")
 #x = soil_parameters(con, 197595)
 #print(x)
-
-
 
 def humus_class_to_corg(humus_class):
     "convert humus class to soil organic carbon content"
