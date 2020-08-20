@@ -127,24 +127,24 @@ Errors SoilParameters::merge(json11::Json j)
 json11::Json SoilParameters::to_json() const
 {
 	return J11Object{
-		{"type", "SoilParameters"},
-		{"Sand", J11Array {vs_SoilSandContent, "% [0-1]"}},
-		{"Clay", J11Array {vs_SoilClayContent, "% [0-1]"}},
-		{"pH", vs_SoilpH},
-		{"Sceleton", J11Array {vs_SoilStoneContent, "vol% [0-1] (m3 m-3)"}},
-		{"Lambda", vs_Lambda},
-		{"FieldCapacity", J11Array {vs_FieldCapacity, "vol% [0-1] (m3 m-3)"}},
-		{"PoreVolume", J11Array{vs_Saturation, "vol% [0-1] (m3 m-3)"}},
-		{"PermanentWiltingPoint", J11Array{vs_PermanentWiltingPoint, "vol% [0-1] (m3 m-3)"}},
-		{"KA5TextureClass", vs_SoilTexture},
-		{"SoilAmmonium", J11Array{vs_SoilAmmonium, "kg NH4-N m-3"}},
-		{"SoilNitrate", J11Array{vs_SoilNitrate, "kg NO3-N m-3"}},
-		{"CN", vs_Soil_CN_Ratio},
-		{"SoilRawDensity", J11Array {_vs_SoilRawDensity, "kg m-3"}},
-		{"SoilBulkDensity", J11Array {_vs_SoilBulkDensity, "kg m-3"}},
-		{"SoilOrganicCarbon", J11Array {_vs_SoilOrganicCarbon * 100.0, "mass% [0-100]"}},
-		{"SoilOrganicMatter", J11Array {_vs_SoilOrganicMatter, "mass% [0-1]"}},
-		{"SoilMoisturePercentFC", J11Array {vs_SoilMoisturePercentFC, "% [0-100]"}}};
+		{"type", "SoilParameters"}
+	,	{"Sand", J11Array {vs_SoilSandContent, "% [0-1]"}}
+	,	{"Clay", J11Array {vs_SoilClayContent, "% [0-1]"}}
+	,	{"pH", vs_SoilpH}
+	,	{"Sceleton", J11Array {vs_SoilStoneContent, "vol% [0-1] (m3 m-3)"}}
+	,	{"Lambda", vs_Lambda}
+	,	{"FieldCapacity", J11Array {vs_FieldCapacity, "vol% [0-1] (m3 m-3)"}}
+	,	{"PoreVolume", J11Array{vs_Saturation, "vol% [0-1] (m3 m-3)"}}
+	,	{"PermanentWiltingPoint", J11Array{vs_PermanentWiltingPoint, "vol% [0-1] (m3 m-3)"}}
+	,	{"KA5TextureClass", vs_SoilTexture}
+	,	{"SoilAmmonium", J11Array{vs_SoilAmmonium, "kg NH4-N m-3"}}
+	,	{"SoilNitrate", J11Array{vs_SoilNitrate, "kg NO3-N m-3"}}
+	,	{"CN", vs_Soil_CN_Ratio}
+	,	{"SoilRawDensity", J11Array {_vs_SoilRawDensity, "kg m-3"}}
+	,	{"SoilBulkDensity", J11Array {_vs_SoilBulkDensity, "kg m-3"}}
+	,	{"SoilOrganicCarbon", J11Array {_vs_SoilOrganicCarbon * 100.0, "mass% [0-100]"}}
+	,	{"SoilOrganicMatter", J11Array {_vs_SoilOrganicMatter, "mass% [0-1]"}}
+	,	{"SoilMoisturePercentFC", J11Array {vs_SoilMoisturePercentFC, "% [0-100]"}}};
 }
 
 //----------------------------------------------------------------------------------
