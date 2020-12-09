@@ -25,7 +25,6 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 
 #ifndef NO_ZMQ
 #include "zmq.hpp"
-#include "zhelpers.hpp"
 #endif
 
 #include "tools/date.h"
@@ -46,7 +45,13 @@ namespace Tools
 #ifndef NO_ZMQ
 	Msg receiveMsg(zmq::socket_t& socket, int topicCharCount = 0, bool nonBlockingMode = false);
 
-  inline bool sendMsg(zmq::socket_t& pushSocket, json11::Json msg){ return s_send(pushSocket, msg.dump()); }
+  bool sendMsg(zmq::socket_t& pushSocket, json11::Json msg);
+
+  std::string s_recv(zmq::socket_t& socket);
+
+  bool s_send(zmq::socket_t& socket, const std::string& string);
+
+  bool s_sendmore(zmq::socket_t& socket, const std::string& string);
 #endif
 }
 

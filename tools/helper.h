@@ -301,6 +301,43 @@ namespace Tools
 
 	//----------------------------------------------------------------------------
 
+	// listbuilder has to have the same size as collection
+	template<typename Collection, typename CapnpListBuilder>
+	void setCapnpList(const Collection& values, CapnpListBuilder listBuilder) {
+		uint i = 0;
+		for (auto value : values) listBuilder.set(i++, value);
+	}
+
+	//----------------------------------------------------------------------------
+
+	template<typename Collection, typename CapnpListBuilder>
+	void setComplexCapnpList(const Collection& values, CapnpListBuilder listBuilder) {
+		uint i = 0;
+		for (auto value : values) value.serialize(listBuilder[i++]);
+	}
+
+	//----------------------------------------------------------------------------
+
+	// vector will be deleted before setting the capnp lists values
+	template<typename Vector, typename CapnpListReader>
+	void setFromCapnpList(Vector& values, CapnpListReader listReader) {
+		values.resize(listReader.size());
+		uint i = 0;
+		for (auto value : listReader) values[i++] = value;
+	}
+
+	//----------------------------------------------------------------------------
+
+	// vector will be deleted before setting the capnp lists values
+	template<typename Vector, typename CapnpListReader>
+	void setFromComplexCapnpList(Vector& values, CapnpListReader listReader) {
+		values.resize(listReader.size());
+		uint i = 0;
+		for (auto value : values) value.deserialize(listReader[i++]);
+	}
+
+	//----------------------------------------------------------------------------
+
   //  template<typename T, bool isStdFundamental>
   //  struct ToString
   //  {

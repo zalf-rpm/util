@@ -27,6 +27,10 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <functional>
 #include <iostream>
 
+#ifdef CAPNPROTO_SERIALIZATION_SUPPORT
+#include "monica/monica_params.capnp.h"
+#endif
+
 #include "json11/json11.hpp"
 #include "json11/json11-helper.h"
 
@@ -38,6 +42,12 @@ namespace Soil
 		SoilParameters() {}
 
 		SoilParameters(json11::Json object);
+
+#ifdef CAPNPROTO_SERIALIZATION_SUPPORT
+		void serialize(mas::models::monica::SoilParameters::Builder builder) const;
+
+		void deserialize(mas::models::monica::SoilParameters::Reader reader);
+#endif
 
 		virtual Tools::Errors merge(json11::Json j);
 
@@ -119,7 +129,7 @@ namespace Soil
 	typedef std::vector<SoilParameters> SoilPMs;
 	typedef std::shared_ptr<SoilPMs> SoilPMsPtr;
 
-	std::pair<SoilPMsPtr, Tools::Errors> createSoilPMs(const Tools::J11Array& jsonSoilPMs);
+	std::pair<SoilPMs, Tools::Errors> createSoilPMs(const Tools::J11Array& jsonSoilPMs);
 
 	//! creates a concatenated string of the KA5 soil-textures making up the soil-profile with the given id
 	std::string soilProfileId2KA5Layers(const std::string& abstractDbSchema,

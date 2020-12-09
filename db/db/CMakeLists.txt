@@ -19,7 +19,7 @@ endif()
 
 add_library(db_lib STATIC ../db.h ../db.cpp ../abstract-db-connections.h ../abstract-db-connections.cpp)
 target_link_libraries(db_lib PUBLIC date_lib sqlite3_lib read_ini_lib)
-target_include_directories(db_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/.. ../..)
+target_include_directories(db_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/.. ../.. ${CMAKE_CURRENT_BINARY_DIR}/../../mas-infrastructure/capnproto_schemas)
 if(MSVC AND MT_RUNTIME_LIB)
 	target_compile_options(db_lib PRIVATE "/MT$<$<CONFIG:Debug>:d>")
 endif()

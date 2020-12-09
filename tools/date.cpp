@@ -130,6 +130,20 @@ Date::Date(uint day,
 	}
 }
 
+#ifdef CAPNPROTO_SERIALIZATION_SUPPORT
+void Date::deserialize(mas::common::Date::Reader reader) {
+	_d = reader.getDay();
+	_m = reader.getMonth();
+	_y = reader.getYear();
+}
+
+void Date::serialize(mas::common::Date::Builder builder) const {
+	builder.setDay(_d);
+	builder.setMonth(_m);
+	builder.setYear(_y);
+}
+#endif
+
 Date Date::relativeDate(uint day, 
 												uint month,
 												int deltaYears,

@@ -21,6 +21,10 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <vector>
 #include "common/common-typedefs.h"
 
+#ifdef CAPNPROTO_SERIALIZATION_SUPPORT
+#include "date.capnp.h"
+#endif
+
 #ifdef DSS_NO_LEAP_YEAR_BY_DEFAULT
 #define DEFAULT_USE_LEAP_YEARS false
 #else
@@ -64,6 +68,14 @@ namespace Tools
 				 bool isRelativeDate = false,
 				 bool createValidDate = false,
 				 bool useLeapYears = DEFAULT_USE_LEAP_YEARS);
+
+#ifdef CAPNPROTO_SERIALIZATION_SUPPORT
+		Date(mas::common::Date::Reader reader) { deserialize(reader); }
+
+		void serialize(mas::common::Date::Builder builder) const;
+
+		void deserialize(mas::common::Date::Reader reader);
+#endif
 
 		static Date relativeDate(uint day,
 														 uint month,

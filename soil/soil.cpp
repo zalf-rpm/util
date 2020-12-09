@@ -41,7 +41,47 @@ using namespace json11;
 
 //----------------------------------------------------------------------------------
 
+#ifdef CAPNPROTO_SERIALIZATION_SUPPORT
+void SoilParameters::serialize(mas::models::monica::SoilParameters::Builder builder) const {
+	builder.setSoilSandContent(vs_SoilSandContent);
+	builder.setSoilClayContent(vs_SoilClayContent);
+	builder.setSoilpH(vs_SoilpH);
+	builder.setSoilStoneContent(vs_SoilStoneContent);
+	builder.setLambda(vs_Lambda);
+	builder.setFieldCapacity(vs_FieldCapacity);
+	builder.setSaturation(vs_Saturation);
+	builder.setPermanentWiltingPoint(vs_PermanentWiltingPoint);
+	builder.setSoilTexture(vs_SoilTexture);
+	builder.setSoilAmmonium(vs_SoilAmmonium);
+	builder.setSoilNitrate(vs_SoilNitrate);
+	builder.setSoilCNRatio(vs_Soil_CN_Ratio);
+	builder.setSoilMoisturePercentFC(vs_SoilMoisturePercentFC);
+	builder.setSoilRawDensity(_vs_SoilRawDensity);
+	builder.setSoilBulkDensity(_vs_SoilBulkDensity);
+	builder.setSoilOrganicCarbon(_vs_SoilOrganicCarbon);
+	builder.setSoilOrganicMatter(_vs_SoilOrganicMatter);
+}
 
+void SoilParameters::deserialize(mas::models::monica::SoilParameters::Reader reader) {
+	vs_SoilSandContent = reader.getSoilSandContent();
+	vs_SoilClayContent = reader.getSoilClayContent();
+	vs_SoilpH = reader.getSoilpH();
+	vs_SoilStoneContent = reader.getSoilStoneContent();
+	vs_Lambda = reader.getLambda();
+	vs_FieldCapacity = reader.getFieldCapacity();
+	vs_Saturation = reader.getSaturation();
+	vs_PermanentWiltingPoint = reader.getPermanentWiltingPoint();
+	vs_SoilTexture = reader.getSoilTexture();
+	vs_SoilAmmonium = reader.getSoilAmmonium();
+	vs_SoilNitrate = reader.getSoilNitrate();
+	vs_Soil_CN_Ratio = reader.getSoilCNRatio();
+	vs_SoilMoisturePercentFC = reader.getSoilMoisturePercentFC();
+	_vs_SoilRawDensity = reader.getSoilRawDensity();
+	_vs_SoilBulkDensity = reader.getSoilBulkDensity();
+	_vs_SoilOrganicCarbon = reader.getSoilOrganicCarbon();
+	_vs_SoilOrganicMatter = reader.getSoilOrganicMatter();
+}
+#endif
 
 SoilParameters::SoilParameters(json11::Json j)
 {
@@ -359,11 +399,11 @@ double SoilParameters::sandAndClay2lambda(double sand, double clay)
 
 //------------------------------------------------------------------------------
 
-std::pair<SoilPMsPtr, Errors> Soil::createSoilPMs(const J11Array& jsonSoilPMs)
+std::pair<SoilPMs, Errors> Soil::createSoilPMs(const J11Array& jsonSoilPMs)
 {
 	Errors errors;
 
-	auto soilPMs = make_shared<SoilPMs>();
+	SoilPMs soilPMs;
 	int layerCount = 0;
 	for(size_t spi = 0, spsCount = jsonSoilPMs.size(); spi < spsCount; spi++)
 	{
@@ -384,7 +424,7 @@ std::pair<SoilPMsPtr, Errors> Soil::createSoilPMs(const J11Array& jsonSoilPMs)
 		{
 			SoilParameters sps;
 			auto es = sps.merge(sp);
-			soilPMs->push_back(sps);
+			soilPMs.push_back(sps);
 			if(es.failure())
 				errors.append(es);
 		}

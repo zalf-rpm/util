@@ -14,7 +14,7 @@ endif()
 
 add_library(json11_lib STATIC json11.hpp json11.cpp json11-helper.h json11-helper.cpp)
 target_link_libraries(json11_lib PUBLIC date_lib helpers_lib)
-target_include_directories(json11_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ..)
+target_include_directories(json11_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} .. ${CMAKE_CURRENT_BINARY_DIR}/../../mas-infrastructure/capnproto_schemas)
 if(MSVC AND MT_RUNTIME_LIB)
 	target_compile_options(json11_lib PRIVATE "/MT$<$<CONFIG:Debug>:d>")
 endif()

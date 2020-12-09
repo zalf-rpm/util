@@ -207,7 +207,7 @@ namespace Db
 
 	struct DBConData
 	{
-		DBConData() : maxNoOfConnections(0) {}
+		DBConData() {}
 		//! construct a Mysql connection
 		DBConData(const std::string& host, const std::string& user,
 							const std::string& pwd, const std::string& schema,
@@ -224,8 +224,8 @@ namespace Db
 		std::string filename;
     std::string abstractSchemaName;
 
-		int maxNoOfConnections;
-		unsigned int port;
+		int maxNoOfConnections{ 0 };
+		unsigned int port{ 0 };
 		bool isValid() const
 		{
 			return !filename.empty() || (!host.empty() && !user.empty() && !pwd.empty() && !schema.empty());

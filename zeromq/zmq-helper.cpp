@@ -41,6 +41,36 @@ Msg Tools::receiveMsg(zmq::socket_t& socket, int topicCharCount, bool nonBlockin
   }
   return Msg{Json(), "", "", "", false};
 }
+
+bool Tools::sendMsg(zmq::socket_t& pushSocket, json11::Json msg) { 
+  auto msgStr = msg.dump();
+  zmq::message_t message(msgStr.size());
+  memcpy(message.data(), msgStr.data(), msgStr.size());
+  return pushSocket.send(message);
+}
+
+std::string Tools::s_recv(zmq::socket_t& socket) {
+  zmq::message_t message;
+  socket.recv(&message);
+  return std::string(static_cast<char*>(message.data()), message.size());
+}
+
+bool Tools::s_send(zmq::socket_t& socket, const std::string& string) {
+  zmq::message_t message(string.size());
+  memcpy(message.data(), string.data(), string.size());
+
+  bool rc = socket.send(message);
+  return (rc);
+}
+
+bool Tools::s_sendmore(zmq::socket_t& socket, const std::string& string) {
+  zmq::message_t message(string.size());
+  memcpy(message.data(), string.data(), string.size());
+
+  bool rc = socket.send(message, ZMQ_SNDMORE);
+  return (rc);
+}
+
 #endif
 
 
