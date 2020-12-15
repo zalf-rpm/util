@@ -301,7 +301,7 @@ namespace Tools
 
 	//----------------------------------------------------------------------------
 
-	// listbuilder has to have the same size as collection
+	// listBuilder has to have the same size as collection
 	template<typename Collection, typename CapnpListBuilder>
 	void setCapnpList(const Collection& values, CapnpListBuilder listBuilder) {
 		uint i = 0;
@@ -310,17 +310,17 @@ namespace Tools
 
 	//----------------------------------------------------------------------------
 
+	// listBuilder has to have the same size as collection
 	template<typename Collection, typename CapnpListBuilder>
 	void setComplexCapnpList(const Collection& values, CapnpListBuilder listBuilder) {
 		uint i = 0;
-		for (auto value : values) value.serialize(listBuilder[i++]);
+		for (const auto& value : values) value.serialize(listBuilder[i++]);
 	}
 
 	//----------------------------------------------------------------------------
 
-	// vector will be deleted before setting the capnp lists values
-	template<typename Vector, typename CapnpListReader>
-	void setFromCapnpList(Vector& values, CapnpListReader listReader) {
+	template<typename Collection, typename CapnpListReader>
+	void setFromCapnpList(Collection& values, CapnpListReader listReader) {
 		values.resize(listReader.size());
 		uint i = 0;
 		for (auto value : listReader) values[i++] = value;
@@ -328,12 +328,11 @@ namespace Tools
 
 	//----------------------------------------------------------------------------
 
-	// vector will be deleted before setting the capnp lists values
-	template<typename Vector, typename CapnpListReader>
-	void setFromComplexCapnpList(Vector& values, CapnpListReader listReader) {
+	template<typename Collection, typename CapnpListReader>
+	void setFromComplexCapnpList(Collection& values, CapnpListReader listReader) {
 		values.resize(listReader.size());
 		uint i = 0;
-		for (auto value : values) value.deserialize(listReader[i++]);
+		for (auto& value : values) value.deserialize(listReader[i++]);
 	}
 
 	//----------------------------------------------------------------------------
