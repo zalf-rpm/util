@@ -28,7 +28,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <iostream>
 
 #ifdef CAPNPROTO_SERIALIZATION_SUPPORT
-#include "monica/monica_params.capnp.h"
+#include "models/monica/monica_params.capnp.h"
 #endif
 
 #include "json11/json11.hpp"
