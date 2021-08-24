@@ -941,7 +941,6 @@ RPSCDRes Soil::readSoilCharacteristicModifier(string soilType, double organicMat
 #else
 			auto pathToMonicaParamsSoil = fs->getCurrentPath().eval(replaceEnvVars("${MONICA_PARAMETERS}/soil/"));
 #endif
-			cout << pathToMonicaParamsSoil.toString().cStr() << endl;
 			try
 			{
 				KJ_IF_MAYBE(file, fs->getRoot().tryOpenFile(pathToMonicaParamsSoil.append("SoilCharacteristicModifier.sercapnp")))
