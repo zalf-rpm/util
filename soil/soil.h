@@ -132,8 +132,8 @@ namespace Soil
 	std::pair<SoilPMs, Tools::Errors> createSoilPMs(const Tools::J11Array& jsonSoilPMs);
 
 	//! creates a concatenated string of the KA5 soil-textures making up the soil-profile with the given id
-	std::string soilProfileId2KA5Layers(const std::string& abstractDbSchema,
-																			int soilProfileId);
+	//std::string soilProfileId2KA5Layers(const std::string& abstractDbSchema,
+	//																		int soilProfileId);
 
 	const SoilPMsPtr soilParametersFromHermesFile(int soilId,
 																								const std::string& pathToFile,
@@ -144,12 +144,12 @@ namespace Soil
 
 	struct RPSCDRes
 	{
-		RPSCDRes() : sat(0), fc(0), pwp(0), initialized(false) {}
-		RPSCDRes(bool initialized) : sat(0), fc(0), pwp(0), initialized(initialized) {}
-		double sat; //!< [m3 m-3]
-		double fc; //!< [m3 m-3]
-		double pwp; //!< [m3 m-3]
-		bool initialized;
+		RPSCDRes() {}
+		RPSCDRes(bool initialized) : initialized(initialized) {}
+		double sat{ 0.0 }; // [m3 m-3]
+		double fc{ 0.0 };  // [m3 m-3]
+		double pwp{ 0.0 }; // [m3 m-3]
+		bool initialized{ false };
 	};
 	RPSCDRes readPrincipalSoilCharacteristicData(std::string KA5TextureClass,
 																							 double rawDensity);

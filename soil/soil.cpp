@@ -24,7 +24,14 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <utility>
 #include <mutex>
 
-#include "db/abstract-db-connections.h"
+#include <capnp/message.h>
+#include <capnp/serialize.h>
+#include <kj/filesystem.h>
+#include <kj/string.h>
+#include "models/monica/soil_params.capnp.h"
+#include "capnp/compat/json.h"
+
+//#include "db/abstract-db-connections.h"
 #include "tools/helper.h"
 #include "tools/algorithms.h"
 #include "conversion.h"
@@ -33,7 +40,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include "constants.h"
 #include "json11/json11-helper.h"
 
-using namespace Db;
+//using namespace Db;
 using namespace std;
 using namespace Tools;
 using namespace Soil;
@@ -230,6 +237,7 @@ std::map<size_t, double> CapillaryRiseRates::getMap(std::string bodart) const
 	return tmp;
 }
 
+//*
 const CapillaryRiseRates& Soil::readCapillaryRiseRates()
 {
 	static mutex lockable;
@@ -242,23 +250,102 @@ const CapillaryRiseRates& Soil::readCapillaryRiseRates()
 
 		if(!initialized)
 		{
+			auto cacheAllData = [](mas::data::soil::CapillaryRiseRate::Reader data) {
+				for (const auto& scd : data.getList())
+				{
+					cap_rates.addRate(scd.getSoilType(), scd.getDistance(), scd.getRate());
+				}
+			};
+
+			auto fs = kj::newDiskFilesystem();
+#ifdef WIN32
+			auto pathToMonicaParamsSoil = fs->getCurrentPath().evalWin32(replaceEnvVars("${MONICA_PARAMETERS}\\soil\\"));
+#else
+			auto pathToMonicaParamsSoil = fs->getCurrentPath().eval(replaceEnvVars("${MONICA_PARAMETERS}/soil/"));
+#endif
+			try {
+				KJ_IF_MAYBE(file, fs->getRoot().tryOpenFile(pathToMonicaParamsSoil.append("CapillaryRiseRates.sercapnp")))
+				{
+					auto allBytes = (*file)->readAllBytes();
+					kj::ArrayInputStream aios(allBytes);
+					capnp::InputStreamMessageReader message(aios);
+					cacheAllData(message.getRoot<mas::data::soil::CapillaryRiseRate>());
+				} else
+          KJ_IF_MAYBE(file, fs->getRoot().tryOpenFile(pathToMonicaParamsSoil.append("CapillaryRiseRates.json")))
+        {
+          capnp::JsonCodec json;
+          capnp::MallocMessageBuilder msg;
+          auto builder = msg.initRoot<mas::data::soil::CapillaryRiseRate>();
+          json.decode((*file)->readAllBytes().asChars(), builder);
+          cacheAllData(builder.asReader());
+        }
+
+        initialized = true;
+      }
+      catch (kj::Exception e)
+      {
+        cout << "Error: couldn't read CapillaryRiseRates.sercapnp or CapillaryRiseRates.json from folder "
+          << pathToMonicaParamsSoil.toString().cStr() << " ! Exception: " << e.getDescription().cStr() << endl;
+      }
+
+			initialized = true;
+		}
+	}
+
+	return cap_rates;
+}
+//*/
+
+/*
+const CapillaryRiseRates& Soil::readCapillaryRiseRates()
+{
+	static mutex lockable;
+	static bool initialized = false;
+	static CapillaryRiseRates cap_rates;
+
+	if (!initialized)
+	{
+		lock_guard<mutex> lock(lockable);
+
+		if (!initialized)
+		{
 
 			static const string query =
 				"select soil_type, distance, capillary_rate "
 				"from capillary_rise_rate";
 
 			// read capillary rise rates from database
-			DB *con = newConnection("ka5-soil-data");
+			DB* con = newConnection("ka5-soil-data");
 			con->select(query.c_str());
 
+			capnp::MallocMessageBuilder message;
+			auto serData = message.initRoot<mas::data::soil::CapillaryRiseRate>();
+			auto list = serData.initList(con->getNumberOfRows());
+			int i = 0;
+
 			DBRow row;
-			while(!(row = con->getRow()).empty())
+			while (!(row = con->getRow()).empty())
 			{
 				string soil_type = row[0];
 				int distance = satoi(row[1]);
 				double rate = satof(row[2]);
 				cap_rates.addRate(soil_type, distance, rate);
+
+				auto scd = list[i++];
+				scd.setSoilType(soil_type);
+				scd.setDistance(distance);
+				scd.setRate(rate);
 			}
+
+			auto flatArray = capnp::messageToFlatArray(message.getSegmentsForOutput());
+			auto fs = kj::newDiskFilesystem();
+			capnp::JsonCodec json;
+			json.setPrettyPrint(true);
+			kj::String encoded = json.encode(serData.asReader());
+			auto jsonFile = fs->getRoot().openFile(fs->getCurrentPath().eval("CapillaryRiseRates.json"), kj::WriteMode::CREATE | kj::WriteMode::MODIFY);
+			jsonFile->writeAll(encoded);
+			auto file = fs->getRoot().openFile(fs->getCurrentPath().eval("CapillaryRiseRates.sercapnp"), kj::WriteMode::CREATE | kj::WriteMode::MODIFY);
+			file->writeAll(flatArray.asBytes());
 
 			delete con;
 
@@ -268,6 +355,7 @@ const CapillaryRiseRates& Soil::readCapillaryRiseRates()
 
 	return cap_rates;
 }
+//*/
 
 //------------------------------------------------------------------------------
 
@@ -437,6 +525,7 @@ std::pair<SoilPMs, Errors> Soil::createSoilPMs(const J11Array& jsonSoilPMs)
 
 //-----------------------------------------------------------------------------
 
+/*
 string Soil::soilProfileId2KA5Layers(const string& abstractDbSchema,
 																		 int soilProfileId)
 {
@@ -486,6 +575,7 @@ string Soil::soilProfileId2KA5Layers(const string& abstractDbSchema,
 
 	return "Soil profile database not found!";
 }
+*/
 
 //------------------------------------------------------------------------------
 
@@ -635,6 +725,95 @@ const SoilPMsPtr Soil::soilParametersFromHermesFile(int soilId,
 
 //------------------------------------------------------------------------------
 
+
+
+//*
+RPSCDRes Soil::readPrincipalSoilCharacteristicData(string soilType, double rawDensity)
+{
+	static mutex lockable;
+	typedef map<int, RPSCDRes> M1;
+	typedef map<string, M1> M2;
+	static M2 m;
+	static bool initialized = false;
+
+	RPSCDRes errorRes;
+
+	if (!initialized)
+	{
+		lock_guard<mutex> lock(lockable);
+
+    if (!initialized)
+    {
+			auto cacheAllData = [](mas::data::soil::SoilCharacteristicData::Reader data) {
+				for (const auto& scd : data.getList())
+				{
+					double ac = scd.getAirCapacity();
+					double fc = scd.getFieldCapacity();
+					double nfc = scd.getNFieldCapacity();
+
+					RPSCDRes r(true);
+					r.sat = ac + fc;
+					r.fc = fc;
+					r.pwp = fc - nfc;
+
+					m[scd.getSoilType()][int(scd.getSoilRawDensity() / 100.0)] = r;
+				}
+			};
+
+      auto fs = kj::newDiskFilesystem();
+#ifdef WIN32
+			auto pathToMonicaParamsSoil = fs->getCurrentPath().evalWin32(replaceEnvVars("${MONICA_PARAMETERS}\\soil\\"));
+#else
+			auto pathToMonicaParamsSoil = fs->getCurrentPath().eval(replaceEnvVars("${MONICA_PARAMETERS}/soil/"));
+#endif
+			try {
+        KJ_IF_MAYBE(file, fs->getRoot().tryOpenFile(pathToMonicaParamsSoil.append("SoilCharacteristicData.sercapnp")))
+        {
+          auto allBytes = (*file)->readAllBytes();
+          kj::ArrayInputStream aios(allBytes);
+          capnp::InputStreamMessageReader message(aios);
+          cacheAllData(message.getRoot<mas::data::soil::SoilCharacteristicData>());
+        } else
+          KJ_IF_MAYBE(file, fs->getRoot().tryOpenFile(pathToMonicaParamsSoil.append("SoilCharacteristicData.json")))
+        {
+          capnp::JsonCodec json;
+          capnp::MallocMessageBuilder msg;
+          auto builder = msg.initRoot<mas::data::soil::SoilCharacteristicData>();
+          json.decode((*file)->readAllBytes().asChars(), builder);
+          cacheAllData(builder.asReader());
+        }
+
+        initialized = true;
+      }
+      catch (kj::Exception e)
+      {
+        cout << "Error: couldn't read SoilCharacteristicData.sercapnp or SoilCharacteristicData.json from folder "
+          << pathToMonicaParamsSoil.toString().cStr() << " ! Exception: " << e.getDescription().cStr() << endl;
+      }
+		}
+	}
+
+	auto ci = m.find(soilType);
+	if (ci != m.end())
+	{
+		int rd10 = int(rawDensity * 10);
+		int delta = rd10 < 15 ? 2 : -2;
+
+		M1::const_iterator ci2;
+		//if we didn't find values for a given raw density, e.g. 1.1 (= 11)
+		//we try to find the closest next one (up (1.1) or down (1.9))
+		while ((ci2 = ci->second.find(rd10)) == ci->second.end() &&
+			(11 <= rd10 && rd10 <= 19))
+			rd10 += delta;
+
+		return ci2 != ci->second.end() ? ci2->second : errorRes;
+	}
+
+	return errorRes;
+}
+//*/
+
+/*
 RPSCDRes Soil::readPrincipalSoilCharacteristicData(string soilType, double rawDensity)
 {
 	static mutex lockable;
@@ -661,6 +840,11 @@ RPSCDRes Soil::readPrincipalSoilCharacteristicData(string soilType, double rawDe
 									 "where air_capacity != 0 and field_capacity != 0 and n_field_capacity != 0 "
 									 "order by soil_type, soil_raw_density");
 			con->select(query.c_str());
+			
+			//capnp::MallocMessageBuilder message;
+			//auto serData = message.initRoot<mas::data::soil::SoilCharacteristicData>();
+			//auto list = serData.initList(con->getNumberOfRows());
+			//int i = 0;
 
 			debug() << endl << query.c_str() << endl;
 			DBRow row;
@@ -669,6 +853,13 @@ RPSCDRes Soil::readPrincipalSoilCharacteristicData(string soilType, double rawDe
 				double ac = satof(row[2]);
 				double fc = satof(row[3]);
 				double nfc = satof(row[4]);
+
+				//auto scd = list[i++];
+				//scd.setSoilType(row[0]);
+				//scd.setSoilRawDensity(satoi(row[1]) * 100);
+				//scd.setAirCapacity(satoi(row[2]));
+				//scd.setFieldCapacity(satoi(row[3]));
+				//scd.setNFieldCapacity(satoi(row[4]));
 
 				RPSCDRes r(true);
 				r.sat = ac + fc;
@@ -679,6 +870,16 @@ RPSCDRes Soil::readPrincipalSoilCharacteristicData(string soilType, double rawDe
 			}
 
 			initialized = true;
+
+			//auto flatArray = capnp::messageToFlatArray(message.getSegmentsForOutput());
+			//auto fs = kj::newDiskFilesystem();
+			//capnp::JsonCodec json;
+			//json.setPrettyPrint(true);
+			//kj::String encoded = json.encode(serData.asReader());
+			//auto jsonFile = fs->getRoot().openFile(fs->getCurrentPath().eval("SoilCharacteristicData.json"), kj::WriteMode::CREATE | kj::WriteMode::MODIFY);
+			//jsonFile->writeAll(encoded);
+			//auto file = fs->getRoot().openFile(fs->getCurrentPath().eval("SoilCharacteristicData.sercapnp"), kj::WriteMode::CREATE | kj::WriteMode::MODIFY);
+			//file->writeAll(flatArray.asBytes());
 		}
 	}
 
@@ -700,9 +901,87 @@ RPSCDRes Soil::readPrincipalSoilCharacteristicData(string soilType, double rawDe
 
 	return errorRes;
 }
+//*/
 
 //------------------------------------------------------------------------------
 
+//*
+RPSCDRes Soil::readSoilCharacteristicModifier(string soilType, double organicMatter)
+{
+	static mutex lockable;
+	typedef map<int, RPSCDRes> M1;
+	typedef map<string, M1> M2;
+	static M2 m;
+	static bool initialized = false;
+	if(!initialized)
+	{
+		lock_guard<mutex> lock(lockable);
+
+		if(!initialized)
+		{
+			auto cacheAllData = [](mas::data::soil::SoilCharacteristicModifier::Reader data) {
+				for (const auto& scd : data.getList())
+				{
+					double ac = scd.getAirCapacity();
+					double fc = scd.getFieldCapacity();
+					double nfc = scd.getNFieldCapacity();
+
+					RPSCDRes r(true);
+					r.sat = ac + fc;
+					r.fc = fc;
+					r.pwp = fc - nfc;
+
+					m[scd.getSoilType()][int(scd.getOrganicMatter() * 10)] = r;
+				}
+			};
+
+			auto fs = kj::newDiskFilesystem();
+#ifdef WIN32
+			auto pathToMonicaParamsSoil = fs->getCurrentPath().evalWin32(replaceEnvVars("${MONICA_PARAMETERS}\\soil\\"));
+#else
+			auto pathToMonicaParamsSoil = fs->getCurrentPath().eval(replaceEnvVars("${MONICA_PARAMETERS}/soil/"));
+#endif
+			cout << pathToMonicaParamsSoil.toString().cStr() << endl;
+			try
+			{
+				KJ_IF_MAYBE(file, fs->getRoot().tryOpenFile(pathToMonicaParamsSoil.append("SoilCharacteristicModifier.sercapnp")))
+				{
+					auto allBytes = (*file)->readAllBytes();
+					kj::ArrayInputStream aios(allBytes);
+					capnp::InputStreamMessageReader message(aios);
+					cacheAllData(message.getRoot<mas::data::soil::SoilCharacteristicModifier>());
+				} else
+          KJ_IF_MAYBE(file, fs->getRoot().tryOpenFile(pathToMonicaParamsSoil.append("SoilCharacteristicModifier.json")))
+        {
+          capnp::JsonCodec json;
+          capnp::MallocMessageBuilder msg;
+          auto builder = msg.initRoot<mas::data::soil::SoilCharacteristicModifier>();
+          json.decode((*file)->readAllBytes().asChars(), builder);
+          cacheAllData(builder.asReader());
+        }
+
+        initialized = true;
+			}
+			catch (kj::Exception e)
+			{
+				cout << "Error: couldn't read SoilCharacteristicModifier.sercapnp or SoilCharacteristicModifier.json from folder "
+					<< pathToMonicaParamsSoil.toString().cStr() << " ! Exception: " << e.getDescription().cStr() << endl;
+			}
+    }
+  }
+
+	auto ci = m.find(soilType);
+	if(ci != m.end())
+	{
+		auto ci2 = ci->second.find(int(organicMatter * 10));
+		return ci2 != ci->second.end() ? ci2->second : RPSCDRes();
+	}
+
+	return RPSCDRes();
+}
+//*/
+
+/*
 RPSCDRes Soil::readSoilCharacteristicModifier(string soilType, double organicMatter)
 {
 	static mutex lockable;
@@ -724,6 +1003,11 @@ RPSCDRes Soil::readSoilCharacteristicModifier(string soilType, double organicMat
 									 "order by soil_type, organic_matter");
 			con->select(query.c_str());
 
+			//capnp::MallocMessageBuilder message;
+			//auto serData = message.initRoot<mas::data::soil::SoilCharacteristicModifier>();
+			//auto list = serData.initList(con->getNumberOfRows());
+			//int i = 0;
+
 			debug() << endl << query.c_str() << endl;
 			DBRow row;
 			while(!(row = con->getRow()).empty())
@@ -731,6 +1015,13 @@ RPSCDRes Soil::readSoilCharacteristicModifier(string soilType, double organicMat
 				double ac = satof(row[2]);
 				double fc = satof(row[3]);
 				double nfc = satof(row[4]);
+
+				//auto scd = list[i++];
+				//scd.setSoilType(row[0]);
+				//scd.setOrganicMatter(satof(row[1]) / 10.);
+				//scd.setAirCapacity(satoi(row[2]));
+				//scd.setFieldCapacity(satoi(row[3]));
+				//scd.setNFieldCapacity(satoi(row[4]));
 
 				RPSCDRes r(true);
 				r.sat = ac + fc;
@@ -741,6 +1032,16 @@ RPSCDRes Soil::readSoilCharacteristicModifier(string soilType, double organicMat
 			}
 
 			initialized = true;
+
+			//auto flatArray = capnp::messageToFlatArray(message.getSegmentsForOutput());
+			//auto fs = kj::newDiskFilesystem();
+			//capnp::JsonCodec json;
+			//json.setPrettyPrint(true);
+			//kj::String encoded = json.encode(serData.asReader());
+			//auto jsonFile = fs->getRoot().openFile(fs->getCurrentPath().eval("SoilCharacteristicModifier.json"), kj::WriteMode::CREATE | kj::WriteMode::MODIFY);
+			//jsonFile->writeAll(encoded);
+			//auto file = fs->getRoot().openFile(fs->getCurrentPath().eval("SoilCharacteristicModifier.sercapnp"), kj::WriteMode::CREATE | kj::WriteMode::MODIFY);
+			//file->writeAll(flatArray.asBytes());
 		}
 	}
 
@@ -753,6 +1054,7 @@ RPSCDRes Soil::readSoilCharacteristicModifier(string soilType, double organicMat
 
 	return RPSCDRes();
 }
+//*/
 
 //------------------------------------------------------------------------------
 
