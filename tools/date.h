@@ -70,11 +70,11 @@ namespace Tools
 				 bool useLeapYears = DEFAULT_USE_LEAP_YEARS);
 
 #ifdef CAPNPROTO_SERIALIZATION_SUPPORT
-		Date(mas::common::Date::Reader reader) { deserialize(reader); }
+		Date(mas::schema::common::Date::Reader reader) { deserialize(reader); }
 
-		void serialize(mas::common::Date::Builder builder) const;
+		void serialize(mas::schema::common::Date::Builder builder) const;
 
-		void deserialize(mas::common::Date::Reader reader);
+		void deserialize(mas::schema::common::Date::Reader reader);
 #endif
 
 		static Date relativeDate(uint day,

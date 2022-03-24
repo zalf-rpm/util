@@ -28,7 +28,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <iostream>
 
 #ifdef CAPNPROTO_SERIALIZATION_SUPPORT
-#include "models/monica/monica_params.capnp.h"
+#include "model/monica/monica_params.capnp.h"
 #endif
 
 #include "json11/json11.hpp"
@@ -44,9 +44,9 @@ namespace Soil
 		SoilParameters(json11::Json object);
 
 #ifdef CAPNPROTO_SERIALIZATION_SUPPORT
-		void serialize(mas::models::monica::SoilParameters::Builder builder) const;
+		void serialize(mas::schema::model::monica::SoilParameters::Builder builder) const;
 
-		void deserialize(mas::models::monica::SoilParameters::Reader reader);
+		void deserialize(mas::schema::model::monica::SoilParameters::Reader reader);
 #endif
 
 		virtual Tools::Errors merge(json11::Json j);

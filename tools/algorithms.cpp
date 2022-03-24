@@ -25,6 +25,7 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <sstream>
 #include <cassert>
 #include <utility>
+#include <climits>
 
 #include "algorithms.h"
 //#include "tools/date.h"

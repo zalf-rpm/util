@@ -131,13 +131,13 @@ Date::Date(uint day,
 }
 
 #ifdef CAPNPROTO_SERIALIZATION_SUPPORT
-void Date::deserialize(mas::common::Date::Reader reader) {
+void Date::deserialize(mas::schema::common::Date::Reader reader) {
 	_d = reader.getDay();
 	_m = reader.getMonth();
 	_y = reader.getYear();
 }
 
-void Date::serialize(mas::common::Date::Builder builder) const {
+void Date::serialize(mas::schema::common::Date::Builder builder) const {
 	builder.setDay(_d);
 	builder.setMonth(_m);
 	builder.setYear(_y);

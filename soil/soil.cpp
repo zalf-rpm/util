@@ -23,12 +23,13 @@ Copyright (C) Leibniz Centre for Agricultural Landscape Research (ZALF)
 #include <cmath>
 #include <utility>
 #include <mutex>
+#include <climits>
 
 #include <capnp/message.h>
 #include <capnp/serialize.h>
 #include <kj/filesystem.h>
 #include <kj/string.h>
-#include "models/monica/soil_params.capnp.h"
+#include "model/monica/soil_params.capnp.h"
 #include "capnp/compat/json.h"
 
 //#include "db/abstract-db-connections.h"
@@ -49,7 +50,7 @@ using namespace json11;
 //----------------------------------------------------------------------------------
 
 #ifdef CAPNPROTO_SERIALIZATION_SUPPORT
-void SoilParameters::serialize(mas::models::monica::SoilParameters::Builder builder) const {
+void SoilParameters::serialize(mas::schema::model::monica::SoilParameters::Builder builder) const {
 	builder.setSoilSandContent(vs_SoilSandContent);
 	builder.setSoilClayContent(vs_SoilClayContent);
 	builder.setSoilpH(vs_SoilpH);
@@ -69,7 +70,7 @@ void SoilParameters::serialize(mas::models::monica::SoilParameters::Builder buil
 	builder.setSoilOrganicMatter(_vs_SoilOrganicMatter);
 }
 
-void SoilParameters::deserialize(mas::models::monica::SoilParameters::Reader reader) {
+void SoilParameters::deserialize(mas::schema::model::monica::SoilParameters::Reader reader) {
 	vs_SoilSandContent = reader.getSoilSandContent();
 	vs_SoilClayContent = reader.getSoilClayContent();
 	vs_SoilpH = reader.getSoilpH();
@@ -250,7 +251,7 @@ const CapillaryRiseRates& Soil::readCapillaryRiseRates()
 
 		if(!initialized)
 		{
-			auto cacheAllData = [](mas::data::soil::CapillaryRiseRate::Reader data) {
+			auto cacheAllData = [](mas::schema::soil::CapillaryRiseRate::Reader data) {
 				for (const auto& scd : data.getList())
 				{
 					cap_rates.addRate(scd.getSoilType(), scd.getDistance(), scd.getRate());
@@ -269,13 +270,13 @@ const CapillaryRiseRates& Soil::readCapillaryRiseRates()
 					auto allBytes = (*file)->readAllBytes();
 					kj::ArrayInputStream aios(allBytes);
 					capnp::InputStreamMessageReader message(aios);
-					cacheAllData(message.getRoot<mas::data::soil::CapillaryRiseRate>());
+					cacheAllData(message.getRoot<mas::schema::soil::CapillaryRiseRate>());
 				} else
           KJ_IF_MAYBE(file, fs->getRoot().tryOpenFile(pathToMonicaParamsSoil.append("CapillaryRiseRates.json")))
         {
           capnp::JsonCodec json;
           capnp::MallocMessageBuilder msg;
-          auto builder = msg.initRoot<mas::data::soil::CapillaryRiseRate>();
+          auto builder = msg.initRoot<mas::schema::soil::CapillaryRiseRate>();
           json.decode((*file)->readAllBytes().asChars(), builder);
           cacheAllData(builder.asReader());
         }
@@ -319,7 +320,7 @@ const CapillaryRiseRates& Soil::readCapillaryRiseRates()
 			con->select(query.c_str());
 
 			capnp::MallocMessageBuilder message;
-			auto serData = message.initRoot<mas::data::soil::CapillaryRiseRate>();
+			auto serData = message.initRoot<mas::schema::soil::CapillaryRiseRate>();
 			auto list = serData.initList(con->getNumberOfRows());
 			int i = 0;
 
@@ -744,7 +745,7 @@ RPSCDRes Soil::readPrincipalSoilCharacteristicData(string soilType, double rawDe
 
     if (!initialized)
     {
-			auto cacheAllData = [](mas::data::soil::SoilCharacteristicData::Reader data) {
+			auto cacheAllData = [](mas::schema::soil::SoilCharacteristicData::Reader data) {
 				for (const auto& scd : data.getList())
 				{
 					double ac = scd.getAirCapacity();
@@ -772,13 +773,13 @@ RPSCDRes Soil::readPrincipalSoilCharacteristicData(string soilType, double rawDe
           auto allBytes = (*file)->readAllBytes();
           kj::ArrayInputStream aios(allBytes);
           capnp::InputStreamMessageReader message(aios);
-          cacheAllData(message.getRoot<mas::data::soil::SoilCharacteristicData>());
+          cacheAllData(message.getRoot<mas::schema::soil::SoilCharacteristicData>());
         } else
           KJ_IF_MAYBE(file, fs->getRoot().tryOpenFile(pathToMonicaParamsSoil.append("SoilCharacteristicData.json")))
         {
           capnp::JsonCodec json;
           capnp::MallocMessageBuilder msg;
-          auto builder = msg.initRoot<mas::data::soil::SoilCharacteristicData>();
+          auto builder = msg.initRoot<mas::schema::soil::SoilCharacteristicData>();
           json.decode((*file)->readAllBytes().asChars(), builder);
           cacheAllData(builder.asReader());
         }
@@ -842,7 +843,7 @@ RPSCDRes Soil::readPrincipalSoilCharacteristicData(string soilType, double rawDe
 			con->select(query.c_str());
 			
 			//capnp::MallocMessageBuilder message;
-			//auto serData = message.initRoot<mas::data::soil::SoilCharacteristicData>();
+			//auto serData = message.initRoot<mas::schema::soil::SoilCharacteristicData>();
 			//auto list = serData.initList(con->getNumberOfRows());
 			//int i = 0;
 
@@ -919,7 +920,7 @@ RPSCDRes Soil::readSoilCharacteristicModifier(string soilType, double organicMat
 
 		if(!initialized)
 		{
-			auto cacheAllData = [](mas::data::soil::SoilCharacteristicModifier::Reader data) {
+			auto cacheAllData = [](mas::schema::soil::SoilCharacteristicModifier::Reader data) {
 				for (const auto& scd : data.getList())
 				{
 					double ac = scd.getAirCapacity();
@@ -948,13 +949,13 @@ RPSCDRes Soil::readSoilCharacteristicModifier(string soilType, double organicMat
 					auto allBytes = (*file)->readAllBytes();
 					kj::ArrayInputStream aios(allBytes);
 					capnp::InputStreamMessageReader message(aios);
-					cacheAllData(message.getRoot<mas::data::soil::SoilCharacteristicModifier>());
+					cacheAllData(message.getRoot<mas::schema::soil::SoilCharacteristicModifier>());
 				} else
           KJ_IF_MAYBE(file, fs->getRoot().tryOpenFile(pathToMonicaParamsSoil.append("SoilCharacteristicModifier.json")))
         {
           capnp::JsonCodec json;
           capnp::MallocMessageBuilder msg;
-          auto builder = msg.initRoot<mas::data::soil::SoilCharacteristicModifier>();
+          auto builder = msg.initRoot<mas::schema::soil::SoilCharacteristicModifier>();
           json.decode((*file)->readAllBytes().asChars(), builder);
           cacheAllData(builder.asReader());
         }
@@ -1003,7 +1004,7 @@ RPSCDRes Soil::readSoilCharacteristicModifier(string soilType, double organicMat
 			con->select(query.c_str());
 
 			//capnp::MallocMessageBuilder message;
-			//auto serData = message.initRoot<mas::data::soil::SoilCharacteristicModifier>();
+			//auto serData = message.initRoot<mas::schema::soil::SoilCharacteristicModifier>();
 			//auto list = serData.initList(con->getNumberOfRows());
 			//int i = 0;
 
