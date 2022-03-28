@@ -245,21 +245,29 @@ def get_soil_profile_group(con, profile_group_id=None, only_raw_data=True, no_un
     profiles = []
     layers = []
     prev_depth = 0
+    range_percentage = ""
+    avg_percentage = 0
     for row in rows:
         group_id = int(row["polygon_id"])
         profile_id = int(row["profile_id_in_polygon"])
+        range_percentage = row["range_percentage_of_area"]
+        avg_percentage = float(row["avg_range_percentage_of_area"])
+        if not last_profile_id:
+            last_profile_id = profile_id
+        if not last_profile_group_id:
+            last_profile_group_id = group_id
+
         if profile_id != last_profile_id or group_id != last_profile_group_id:
             profiles.append({
                 "id": last_profile_id,
                 "layers": layers,
-                "range_percentage_in_group": row["range_percentage_of_area"],
-                "avg_range_percentage_in_group": int(row["avg_range_percentage_of_area"])
+                "range_percentage_in_group": range_percentage,
+                "avg_range_percentage_in_group": avg_percentage
             })
             last_profile_id = profile_id
             layers = []
             prev_depth = 0
 
-        group_id = int(row["polygon_id"])
         if group_id != last_profile_group_id:
             profile_groups.append((last_profile_group_id, profiles))
             last_profile_group_id = group_id
@@ -268,12 +276,21 @@ def get_soil_profile_group(con, profile_group_id=None, only_raw_data=True, no_un
         layer, prev_depth = create_layer(row, prev_depth, only_raw_data, no_units=no_units)
         layers.append(layer)
 
+    # store also last profile and profile group 
+    profiles.append({
+        "id": last_profile_id,
+        "layers": layers,
+        "range_percentage_in_group": range_percentage,
+        "avg_range_percentage_in_group": avg_percentage
+    })
+    profile_groups.append((last_profile_group_id, profiles))
+
     return profile_groups
 
 #------------------------------------------------------------------------------
 
-def available_soil_parameters_group(con, table="soil_profile_all"):
-    return available_soil_parameters(con, table)
+def available_soil_parameters_group(con, table="soil_profile_all", only_raw_data=True):
+    return available_soil_parameters(con, table=table, only_raw_data=only_raw_data)
 
 #------------------------------------------------------------------------------
 
