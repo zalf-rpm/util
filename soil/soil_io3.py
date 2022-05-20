@@ -289,15 +289,15 @@ def get_soil_profile_group(con, profile_group_id=None, only_raw_data=True, no_un
 
 #------------------------------------------------------------------------------
 
-def available_soil_parameters_group(con, table="soil_profile_all", only_raw_data=True):
-    return available_soil_parameters(con, table=table, only_raw_data=only_raw_data)
+def available_soil_parameters_group(con, table="soil_profile_all", id_col="polygon_id", only_raw_data=True):
+    return available_soil_parameters(con, table=table, id_col=id_col, only_raw_data=only_raw_data)
 
 #------------------------------------------------------------------------------
 
-def available_soil_parameters(con, table="soil_profile", only_raw_data=True):
+def available_soil_parameters(con, table="soil_profile", id_col="id", only_raw_data=True):
     "return which soil parameters in the database are always there (mandatory) and which are sometimes there (optional) "
 
-    query = "select count(id) as count from {} where {} is null"
+    query = "select count({}) as count from {} where {} is null"
     params = {
         "layer_depth": "Thickness",
         "soil_organic_carbon": "SoilOrganicCarbon", 
@@ -328,7 +328,7 @@ def available_soil_parameters(con, table="soil_profile", only_raw_data=True):
 
     for param in params.keys():
         con.row_factory = sqlite3.Row
-        q = query.format(table, param)
+        q = query.format(id_col, table, param)
         for row in con.cursor().execute(q):
             if int(row["count"]) == 0:
                 mandatory.append(params[param])
